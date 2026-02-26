@@ -1,5 +1,4 @@
 # GuardianAngel
----
 
 ## 🛡️ Product Overview: Guardian Angel AI
 
