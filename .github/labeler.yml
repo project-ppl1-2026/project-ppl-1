@@ -1,0 +1,30 @@
+frontend:
+  - changed-files:
+    - any-glob-to-any-file: 'src/frontend/**/*'
+    - any-glob-to-any-file: 'public/**/*'
+    - any-glob-to-any-file: '**/*.{html,css,scss,js,jsx,ts,tsx}'
+
+backend:
+  - changed-files:
+    - any-glob-to-any-file: 'src/backend/**/*'
+    - any-glob-to-any-file: 'api/**/*'
+    - any-glob-to-any-file: 'server/**/*'
+
+dokumentasi:
+  - changed-files:
+    - any-glob-to-any-file: 'README.md'
+    - any-glob-to-any-file: 'docs/**/*'
+    - any-glob-to-any-file: '**/*.md'
+
+konfigurasi:
+  - changed-files:
+    - any-glob-to-any-file: '*.json'
+    - any-glob-to-any-file: '*.yaml'
+    - any-glob-to-any-file: '*.yml'
+    - any-glob-to-any-file: '.github/**/*'
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file: 'test/**/*'
+    - any-glob-to-any-file: '**/*.test.*'
+    - any-glob-to-any-file: '**/*.spec.*'
