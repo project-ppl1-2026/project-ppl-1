@@ -1,30 +1,43 @@
 frontend:
   - changed-files:
-    - any-glob-to-any-file: 'src/frontend/**/*'
-    - any-glob-to-any-file: 'public/**/*'
-    - any-glob-to-any-file: '**/*.{html,css,scss,js,jsx,ts,tsx}'
+    - any-glob-to-any-file: 
+        - 'app/**/*'      # Folder Next.js App Router
+        - 'pages/**/*'    # Folder Next.js Pages Router (kalau ada)
+        - 'components/**/*'
+        - 'styles/**/*'
+        - 'public/**/*'
+        - '**/*.{html,css,scss,js,jsx,ts,tsx}'
 
-backend:
+backend-api:
   - changed-files:
-    - any-glob-to-any-file: 'src/backend/**/*'
-    - any-glob-to-any-file: 'api/**/*'
-    - any-glob-to-any-file: 'server/**/*'
+    - any-glob-to-any-file: 
+        - 'app/api/**/*'  # API Routes Next.js
+        - 'pages/api/**/*'
+        - 'lib/**/*'      # Biasanya tempat utilitas backend
+
+database:
+  - changed-files:
+    - any-glob-to-any-file: 
+        - 'prisma/**/*'   # File schema.prisma dan migrasi
+        - 'supabase/**/*' # Kalau ada folder config supabase
 
 dokumentasi:
   - changed-files:
-    - any-glob-to-any-file: 'README.md'
-    - any-glob-to-any-file: 'docs/**/*'
-    - any-glob-to-any-file: '**/*.md'
+    - any-glob-to-any-file: 
+        - 'README.md'
+        - 'docs/**/*'
+        - '**/*.md'
 
 konfigurasi:
   - changed-files:
-    - any-glob-to-any-file: '*.json'
-    - any-glob-to-any-file: '*.yaml'
-    - any-glob-to-any-file: '*.yml'
-    - any-glob-to-any-file: '.github/**/*'
+    - any-glob-to-any-file: 
+        - '*.json'        # package.json, tsconfig.json
+        - '*.config.{js,ts,mjs}' # next.config.js, tailwind.config.js
+        - '.github/**/*'
 
 tests:
   - changed-files:
-    - any-glob-to-any-file: 'test/**/*'
-    - any-glob-to-any-file: '**/*.test.*'
-    - any-glob-to-any-file: '**/*.spec.*'
+    - any-glob-to-any-file: 
+        - 'test/**/*'
+        - '**/*.test.*'
+        - '**/*.spec.*'
