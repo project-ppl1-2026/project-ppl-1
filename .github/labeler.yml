@@ -1,43 +1,43 @@
 frontend:
   - changed-files:
-    - any-glob-to-any-file: 
-        - 'app/**/*'      # Folder Next.js App Router
-        - 'pages/**/*'    # Folder Next.js Pages Router (kalau ada)
-        - 'components/**/*'
-        - 'styles/**/*'
-        - 'public/**/*'
-        - '**/*.{html,css,scss,js,jsx,ts,tsx}'
+      - any-glob-to-any-file:
+          - "app/**/*" # Folder Next.js App Router
+          - "pages/**/*" # Folder Next.js Pages Router (kalau ada)
+          - "components/**/*"
+          - "styles/**/*"
+          - "public/**/*"
+          - "**/*.{html,css,scss,js,jsx,ts,tsx}"
 
 backend-api:
   - changed-files:
-    - any-glob-to-any-file: 
-        - 'app/api/**/*'  # API Routes Next.js
-        - 'pages/api/**/*'
-        - 'lib/**/*'      # Biasanya tempat utilitas backend
+      - any-glob-to-any-file:
+          - "app/api/**/*" # API Routes Next.js
+          - "pages/api/**/*"
+          - "lib/**/*" # Biasanya tempat utilitas backend
 
 database:
   - changed-files:
-    - any-glob-to-any-file: 
-        - 'prisma/**/*'   # File schema.prisma dan migrasi
-        - 'supabase/**/*' # Kalau ada folder config supabase
+      - any-glob-to-any-file:
+          - "prisma/**/*" # File schema.prisma dan migrasi
+          - "supabase/**/*" # Kalau ada folder config supabase
 
 dokumentasi:
   - changed-files:
-    - any-glob-to-any-file: 
-        - 'README.md'
-        - 'docs/**/*'
-        - '**/*.md'
+      - any-glob-to-any-file:
+          - "README.md"
+          - "docs/**/*"
+          - "**/*.md"
 
 konfigurasi:
   - changed-files:
-    - any-glob-to-any-file: 
-        - '*.json'        # package.json, tsconfig.json
-        - '*.config.{js,ts,mjs}' # next.config.js, tailwind.config.js
-        - '.github/**/*'
+      - any-glob-to-any-file:
+          - "*.json" # package.json, tsconfig.json
+          - "*.config.{js,ts,mjs}" # next.config.js, tailwind.config.js
+          - ".github/**/*"
 
 tests:
   - changed-files:
-    - any-glob-to-any-file: 
-        - 'test/**/*'
-        - '**/*.test.*'
-        - '**/*.spec.*'
+      - any-glob-to-any-file:
+          - "test/**/*"
+          - "**/*.test.*"
+          - "**/*.spec.*"
