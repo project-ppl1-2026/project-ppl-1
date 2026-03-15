@@ -12,21 +12,18 @@ backend-api:
   - changed-files:
       - any-glob-to-any-file:
           - "app/api/**/*" # API Routes Next.js
-          - "pages/api/**/*"
           - "lib/**/*" # Biasanya tempat utilitas backend
 
 database:
   - changed-files:
       - any-glob-to-any-file:
           - "prisma/**/*" # File schema.prisma dan migrasi
-          - "supabase/**/*" # Kalau ada folder config supabase
 
 dokumentasi:
   - changed-files:
       - any-glob-to-any-file:
           - "README.md"
           - "docs/**/*"
-          - "**/*.md"
 
 konfigurasi:
   - changed-files:
