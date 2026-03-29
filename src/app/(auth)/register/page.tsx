@@ -19,11 +19,18 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { TargetAndTransition } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
+import {
+  registerStep1Schema,
+  registerStep2Schema,
+  registerStep3Schema,
+  type RegisterStep1Input,
+  type RegisterStep2Input,
+  type RegisterStep3Input,
+} from "@/lib/validations";
 
 // ─── Color system ─────────────────────────────────────────────
 const C = {
@@ -47,46 +54,9 @@ const C = {
   successGreen: "#166534",
 };
 
-// ─── Validation schemas — Zod v4 compatible ───────────────────
-const step1Schema = z
-  .object({
-    email: z.string().email("Format email tidak valid"),
-    password: z.string().min(8, "Password minimal 8 karakter"),
-    confirm: z.string(),
-  })
-  .refine((d) => d.password === d.confirm, {
-    message: "Password tidak cocok",
-    path: ["confirm"],
-  });
-
-const step2Schema = z.object({
-  name: z.string().min(2, "Nama minimal 2 karakter"),
-  birthYear: z
-    .string()
-    .regex(/^\d{4}$/, "Tahun tidak valid")
-    .refine((y) => {
-      const yr = parseInt(y, 10);
-      const now = new Date().getFullYear();
-      return yr >= now - 29 && yr <= now - 10;
-    }, "Usia harus antara 10–29 tahun"),
-  // FIX: Zod v4 — gunakan `error` bukan `errorMap`
-  gender: z.enum(["male", "female", "prefer_not"] as const, {
-    error: "Pilih salah satu",
-  }),
-});
-
-const step3Schema = z.object({
-  parentEmail: z
-    .string()
-    .optional()
-    .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), {
-      message: "Format email tidak valid",
-    }),
-});
-
-type Step1 = z.infer<typeof step1Schema>;
-type Step2 = z.infer<typeof step2Schema>;
-type Step3 = z.infer<typeof step3Schema>;
+type Step1 = RegisterStep1Input;
+type Step2 = RegisterStep2Input;
+type Step3 = RegisterStep3Input;
 
 type ProfileStatus = {
   isAuthenticated: boolean;
@@ -497,7 +467,7 @@ function Step1Form({
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<Step1>({
-    resolver: zodResolver(step1Schema),
+    resolver: zodResolver(registerStep1Schema),
     defaultValues,
   });
 
@@ -682,7 +652,7 @@ function Step2Form({
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<Step2>({
-    resolver: zodResolver(step2Schema),
+    resolver: zodResolver(registerStep2Schema),
     defaultValues,
   });
 
@@ -821,7 +791,7 @@ function Step3Form({
     handleSubmit,
     formState: { errors },
   } = useForm<Step3>({
-    resolver: zodResolver(step3Schema),
+    resolver: zodResolver(registerStep3Schema),
     defaultValues,
   });
 

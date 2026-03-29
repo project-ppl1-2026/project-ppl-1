@@ -1,20 +1,22 @@
 import { NextResponse } from "next/server";
 
 import prisma from "@/lib/prisma";
-
-type RegisterStatusBody = {
-  email?: string;
-};
+import { registerStatusApiSchema } from "@/lib/validations";
 
 // Checks whether a user row exists after signup attempt.
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as RegisterStatusBody;
-    const email = body.email?.trim().toLowerCase();
+    const rawBody = await request.json();
+    const parsed = registerStatusApiSchema.safeParse(rawBody);
 
-    if (!email) {
-      return NextResponse.json({ error: "Email wajib diisi" }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || "Payload tidak valid" },
+        { status: 400 },
+      );
     }
+
+    const { email } = parsed.data;
 
     const user = await prisma.user.findUnique({
       where: { email },

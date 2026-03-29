@@ -48,6 +48,60 @@ export const registerSchema = z
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 
+// ─── Register Step Schemas (UI + API aligned) ───────────────
+export const registerStep1Schema = z
+  .object({
+    email: z
+      .string({ error: "Email wajib diisi" })
+      .email("Format email tidak valid")
+      .toLowerCase()
+      .trim(),
+    password: z
+      .string({ error: "Password wajib diisi" })
+      .min(8, "Password minimal 8 karakter"),
+    confirm: z.string({ error: "Konfirmasi password wajib diisi" }),
+  })
+  .refine((d) => d.password === d.confirm, {
+    message: "Password tidak cocok",
+    path: ["confirm"],
+  });
+
+export type RegisterStep1Input = z.infer<typeof registerStep1Schema>;
+
+const uiCurrentYear = new Date().getFullYear();
+
+export const registerStep2Schema = z.object({
+  name: z
+    .string({ error: "Nama wajib diisi" })
+    .min(2, "Nama minimal 2 karakter")
+    .max(50, "Nama maksimal 50 karakter")
+    .trim(),
+  birthYear: z
+    .string({ error: "Tahun wajib diisi" })
+    .regex(/^\d{4}$/, "Tahun tidak valid")
+    .refine((y) => {
+      const yr = parseInt(y, 10);
+      return yr >= uiCurrentYear - 29 && yr <= uiCurrentYear - 10;
+    }, "Usia harus antara 10–29 tahun"),
+  gender: z.enum(["male", "female", "prefer_not"], {
+    error: "Pilih salah satu",
+  }),
+});
+
+export type RegisterStep2Input = z.infer<typeof registerStep2Schema>;
+
+export const registerStep3Schema = z.object({
+  parentEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Format email tidak valid")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type RegisterStep3Input = z.infer<typeof registerStep3Schema>;
+
 // ─── Login Schema ─────────────────────────────────────────────
 export const loginSchema = z.object({
   email: z
@@ -119,3 +173,42 @@ export const parentReportSchema = z.object({
 });
 
 export type ParentReportInput = z.infer<typeof parentReportSchema>;
+
+// ─── Backend API Schemas ─────────────────────────────────────
+const currentYear = new Date().getFullYear();
+
+export const profileCompleteApiSchema = z.object({
+  name: z
+    .string({ error: "Nama wajib diisi" })
+    .min(2, "Nama minimal 2 karakter")
+    .max(50, "Nama maksimal 50 karakter")
+    .trim(),
+  birthYear: z.coerce
+    .number({ error: "Tahun lahir wajib diisi" })
+    .int("Tahun lahir tidak valid")
+    .min(currentYear - 29, "Usia harus antara 10-29 tahun")
+    .max(currentYear - 10, "Usia harus antara 10-29 tahun"),
+  gender: z.enum(["male", "female", "prefer_not"], {
+    error: "Jenis kelamin tidak valid",
+  }),
+  parentEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Format email orang tua tidak valid")
+    .optional()
+    .or(z.literal(""))
+    .transform((value) => (value === "" ? undefined : value)),
+});
+
+export type ProfileCompleteApiInput = z.infer<typeof profileCompleteApiSchema>;
+
+export const registerStatusApiSchema = z.object({
+  email: z
+    .string({ error: "Email wajib diisi" })
+    .trim()
+    .toLowerCase()
+    .email("Format email tidak valid"),
+});
+
+export type RegisterStatusApiInput = z.infer<typeof registerStatusApiSchema>;
