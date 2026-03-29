@@ -117,6 +117,56 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+// ─── Forgot / Reset / Change Password Schemas ───────────────
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string({ error: "Email wajib diisi" })
+    .email("Format email tidak valid")
+    .toLowerCase()
+    .trim(),
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    newPassword: z
+      .string({ error: "Password baru wajib diisi" })
+      .min(8, "Password minimal 8 karakter"),
+    confirmNewPassword: z.string({
+      error: "Konfirmasi password baru wajib diisi",
+    }),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "Konfirmasi password tidak cocok",
+    path: ["confirmNewPassword"],
+  });
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z
+      .string({ error: "Password saat ini wajib diisi" })
+      .min(1, "Password saat ini wajib diisi"),
+    newPassword: z
+      .string({ error: "Password baru wajib diisi" })
+      .min(8, "Password baru minimal 8 karakter"),
+    confirmNewPassword: z.string({
+      error: "Konfirmasi password baru wajib diisi",
+    }),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "Konfirmasi password tidak cocok",
+    path: ["confirmNewPassword"],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "Password baru harus berbeda dari password lama",
+    path: ["newPassword"],
+  });
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 // ─── Mood Check-In Schema ─────────────────────────────────────
 export const moodCheckInSchema = z.object({
   moodLevel: z

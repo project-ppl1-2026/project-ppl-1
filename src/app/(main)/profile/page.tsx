@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 // Definisi tipe data profil lengkap
@@ -72,7 +73,7 @@ export default function ProfilePage() {
         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 md:p-8 shadow-sm">
           {/* Header Profil (Avatar & Nama Dasar) */}
           <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-            <div className="flex h-28 w-28 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-teal-100 text-4xl font-bold text-teal-700 ring-4 ring-white shadow-sm">
+            <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full bg-teal-100 text-4xl font-bold text-teal-700 ring-4 ring-white shadow-sm">
               {profile.image && profile.image.startsWith("http") ? (
                 <Image
                   src={profile.image}
@@ -164,16 +165,12 @@ export default function ProfilePage() {
             </div>
 
             <div className="mt-8 flex justify-end">
-              <button
-                className="rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-200"
-                onClick={() =>
-                  alert(
-                    "Fitur edit profil via API POST/PUT dapat ditambahkan di sini nantinya.",
-                  )
-                }
+              <Link
+                href="/profile/change-password"
+                className="rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-200"
               >
-                Edit Data (Segera Hadir)
-              </button>
+                Ganti Password
+              </Link>
             </div>
           </div>
         </div>

@@ -15,6 +15,47 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }) => {
+      const greetingName = user.name?.trim() || "Teman";
+
+      // Jangan menunggu pengiriman agar mengurangi risiko timing attack.
+      void sendEmail({
+        to: user.email,
+        subject: "Reset Password Akun TemanTumbuh",
+        text:
+          `Halo ${greetingName},\n\n` +
+          "Kami menerima permintaan untuk mengatur ulang password akunmu.\n" +
+          "Jika ini memang kamu, buka link berikut untuk membuat password baru:\n\n" +
+          `${url}\n\n` +
+          "Jika kamu tidak meminta reset password, abaikan email ini.",
+        html: `
+          <div style="background:#f3f8ff;padding:24px 12px;font-family:Arial,sans-serif;color:#1f2937;">
+            <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #dbe7f3;border-radius:14px;overflow:hidden;">
+              <div style="background:linear-gradient(90deg,#0f6b60,#1a9688,#28b0a4);height:6px;"></div>
+              <div style="padding:28px 24px;">
+                <h2 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#0f6b60;">Halo ${greetingName}, reset password akunmu</h2>
+                <p style="margin:0 0 10px;font-size:15px;line-height:1.7;">Kami menerima permintaan untuk mengatur ulang password akun TemanTumbuh kamu.</p>
+                <p style="margin:0 0 20px;font-size:15px;line-height:1.7;">Klik tombol di bawah untuk membuat password baru.</p>
+
+                <div style="margin:22px 0 24px;text-align:center;">
+                  <a href="${url}" style="display:inline-block;background:#1a9688;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 22px;border-radius:10px;">Atur Ulang Password</a>
+                </div>
+
+                <p style="margin:0 0 8px;font-size:13px;color:#4b5563;">Jika tombol tidak berfungsi, salin link ini:</p>
+                <p style="margin:0 0 18px;word-break:break-all;"><a href="${url}" style="color:#0f6b60;font-size:13px;">${url}</a></p>
+
+                <p style="margin:0;font-size:12px;line-height:1.6;color:#6b7280;">Jika kamu tidak merasa meminta reset password, abaikan email ini.</p>
+              </div>
+            </div>
+          </div>
+        `,
+      }).catch((error) => {
+        console.error("Gagal mengirim email reset password:", error);
+      });
+    },
+    onPasswordReset: async ({ user }) => {
+      console.log(`Password untuk ${user.email} berhasil direset.`);
+    },
   },
   // Sends verification links through SMTP and avoids timing attacks by not awaiting from auth flow.
   emailVerification: {
