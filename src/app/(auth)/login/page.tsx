@@ -425,8 +425,11 @@ export default function LoginPage() {
       });
 
       if (response.error) {
+        const isVerificationError = response.error.status === 403;
         setServerError(
-          response.error.message ?? "Email atau password tidak valid.",
+          isVerificationError
+            ? "Email belum terverifikasi. Kami sudah mengirim ulang link verifikasi ke email kamu."
+            : (response.error.message ?? "Email atau password tidak valid."),
         );
         return;
       }

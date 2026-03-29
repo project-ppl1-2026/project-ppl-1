@@ -428,7 +428,7 @@ function SubmitBtn({
 
 // ─── Step indicator ───────────────────────────────────────────
 function StepIndicator({ current, total }: { current: number; total: number }) {
-  const labels = ["Akun", "Data Diri", "Laporan"];
+  const labels = ["Akun", "Data Diri", "Laporan"].slice(0, total);
   return (
     <div className="flex items-center justify-center mb-8">
       {Array.from({ length: total }).map((_, i) => {
@@ -476,11 +476,17 @@ function Step1Form({
   onNext,
   onGoogle,
   isGoogleLoading,
+  isEmailLoading,
+  verificationEmail,
+  isCompleteProfileFlow,
   defaultValues,
 }: {
-  onNext: (data: Step1) => void;
+  onNext: (data: Step1) => Promise<void> | void;
   onGoogle: () => void;
   isGoogleLoading: boolean;
+  isEmailLoading?: boolean;
+  verificationEmail?: string | null;
+  isCompleteProfileFlow?: boolean;
   defaultValues: Partial<Step1>;
 }) {
   const [showPw, setShowPw] = useState(false);
@@ -539,7 +545,9 @@ function Step1Form({
       </div>
 
       <form
-        onSubmit={handleSubmit(onNext)}
+        onSubmit={handleSubmit(async (data) => {
+          await onNext(data);
+        })}
         className="flex flex-col gap-4"
         noValidate
       >
@@ -612,16 +620,43 @@ function Step1Form({
 
         <div className="mt-2 flex gap-3">
           <SubmitBtn
-            isLoading={isSubmitting}
+            isLoading={isSubmitting || !!isEmailLoading}
             label={
               <span className="flex items-center gap-2">
-                Lanjut <Ic.ArrowRight />
+                {verificationEmail
+                  ? "Kirim Ulang Verifikasi"
+                  : isCompleteProfileFlow
+                    ? "Lanjut"
+                    : "Daftar & Verifikasi"}{" "}
+                <Ic.ArrowRight />
               </span>
             }
             loadingLabel="Memproses..."
           />
         </div>
       </form>
+
+      {verificationEmail && !isCompleteProfileFlow && (
+        <div
+          className="mt-4 rounded-xl border px-4 py-3 text-sm"
+          style={{
+            background: C.tealGhost,
+            borderColor: C.tealPale,
+            color: C.tealDark,
+          }}
+        >
+          <div className="flex items-start gap-2.5">
+            <span className="mt-0.5 shrink-0">
+              <Ic.Info />
+            </span>
+            <p>
+              Link verifikasi sudah dikirim ke{" "}
+              <strong>{verificationEmail}</strong>. Cek inbox/spam, verifikasi
+              dulu, lalu login untuk lanjut isi data diri.
+            </p>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -927,7 +962,9 @@ function SuccessScreen({ name }: { name: string }) {
 // ════════════════════════════════════════════════════════════
 // REGISTER PAGE
 // ════════════════════════════════════════════════════════════
-export default function RegisterPage() {
+import { Suspense } from "react";
+
+function RegisterPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isCompleteProfileFlow = searchParams.get("completeProfile") === "1";
@@ -940,11 +977,59 @@ export default function RegisterPage() {
 
   const [step1Data, setStep1Data] = useState<Partial<Step1>>({});
   const [step2Data, setStep2Data] = useState<Partial<Step2>>({});
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(
+    null,
+  );
 
-  const handleStep1 = useCallback((data: Step1) => {
-    setStep1Data(data);
-    setStep(1);
-  }, []);
+  const handleStep1 = useCallback(
+    async (data: Step1) => {
+      setStep1Data(data);
+      setLoading(true);
+
+      try {
+        if (isCompleteProfileFlow) {
+          setStep(1);
+          return;
+        }
+
+        // Ambil nama dari username email untuk default awal
+        const defaultName = data.email.split("@")[0] || "Pengguna";
+
+        const response = await authClient.signUp.email({
+          email: data.email,
+          password: data.password,
+          name: defaultName, // temporary name
+          callbackURL: "/register?completeProfile=1", // Pastikan ngelempar ke complete profile setelah auto-login dari email
+        });
+
+        if (response.error) {
+          if (
+            response.error.status === 400 ||
+            response.error.message?.toLowerCase().includes("exist") ||
+            response.error.code === "USER_ALREADY_EXISTS"
+          ) {
+            toast.error(
+              "Email ini sudah terdaftar! Silakan pindah ke menu Login.",
+            );
+          } else {
+            toast.error(
+              response.error.message || "Gagal mendaftar. Silakan coba lagi.",
+            );
+          }
+        } else {
+          setVerificationEmail(data.email);
+          toast.success("Silakan periksa email Anda untuk verifikasi.");
+          // Stay on step 0
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Terjadi kesalahan sistem.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isCompleteProfileFlow],
+  );
 
   const handleStep2 = useCallback((data: Step2) => {
     setStep2Data(data);
@@ -1015,48 +1100,11 @@ export default function RegisterPage() {
     };
   }, [isCompleteProfileFlow, router]);
 
-  // Creates account in normal flow and persists profile completion for logged-in users.
+  // Persists profile completion for logged-in users.
   const handleFinalSubmit = useCallback(
     async (data: Step3) => {
       setLoading(true);
       try {
-        if (isCompleteProfileFlow) {
-          const completeResponse = await fetch("/api/profile/complete", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              name: step2Data.name,
-              birthYear: step2Data.birthYear,
-              gender: step2Data.gender,
-              parentEmail: data.parentEmail,
-            }),
-          });
-
-          if (!completeResponse.ok) {
-            toast.error("Gagal menyimpan data diri.");
-            return;
-          }
-
-          setDone(true);
-          toast.success("Data diri berhasil dilengkapi.");
-          router.replace("/");
-          return;
-        }
-
-        const response = await authClient.signUp.email({
-          name: step2Data.name ?? "Pengguna",
-          email: step1Data.email ?? "",
-          password: step1Data.password ?? "",
-          callbackURL: "/",
-        });
-
-        if (response.error) {
-          toast.error(response.error.message ?? "Gagal membuat akun.");
-          return;
-        }
-
         const completeResponse = await fetch("/api/profile/complete", {
           method: "POST",
           headers: {
@@ -1071,29 +1119,22 @@ export default function RegisterPage() {
         });
 
         if (!completeResponse.ok) {
-          toast.error("Akun dibuat, tetapi data diri gagal disimpan.");
+          toast.error("Gagal menyimpan data diri.");
           return;
         }
 
         setDone(true);
-        toast.success("Akun berhasil dibuat.");
+        toast.success("Data diri berhasil dilengkapi.");
         router.replace("/");
+        return;
       } catch (error) {
-        toast.error("Gagal membuat akun. Silakan coba lagi.");
-        console.error("Email register error:", error);
+        toast.error("Gagal menyimpan data. Silakan coba lagi.");
+        console.error("Profile completion error:", error);
       } finally {
         setLoading(false);
       }
     },
-    [
-      isCompleteProfileFlow,
-      router,
-      step1Data.email,
-      step1Data.password,
-      step2Data.birthYear,
-      step2Data.gender,
-      step2Data.name,
-    ],
+    [router, step2Data.birthYear, step2Data.gender, step2Data.name],
   );
 
   // Starts the Better Auth Google flow from the register first step.
@@ -1246,6 +1287,9 @@ export default function RegisterPage() {
                 onGoogle={handleGoogle}
                 isGoogleLoading={isGoogleLoading}
                 defaultValues={step1Data}
+                isEmailLoading={isLoading}
+                verificationEmail={verificationEmail}
+                isCompleteProfileFlow={isCompleteProfileFlow}
               />
             ) : step === 1 ? (
               <Step2Form
@@ -1315,5 +1359,19 @@ export default function RegisterPage() {
         )}
       </motion.div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[calc(100vh-128px)] items-center justify-center bg-gray-50">
+          <p className="text-sm text-gray-500">Memuat halaman pendaftaran...</p>
+        </div>
+      }
+    >
+      <RegisterPageContent />
+    </Suspense>
   );
 }
