@@ -15,7 +15,6 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
-    autoSignInAfterVerification: true, // AUTO LOGIN AFTER VERIFICATION CLICK
     onExistingUserSignUp: async ({ user }) => {
       void sendEmail({
         to: user.email,
@@ -26,13 +25,30 @@ export const auth = betterAuth({
   },
   // Sends verification links through SMTP and avoids timing attacks by not awaiting from auth flow.
   emailVerification: {
+    autoSignInAfterVerification: true, // AUTO LOGIN AFTER VERIFICATION CLICK
     sendVerificationEmail: async ({ user, url }) => {
-      void sendEmail({
-        to: user.email,
-        subject: "Verify your email address",
-        text: `Click this link to verify your email: ${url}`,
-        html: `<p>Click this link to verify your email:</p><p><a href="${url}">${url}</a></p>`,
-      });
+      try {
+        // Harus kita await, agar kalau gagal mengirim email (misal tidak ada koneksi/kredensial SMTP mati),
+        // kita bisa menangkap throw error nya dan membatalkan pembuatan user tersebut.
+        await sendEmail({
+          to: user.email,
+          subject: "Verify your email address",
+          text: `Click this link to verify your email: ${url}`,
+          html: `<p>Click this link to verify your email:</p><p><a href="${url}">${url}</a></p>`,
+        });
+      } catch (error) {
+        console.error(
+          "Gagal mengirim email verifikasi, membatalkan pembuatan akun:",
+          error,
+        );
+        // Hapus akun yang terlanjur terbuat jika email gagal terkirim.
+        await prisma.user.deleteMany({
+          where: {
+            OR: [{ id: user.id }, { email: user.email }],
+          },
+        });
+        throw new Error("Gagal mengirim email. Pembuatan akun dibatalkan.");
+      }
     },
   },
   // Allows implicit linking by email for trusted OAuth providers.

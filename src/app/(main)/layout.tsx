@@ -1,21 +1,30 @@
-// src/app/(main)/layout.tsx
-//
-// FIX: Navbar & Footer DIHAPUS dari sini.
-// Masing-masing page group (main), (auth), dll.
-// punya layout-nya sendiri yang sudah include Navbar + Footer.
-//
-// Jika sebelumnya layout ini punya <Navbar /> dan <Footer />,
-// itulah penyebab Navbar tampil BERBEDA di halaman auth
-// (karena Navbar di-render dua kali atau dari context yang berbeda).
-
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import prisma from "@/lib/prisma";
 
-export default function MainLayout({
+export default async function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // SERVER SIDE AUTH GUARD
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (session?.user) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { profileFilled: true },
+    });
+    if (user && !user.profileFilled) {
+      redirect("/register?completeProfile=1");
+    }
+  }
+
   return (
     <div
       className="min-h-screen flex flex-col"

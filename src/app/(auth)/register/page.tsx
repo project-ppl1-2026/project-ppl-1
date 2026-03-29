@@ -91,6 +91,7 @@ type Step3 = z.infer<typeof step3Schema>;
 type ProfileStatus = {
   isAuthenticated: boolean;
   isComplete: boolean;
+  userName?: string;
 };
 
 // ─── Animated blob ────────────────────────────────────────────
@@ -984,6 +985,7 @@ function RegisterPageContent() {
   const handleStep1 = useCallback(
     async (data: Step1) => {
       setStep1Data(data);
+      setVerificationEmail(null);
       setLoading(true);
 
       try {
@@ -1003,26 +1005,60 @@ function RegisterPageContent() {
         });
 
         if (response.error) {
+          const message =
+            response.error.message || "Gagal mendaftar. Silakan coba lagi.";
+
           if (
             response.error.status === 400 ||
-            response.error.message?.toLowerCase().includes("exist") ||
+            message.toLowerCase().includes("exist") ||
             response.error.code === "USER_ALREADY_EXISTS"
           ) {
             toast.error(
               "Email ini sudah terdaftar! Silakan pindah ke menu Login.",
             );
-          } else {
+          } else if (message.toLowerCase().includes("gagal mengirim email")) {
             toast.error(
-              response.error.message || "Gagal mendaftar. Silakan coba lagi.",
+              "Gagal mengirim email verifikasi. Akun gagal dibuat. Silakan coba lagi.",
             );
+          } else {
+            toast.error(message);
           }
         } else {
+          const statusResponse = await fetch("/api/auth/register-status", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email: data.email }),
+          });
+
+          if (!statusResponse.ok) {
+            setVerificationEmail(null);
+            toast.error(
+              "Status pendaftaran tidak dapat diverifikasi. Silakan coba lagi.",
+            );
+            return;
+          }
+
+          const statusResult = (await statusResponse.json()) as {
+            exists?: boolean;
+          };
+
+          if (!statusResult.exists) {
+            setVerificationEmail(null);
+            toast.error(
+              "Gagal mengirim email verifikasi. Akun gagal dibuat. Silakan coba lagi.",
+            );
+            return;
+          }
+
           setVerificationEmail(data.email);
           toast.success("Silakan periksa email Anda untuk verifikasi.");
           // Stay on step 0
         }
       } catch (error) {
         console.error(error);
+        setVerificationEmail(null);
         toast.error("Terjadi kesalahan sistem.");
       } finally {
         setLoading(false);
@@ -1039,6 +1075,8 @@ function RegisterPageContent() {
   // Controls register access so profile completion is decided from backend status.
   useEffect(() => {
     let mounted = true;
+    const sleep = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
 
     const getProfileStatus = async (): Promise<ProfileStatus> => {
       const response = await fetch("/api/profile/status", {
@@ -1050,38 +1088,57 @@ function RegisterPageContent() {
 
     const checkSession = async () => {
       try {
-        const status = await getProfileStatus();
+        let status: ProfileStatus = {
+          isAuthenticated: false,
+          isComplete: false,
+        };
+
+        const maxAttempts = isCompleteProfileFlow ? 12 : 1;
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+          status = await getProfileStatus();
+
+          if (status.isAuthenticated) {
+            break;
+          }
+
+          if (attempt < maxAttempts - 1) {
+            await sleep(700);
+          }
+        }
 
         if (!mounted) {
           return;
         }
 
-        if (!status.isAuthenticated && isCompleteProfileFlow) {
-          router.replace("/login");
-          return;
-        }
+        const isAuthenticated = status.isAuthenticated;
+        const isComplete = status.isComplete;
 
-        if (!status.isAuthenticated && !isCompleteProfileFlow) {
-          return;
-        }
-
-        if (status.isAuthenticated && status.isComplete) {
+        if (isAuthenticated && isComplete) {
+          // Kalau sudah login dan lengkap, masuk ke beranda
           router.replace("/");
           return;
         }
 
-        if (status.isAuthenticated && !isCompleteProfileFlow) {
+        if (isAuthenticated && !isComplete && !isCompleteProfileFlow) {
+          // Kalau login tapi belum lengkap, lempar ke mode melengkapi profile
           router.replace("/register?completeProfile=1");
           return;
         }
 
-        const { data } = await authClient.getSession();
-        if (data?.user && isCompleteProfileFlow) {
+        // Jika berhasil login (dari email verif) dan ada flag completeProfile
+        if (isAuthenticated && isCompleteProfileFlow) {
           setStep(1);
           setStep2Data((prev) => ({
             ...prev,
-            name: prev.name ?? data.user.name ?? "",
+            name: prev.name ?? status.userName ?? "",
           }));
+          return;
+        }
+
+        // Kalau masih belum authenticated setelah beberapa retry, fallback ke login.
+        if (!isAuthenticated && isCompleteProfileFlow) {
+          toast.error("Sesi verifikasi tidak tersedia. Silakan login kembali.");
+          router.replace("/login");
           return;
         }
       } catch (error) {
