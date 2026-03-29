@@ -25,6 +25,7 @@ export async function GET() {
     return NextResponse.json({
       isAuthenticated: true,
       isComplete: Boolean(rows[0]?.profileFilled),
+      userName: session.user.name ?? "",
     });
   } catch (error) {
     console.error("Profile status error:", error);
