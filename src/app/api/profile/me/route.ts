@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { profileUpdateApiSchema } from "@/lib/validations";
 
 export async function GET(request: Request) {
   try {
@@ -72,6 +73,56 @@ export async function GET(request: Request) {
     return NextResponse.json(fullProfile);
   } catch (error: unknown) {
     console.error("GET Profile Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const sessionResponse = await auth.api.getSession({
+      headers: request.headers,
+    });
+
+    if (!sessionResponse?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rawBody = await request.json();
+    const parsed = profileUpdateApiSchema.safeParse(rawBody);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || "Payload tidak valid" },
+        { status: 400 },
+      );
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: sessionResponse.user.id },
+      data: {
+        name: parsed.data.name,
+        birthYear: parsed.data.birthYear,
+        gender: parsed.data.gender,
+        parentEmail: parsed.data.parentEmail,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        birthYear: true,
+        gender: true,
+        parentEmail: true,
+        profileFilled: true,
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error: unknown) {
+    console.error("PATCH Profile Error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

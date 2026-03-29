@@ -18,8 +18,7 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       const greetingName = user.name?.trim() || "Teman";
 
-      // Jangan menunggu pengiriman agar mengurangi risiko timing attack.
-      void sendEmail({
+      await sendEmail({
         to: user.email,
         subject: "Reset Password Akun TemanTumbuh",
         text:
@@ -49,8 +48,6 @@ export const auth = betterAuth({
             </div>
           </div>
         `,
-      }).catch((error) => {
-        console.error("Gagal mengirim email reset password:", error);
       });
     },
     onPasswordReset: async ({ user }) => {

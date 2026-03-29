@@ -209,6 +209,33 @@ export const profileUpdateSchema = z.object({
 
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 
+export const profileEditFormSchema = z.object({
+  name: z
+    .string({ error: "Nama wajib diisi" })
+    .min(2, "Nama minimal 2 karakter")
+    .max(50, "Nama maksimal 50 karakter")
+    .trim(),
+  birthYear: z
+    .string({ error: "Tahun lahir wajib diisi" })
+    .regex(/^\d{4}$/, "Tahun lahir tidak valid")
+    .refine((y) => {
+      const yr = parseInt(y, 10);
+      return yr >= uiCurrentYear - 29 && yr <= uiCurrentYear - 10;
+    }, "Usia harus antara 10-29 tahun"),
+  gender: z.enum(["male", "female", "prefer_not"], {
+    error: "Pilih jenis kelamin",
+  }),
+  parentEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Format email tidak valid")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type ProfileEditFormInput = z.infer<typeof profileEditFormSchema>;
+
 // ─── Parent Report Settings Schema ────────────────────────────
 export const parentReportSchema = z.object({
   parentEmail: z
@@ -262,3 +289,29 @@ export const registerStatusApiSchema = z.object({
 });
 
 export type RegisterStatusApiInput = z.infer<typeof registerStatusApiSchema>;
+
+export const profileUpdateApiSchema = z.object({
+  name: z
+    .string({ error: "Nama wajib diisi" })
+    .min(2, "Nama minimal 2 karakter")
+    .max(50, "Nama maksimal 50 karakter")
+    .trim(),
+  birthYear: z.coerce
+    .number({ error: "Tahun lahir wajib diisi" })
+    .int("Tahun lahir tidak valid")
+    .min(currentYear - 29, "Usia harus antara 10-29 tahun")
+    .max(currentYear - 10, "Usia harus antara 10-29 tahun"),
+  gender: z.enum(["male", "female", "prefer_not"], {
+    error: "Jenis kelamin tidak valid",
+  }),
+  parentEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Format email orang tua tidak valid")
+    .optional()
+    .or(z.literal(""))
+    .transform((value) => (value === "" ? null : value)),
+});
+
+export type ProfileUpdateApiInput = z.infer<typeof profileUpdateApiSchema>;

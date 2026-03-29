@@ -143,6 +143,16 @@ export default function ChangePasswordPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">
+          Lupa password saat ini?{" "}
+          <Link
+            href="/forgot-password"
+            className="font-semibold text-teal-700 hover:underline"
+          >
+            Atur ulang lewat email
+          </Link>
+        </p>
+
+        <p className="mt-2 text-center text-sm text-slate-600">
           <Link
             href="/profile"
             className="font-semibold text-teal-700 hover:underline"
