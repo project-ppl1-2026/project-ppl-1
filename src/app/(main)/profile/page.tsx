@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 // Definisi tipe data profil lengkap
 interface UserProfile {
@@ -16,6 +17,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,6 +25,12 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
       try {
         const res = await fetch("/api/profile/me");
+
+        if (res.status === 401) {
+          router.replace("/login");
+          return;
+        }
+
         if (res.ok) {
           const data = await res.json();
           setProfile(data);
@@ -34,7 +42,7 @@ export default function ProfilePage() {
       }
     };
     fetchProfile();
-  }, []);
+  }, [router]);
 
   if (loading) {
     return (
