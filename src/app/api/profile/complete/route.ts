@@ -30,17 +30,16 @@ export async function POST(req: Request) {
       );
     }
 
-    await prisma.$executeRaw`
-      UPDATE "user"
-      SET
-        "name" = ${body.name},
-        "birthYear" = ${birthYear},
-        "gender" = ${body.gender},
-        "parentEmail" = ${body.parentEmail || null},
-        "profileFilled" = ${true},
-        "updatedAt" = NOW()
-      WHERE "id" = ${session.user.id}
-    `;
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        name: body.name,
+        birthYear,
+        gender: body.gender,
+        parentEmail: body.parentEmail || null,
+        profileFilled: true,
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

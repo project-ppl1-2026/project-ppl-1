@@ -15,16 +15,14 @@ export async function GET() {
       return NextResponse.json({ isAuthenticated: false, isComplete: false });
     }
 
-    const rows = await prisma.$queryRaw<Array<{ profileFilled: boolean }>>`
-      SELECT "profileFilled"
-      FROM "user"
-      WHERE "id" = ${session.user.id}
-      LIMIT 1
-    `;
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { profileFilled: true },
+    });
 
     return NextResponse.json({
       isAuthenticated: true,
-      isComplete: Boolean(rows[0]?.profileFilled),
+      isComplete: Boolean(user?.profileFilled),
       userName: session.user.name ?? "",
     });
   } catch (error) {
