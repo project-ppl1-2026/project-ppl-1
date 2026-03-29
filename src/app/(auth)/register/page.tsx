@@ -1195,8 +1195,21 @@ function RegisterPageContent() {
           return;
         }
 
+        const completePayload = (await completeResponse.json()) as {
+          requiresParentConsent?: boolean;
+          pendingParentEmail?: string;
+          message?: string;
+        };
+
         setDone(true);
-        toast.success("Data diri berhasil dilengkapi.");
+        if (completePayload.requiresParentConsent) {
+          toast.success(
+            completePayload.message ||
+              `Data diri tersimpan. Menunggu persetujuan orang tua (${completePayload.pendingParentEmail}).`,
+          );
+        } else {
+          toast.success("Data diri berhasil dilengkapi.");
+        }
         router.replace("/");
         return;
       } catch (error) {

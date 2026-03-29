@@ -315,3 +315,28 @@ export const profileUpdateApiSchema = z.object({
 });
 
 export type ProfileUpdateApiInput = z.infer<typeof profileUpdateApiSchema>;
+
+export const parentConsentTokenQuerySchema = z.object({
+  token: z
+    .string({ error: "Token wajib diisi" })
+    .min(20, "Token tidak valid")
+    .trim(),
+});
+
+export type ParentConsentTokenQueryInput = z.infer<
+  typeof parentConsentTokenQuerySchema
+>;
+
+export const parentConsentDecisionSchema = z.object({
+  token: z
+    .string({ error: "Token wajib diisi" })
+    .min(20, "Token tidak valid")
+    .trim(),
+  decision: z.enum(["accept", "reject"], {
+    error: "Keputusan tidak valid",
+  }),
+});
+
+export type ParentConsentDecisionInput = z.infer<
+  typeof parentConsentDecisionSchema
+>;

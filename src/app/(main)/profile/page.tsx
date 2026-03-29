@@ -23,13 +23,26 @@ interface UserProfile {
   gender: string | null;
   parentEmail: string | null;
   profileFilled: boolean;
+  pendingParentEmail?: string | null;
 }
+
+type ProfileUpdateResponse =
+  | UserProfile
+  | {
+      error?: string;
+      requiresParentConsent?: boolean;
+      pendingParentEmail?: string;
+      message?: string;
+    };
 
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [pendingParentEmail, setPendingParentEmail] = useState<string | null>(
+    null,
+  );
 
   const {
     register,
@@ -59,6 +72,7 @@ export default function ProfilePage() {
         if (res.ok) {
           const data = await res.json();
           setProfile(data);
+          setPendingParentEmail(data.pendingParentEmail || null);
           reset({
             name: data.name || "",
             birthYear: data.birthYear ? String(data.birthYear) : "",
@@ -95,9 +109,7 @@ export default function ProfilePage() {
         return;
       }
 
-      const payload = (await response.json()) as
-        | UserProfile
-        | { error?: string };
+      const payload = (await response.json()) as ProfileUpdateResponse;
 
       if (!response.ok) {
         toast.error(
@@ -106,7 +118,28 @@ export default function ProfilePage() {
         return;
       }
 
+      if ("requiresParentConsent" in payload && payload.requiresParentConsent) {
+        setPendingParentEmail(payload.pendingParentEmail || null);
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                name: data.name,
+                birthYear: Number(data.birthYear),
+                gender: data.gender,
+              }
+            : prev,
+        );
+        setIsEditing(false);
+        toast.success(
+          payload.message ||
+            "Email persetujuan telah dikirim ke orang tua/wali. Menunggu persetujuan.",
+        );
+        return;
+      }
+
       setProfile(payload as UserProfile);
+      setPendingParentEmail(null);
       setIsEditing(false);
       toast.success("Profil berhasil diperbarui.");
     } catch (error) {
@@ -174,6 +207,14 @@ export default function ProfilePage() {
           </div>
 
           <hr className="my-8 border-gray-100" />
+
+          {pendingParentEmail && (
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Permintaan verifikasi email orang tua sudah dikirim ke
+              <strong> {pendingParentEmail}</strong>. Email akan terhubung
+              setelah orang tua/wali menyetujui.
+            </div>
+          )}
 
           {/* Form / Data Lengkap Profil */}
           <form
@@ -284,9 +325,16 @@ export default function ProfilePage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-gray-500">
-                  Email Orang Tua (Wali)
-                </label>
+                <div className="mb-1 flex items-center gap-2">
+                  <label className="block text-sm font-medium text-gray-500">
+                    Email Orang Tua (Wali)
+                  </label>
+                  {pendingParentEmail && !profile.parentEmail && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                      Menunggu Persetujuan
+                    </span>
+                  )}
+                </div>
                 {isEditing ? (
                   <>
                     <input
@@ -303,8 +351,13 @@ export default function ProfilePage() {
                   </>
                 ) : (
                   <div className="rounded-xl bg-gray-50 px-4 py-3 text-gray-900 border border-gray-100">
-                    {profile.parentEmail || "-"}
+                    {profile.parentEmail || pendingParentEmail || "-"}
                   </div>
+                )}
+                {pendingParentEmail && !profile.parentEmail && (
+                  <p className="mt-1 text-xs text-amber-700">
+                    Status: menunggu orang tua/wali menyetujui email ini.
+                  </p>
                 )}
               </div>
             </div>
