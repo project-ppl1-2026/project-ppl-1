@@ -594,14 +594,6 @@ export default function LoginPage() {
             </p>
           </motion.div>
 
-          {/* Demo banner */}
-          <div className="mb-6">
-            <Alert type="info">
-              <strong className="font-semibold">Mode demo.</strong> Data tidak
-              dikirim ke backend.
-            </Alert>
-          </div>
-
           {/* Success / error banners */}
           <AnimatePresence>
             {isDemoSuccess && (
