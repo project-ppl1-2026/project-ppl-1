@@ -11,15 +11,18 @@
 // - z.enum errorMap → `error` (Zod v4 API)
 // ============================================================
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { TargetAndTransition } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 // ─── Color system ─────────────────────────────────────────────
@@ -84,6 +87,11 @@ const step3Schema = z.object({
 type Step1 = z.infer<typeof step1Schema>;
 type Step2 = z.infer<typeof step2Schema>;
 type Step3 = z.infer<typeof step3Schema>;
+
+type ProfileStatus = {
+  isAuthenticated: boolean;
+  isComplete: boolean;
+};
 
 // ─── Animated blob ────────────────────────────────────────────
 // FIX: `animate` typed as `TargetAndTransition` bukan `object`
@@ -400,7 +408,7 @@ function SubmitBtn({
       disabled={isLoading}
       whileHover={isLoading ? {} : { scale: 1.01 }}
       whileTap={isLoading ? {} : { scale: 0.98 }}
-      className="flex h-12 flex-[2] items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+      className="flex h-12 flex-2 items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
       style={{
         background: `linear-gradient(135deg, ${C.tealDark} 0%, ${C.teal} 60%, ${C.tealMid} 100%)`,
         boxShadow: isLoading ? "none" : `0 4px 18px rgba(26,150,136,0.28)`,
@@ -452,7 +460,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
             </div>
             {i < total - 1 && (
               <div
-                className="w-12 h-[2px] mb-4 mx-1 transition-colors duration-300"
+                className="w-12 h-0.5 mb-4 mx-1 transition-colors duration-300"
                 style={{ background: i < current ? C.teal : C.border }}
               />
             )}
@@ -467,10 +475,12 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 function Step1Form({
   onNext,
   onGoogle,
+  isGoogleLoading,
   defaultValues,
 }: {
   onNext: (data: Step1) => void;
   onGoogle: () => void;
+  isGoogleLoading: boolean;
   defaultValues: Partial<Step1>;
 }) {
   const [showPw, setShowPw] = useState(false);
@@ -505,16 +515,19 @@ function Step1Form({
       <motion.button
         type="button"
         onClick={onGoogle}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.98 }}
+        disabled={isGoogleLoading}
+        whileHover={isGoogleLoading ? {} : { scale: 1.01 }}
+        whileTap={isGoogleLoading ? {} : { scale: 0.98 }}
         className="mb-5 flex w-full items-center justify-center gap-3 rounded-xl py-3 text-sm font-semibold transition-all"
         style={{
           border: `1.5px solid ${C.border}`,
           color: C.textPrimary,
           background: C.white,
+          opacity: isGoogleLoading ? 0.7 : 1,
         }}
       >
-        <Ic.Google /> Daftar dengan Google
+        <Ic.Google />{" "}
+        {isGoogleLoading ? "Menghubungkan..." : "Daftar dengan Google"}
       </motion.button>
 
       <div className="mb-5 flex items-center gap-3">
@@ -617,10 +630,12 @@ function Step1Form({
 function Step2Form({
   onNext,
   onBack,
+  canGoBack,
   defaultValues,
 }: {
   onNext: (data: Step2) => void;
   onBack: () => void;
+  canGoBack: boolean;
   defaultValues: Partial<Step2>;
 }) {
   const currentYear = new Date().getFullYear();
@@ -715,7 +730,7 @@ function Step2Form({
             color: C.teal,
           }}
         >
-          <span className="mt-0.5 flex-shrink-0">
+          <span className="mt-0.5 shrink-0">
             <Ic.Info />
           </span>
           <span>
@@ -725,17 +740,19 @@ function Step2Form({
         </div>
 
         <div className="mt-2 flex gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
-            style={{
-              border: `1.5px solid ${C.border}`,
-              color: C.textSecondary,
-            }}
-          >
-            <Ic.ArrowLeft /> Kembali
-          </button>
+          {canGoBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+              style={{
+                border: `1.5px solid ${C.border}`,
+                color: C.textSecondary,
+              }}
+            >
+              <Ic.ArrowLeft /> Kembali
+            </button>
+          )}
           <SubmitBtn
             isLoading={isSubmitting}
             label={
@@ -894,14 +911,14 @@ function SuccessScreen({ name }: { name: string }) {
         TemanTumbuh.
       </p>
       <Link
-        href="/dashboard"
+        href="/"
         className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white transition-all hover:opacity-90"
         style={{
           background: `linear-gradient(135deg, ${C.tealDark} 0%, ${C.teal} 60%, ${C.tealMid} 100%)`,
           boxShadow: `0 4px 18px rgba(26,150,136,0.28)`,
         }}
       >
-        Mulai Sekarang <Ic.ArrowRight />
+        Lanjut ke Beranda <Ic.ArrowRight />
       </Link>
     </motion.div>
   );
@@ -911,10 +928,15 @@ function SuccessScreen({ name }: { name: string }) {
 // REGISTER PAGE
 // ════════════════════════════════════════════════════════════
 export default function RegisterPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isCompleteProfileFlow = searchParams.get("completeProfile") === "1";
   const shouldReduce = useReducedMotion();
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const [isLoading, setLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
 
   const [step1Data, setStep1Data] = useState<Partial<Step1>>({});
   const [step2Data, setStep2Data] = useState<Partial<Step2>>({});
@@ -929,28 +951,180 @@ export default function RegisterPage() {
     setStep(2);
   }, []);
 
-  // TODO BE: ganti dengan API call ke /api/auth/register
-  // Contoh:
-  //   const res = await fetch("/api/auth/register", {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({ ...step1Data, ...step2Data, ...data }),
-  //   });
-  //   if (!res.ok) { const { error } = await res.json(); toast.error(error); return; }
-  //   router.push("/dashboard");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleFinalSubmit = useCallback(async (_data: Step3) => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    setDone(true);
-    toast.success("Akun berhasil dibuat! (mode demo)");
+  // Controls register access so profile completion is decided from backend status.
+  useEffect(() => {
+    let mounted = true;
+
+    const getProfileStatus = async (): Promise<ProfileStatus> => {
+      const response = await fetch("/api/profile/status", {
+        method: "GET",
+        cache: "no-store",
+      });
+      return (await response.json()) as ProfileStatus;
+    };
+
+    const checkSession = async () => {
+      try {
+        const status = await getProfileStatus();
+
+        if (!mounted) {
+          return;
+        }
+
+        if (!status.isAuthenticated && isCompleteProfileFlow) {
+          router.replace("/login");
+          return;
+        }
+
+        if (!status.isAuthenticated && !isCompleteProfileFlow) {
+          return;
+        }
+
+        if (status.isAuthenticated && status.isComplete) {
+          router.replace("/");
+          return;
+        }
+
+        if (status.isAuthenticated && !isCompleteProfileFlow) {
+          router.replace("/register?completeProfile=1");
+          return;
+        }
+
+        const { data } = await authClient.getSession();
+        if (data?.user && isCompleteProfileFlow) {
+          setStep(1);
+          setStep2Data((prev) => ({
+            ...prev,
+            name: prev.name ?? data.user.name ?? "",
+          }));
+          return;
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
+      } finally {
+        if (mounted) {
+          setIsPageLoading(false);
+        }
+      }
+    };
+
+    void checkSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isCompleteProfileFlow, router]);
+
+  // Creates account in normal flow and persists profile completion for logged-in users.
+  const handleFinalSubmit = useCallback(
+    async (data: Step3) => {
+      setLoading(true);
+      try {
+        if (isCompleteProfileFlow) {
+          const completeResponse = await fetch("/api/profile/complete", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: step2Data.name,
+              birthYear: step2Data.birthYear,
+              gender: step2Data.gender,
+              parentEmail: data.parentEmail,
+            }),
+          });
+
+          if (!completeResponse.ok) {
+            toast.error("Gagal menyimpan data diri.");
+            return;
+          }
+
+          setDone(true);
+          toast.success("Data diri berhasil dilengkapi.");
+          router.replace("/");
+          return;
+        }
+
+        const response = await authClient.signUp.email({
+          name: step2Data.name ?? "Pengguna",
+          email: step1Data.email ?? "",
+          password: step1Data.password ?? "",
+          callbackURL: "/",
+        });
+
+        if (response.error) {
+          toast.error(response.error.message ?? "Gagal membuat akun.");
+          return;
+        }
+
+        const completeResponse = await fetch("/api/profile/complete", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: step2Data.name,
+            birthYear: step2Data.birthYear,
+            gender: step2Data.gender,
+            parentEmail: data.parentEmail,
+          }),
+        });
+
+        if (!completeResponse.ok) {
+          toast.error("Akun dibuat, tetapi data diri gagal disimpan.");
+          return;
+        }
+
+        setDone(true);
+        toast.success("Akun berhasil dibuat.");
+        router.replace("/");
+      } catch (error) {
+        toast.error("Gagal membuat akun. Silakan coba lagi.");
+        console.error("Email register error:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      isCompleteProfileFlow,
+      router,
+      step1Data.email,
+      step1Data.password,
+      step2Data.birthYear,
+      step2Data.gender,
+      step2Data.name,
+    ],
+  );
+
+  // Starts the Better Auth Google flow from the register first step.
+  const handleGoogle = useCallback(async () => {
+    setIsGoogleLoading(true);
+
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/register?completeProfile=1",
+      });
+    } catch (error) {
+      toast.error("Google sign-in gagal dimulai.");
+      console.error("Google register error:", error);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   }, []);
 
-  const handleGoogle = useCallback(() => {
-    // TODO BE: implement Google OAuth (next-auth atau custom)
-    toast.info("Google OAuth belum terhubung.");
-  }, []);
+  if (isPageLoading) {
+    return (
+      <div
+        className="min-h-[calc(100vh-128px)] flex items-center justify-center"
+        style={{ background: C.bg0 }}
+      >
+        <p className="text-sm" style={{ color: C.textMuted }}>
+          Memeriksa sesi...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -1070,6 +1244,7 @@ export default function RegisterPage() {
                 key="s1"
                 onNext={handleStep1}
                 onGoogle={handleGoogle}
+                isGoogleLoading={isGoogleLoading}
                 defaultValues={step1Data}
               />
             ) : step === 1 ? (
@@ -1077,6 +1252,7 @@ export default function RegisterPage() {
                 key="s2"
                 onNext={handleStep2}
                 onBack={() => setStep(0)}
+                canGoBack={!isCompleteProfileFlow}
                 defaultValues={step2Data}
               />
             ) : (
@@ -1091,7 +1267,7 @@ export default function RegisterPage() {
           </AnimatePresence>
 
           {/* Login link */}
-          {!done && (
+          {!done && !isCompleteProfileFlow && (
             <p
               className="mt-6 text-center text-sm"
               style={{ color: C.textMuted }}
@@ -1109,7 +1285,7 @@ export default function RegisterPage() {
         </div>
 
         {/* ToS */}
-        {!done && (
+        {!done && !isCompleteProfileFlow && (
           <div
             className="px-8 pb-6 text-center text-[11px] sm:px-10"
             style={{

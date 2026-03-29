@@ -9,15 +9,17 @@
 // FIX: Blob `animate` prop typed as `TargetAndTransition` (framer-motion)
 // ============================================================
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { TargetAndTransition } from "framer-motion";
 import { toast } from "sonner";
 
+import { authClient } from "@/lib/auth-client";
 import { loginSchema, type LoginInput } from "@/lib/validations";
 import { cn } from "@/lib/utils";
 
@@ -334,7 +336,7 @@ function Alert({
       className="flex items-start gap-2.5 rounded-xl border px-4 py-3 text-[13px]"
       style={{ background: s.bg, borderColor: s.border, color: s.text }}
     >
-      <span className="mt-0.5 flex-shrink-0">{s.icon}</span>
+      <span className="mt-0.5 shrink-0">{s.icon}</span>
       <span className="flex-1">{children}</span>
       {onClose && (
         <button
@@ -353,8 +355,11 @@ function Alert({
 // LOGIN PAGE
 // ════════════════════════════════════════════════════════════
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isDemoSuccess, setIsDemoSuccess] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
   const [serverError, setServerError] = useState("");
   const shouldReduce = useReducedMotion();
 
@@ -368,29 +373,113 @@ export default function LoginPage() {
     defaultValues: { email: "", password: "" },
   });
 
-  // TODO BE: ganti isi fungsi ini dengan API call ke /api/auth/login
-  // Contoh:
-  //   const res = await fetch("/api/auth/login", {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify(data),
-  //   });
-  //   if (!res.ok) { const { error } = await res.json(); setServerError(error); return; }
-  //   router.push("/dashboard");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const onSubmit = async (_data: LoginInput) => {
+  // Redirects authenticated users to the data completion step after login.
+  useEffect(() => {
+    let mounted = true;
+
+    const getProfileStatus = async () => {
+      const response = await fetch("/api/profile/status", {
+        method: "GET",
+        cache: "no-store",
+      });
+      return (await response.json()) as {
+        isAuthenticated: boolean;
+        isComplete: boolean;
+      };
+    };
+
+    const checkSession = async () => {
+      try {
+        const status = await getProfileStatus();
+        if (mounted && status.isAuthenticated) {
+          router.replace(
+            status.isComplete ? "/" : "/register?completeProfile=1",
+          );
+          return;
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
+      } finally {
+        if (mounted) {
+          setIsPageLoading(false);
+        }
+      }
+    };
+
+    void checkSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
+
+  // Signs in with email and redirects to the data completion step.
+  const onSubmit = async (data: LoginInput) => {
     setServerError("");
     setIsDemoSuccess(false);
-    await new Promise((r) => setTimeout(r, 900));
-    setIsDemoSuccess(true);
-    toast.success("Form berhasil disubmit (mode demo).");
-    reset();
+    try {
+      const response = await authClient.signIn.email({
+        email: data.email,
+        password: data.password,
+        callbackURL: "/register?completeProfile=1",
+      });
+
+      if (response.error) {
+        setServerError(
+          response.error.message ?? "Email atau password tidak valid.",
+        );
+        return;
+      }
+
+      const statusResponse = await fetch("/api/profile/status", {
+        method: "GET",
+        cache: "no-store",
+      });
+      const status = (await statusResponse.json()) as {
+        isAuthenticated: boolean;
+        isComplete: boolean;
+      };
+
+      toast.success("Login berhasil.");
+      reset();
+      router.replace(status.isComplete ? "/" : "/register?completeProfile=1");
+    } catch (error) {
+      setServerError("Gagal login. Silakan coba lagi.");
+      console.error("Email login error:", error);
+    }
   };
 
-  // TODO BE: ganti dengan Google OAuth handler (next-auth atau custom)
-  const handleGoogleLogin = () => {
-    toast.info("Google OAuth belum terhubung.");
+  // Starts the Better Auth Google flow from the login page button.
+  const handleGoogleLogin = async () => {
+    setServerError("");
+    setIsGoogleLoading(true);
+
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/register?completeProfile=1",
+      });
+    } catch (error) {
+      setServerError("Gagal memulai login Google. Silakan coba lagi.");
+      toast.error("Google sign-in gagal dimulai.");
+      console.error("Google login error:", error);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
+
+  if (isPageLoading) {
+    return (
+      <div
+        className="min-h-[calc(100vh-128px)] flex items-center justify-center"
+        style={{ background: C.bg0 }}
+      >
+        <p className="text-sm" style={{ color: C.textMuted }}>
+          Memeriksa sesi...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -537,17 +626,19 @@ export default function LoginPage() {
           <motion.button
             type="button"
             onClick={handleGoogleLogin}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
+            disabled={isGoogleLoading}
+            whileHover={isGoogleLoading ? {} : { scale: 1.01 }}
+            whileTap={isGoogleLoading ? {} : { scale: 0.98 }}
             className="mb-5 flex w-full items-center justify-center gap-3 rounded-xl py-3 text-sm font-semibold transition-all"
             style={{
               border: `1.5px solid ${C.border}`,
               color: C.textPrimary,
               background: C.white,
+              opacity: isGoogleLoading ? 0.7 : 1,
             }}
           >
             <Ic.Google />
-            Masuk dengan Google
+            {isGoogleLoading ? "Menghubungkan..." : "Masuk dengan Google"}
           </motion.button>
 
           {/* Divider */}

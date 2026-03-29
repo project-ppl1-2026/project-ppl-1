@@ -21,6 +21,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import type { TargetAndTransition } from "framer-motion";
 
+import { authClient } from "@/lib/auth-client";
+
 // ─── Colour tokens ────────────────────────────────────────────
 const C = {
   teal: "#1A9688",
@@ -47,17 +49,15 @@ interface Session {
   role: Role;
   name: string;
   email: string;
+  image?: string | null;
 }
 
-// TODO BE: ganti dengan session asli
-// import { useSession } from "next-auth/react";
-// const { data: s } = useSession();
-// const role: Role = (s?.user as any)?.role ?? "guest";
-const useMockSession = (): Session => ({
-  role: "guest", // "guest" | "user" | "admin"
-  name: "Abdul Fikri",
-  email: "abdulfikri@example.com",
-});
+const guestSession: Session = {
+  role: "guest",
+  name: "Guest",
+  email: "",
+  image: null,
+};
 
 // ─── Home dropdown sections (sesuai section di page.tsx) ──────
 const homeSections = [
@@ -458,7 +458,7 @@ function NavLink({
       </motion.span>
       {/* Active underline */}
       <motion.span
-        className="absolute -bottom-0.5 left-0 right-0 h-[2px] rounded-full"
+        className="absolute -bottom-0.5 left-0 right-0 h-0.5 rounded-full"
         style={{ background: C.teal, originX: 0.5 }}
         animate={
           {
@@ -491,7 +491,15 @@ function NavLink({
 }
 
 // ─── Avatar ───────────────────────────────────────────────────
-function Avatar({ name, size = 32 }: { name: string; size?: number }) {
+function Avatar({
+  name,
+  image,
+  size = 32,
+}: {
+  name: string;
+  image?: string | null;
+  size?: number;
+}) {
   const initials = name
     .split(" ")
     .map((w) => w[0])
@@ -500,7 +508,7 @@ function Avatar({ name, size = 32 }: { name: string; size?: number }) {
     .toUpperCase();
   return (
     <div
-      className="flex items-center justify-center rounded-full font-bold flex-shrink-0"
+      className="flex items-center justify-center rounded-full font-bold shrink-0"
       style={{
         width: size,
         height: size,
@@ -509,7 +517,17 @@ function Avatar({ name, size = 32 }: { name: string; size?: number }) {
         color: "#fff",
       }}
     >
-      {initials}
+      {image ? (
+        <Image
+          src={image}
+          alt={name}
+          width={size}
+          height={size}
+          className="h-full w-full rounded-full object-cover"
+        />
+      ) : (
+        initials
+      )}
     </div>
   );
 }
@@ -549,7 +567,7 @@ function HomeDropdown({ isActive }: { isActive: boolean }) {
           Home <IcChevronDown open={open} />
         </motion.span>
         <motion.span
-          className="absolute -bottom-0.5 left-0 right-0 h-[2px] rounded-full"
+          className="absolute -bottom-0.5 left-0 right-0 h-0.5 rounded-full"
           style={{ background: C.teal, originX: 0.5 }}
           animate={
             {
@@ -579,7 +597,7 @@ function HomeDropdown({ isActive }: { isActive: boolean }) {
           >
             {/* Pointer arrow */}
             <div
-              className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-3 h-3 rotate-45"
+              className="absolute -top-1.75 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45"
               style={{
                 background: "white",
                 borderTop: `1.5px solid ${C.border}`,
@@ -612,7 +630,7 @@ function HomeDropdown({ isActive }: { isActive: boolean }) {
                 >
                   {/* Icon */}
                   <motion.span
-                    className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-lg"
+                    className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg"
                     style={{ background: C.tealGhost, color: C.teal }}
                     whileHover={
                       {
@@ -645,7 +663,7 @@ function HomeDropdown({ isActive }: { isActive: boolean }) {
 
                   {/* Arrow indicator */}
                   <motion.span
-                    className="flex-shrink-0 opacity-0 group-hover:opacity-100"
+                    className="shrink-0 opacity-0 group-hover:opacity-100"
                     style={{ color: C.teal }}
                     initial={{ x: -4, opacity: 0 }}
                     whileHover={{ x: 0, opacity: 1 } as TargetAndTransition}
@@ -703,12 +721,12 @@ function ProfileDropdown({ session }: { session: Session }) {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        <Avatar name={session.name} size={26} />
+        <Avatar name={session.name} image={session.image} size={26} />
         <span
-          className="text-sm font-semibold hidden sm:block max-w-[100px] truncate"
+          className="text-sm font-semibold hidden sm:block max-w-25 truncate"
           style={{ color: C.textPrimary }}
         >
-          Profile
+          {session.name}
         </span>
         <IcChevronDown open={open} />
       </motion.button>
@@ -732,7 +750,7 @@ function ProfileDropdown({ session }: { session: Session }) {
               className="px-4 py-3.5 flex items-center gap-3"
               style={{ borderBottom: `1px solid ${C.dropDarkBorder}` }}
             >
-              <Avatar name={session.name} size={34} />
+              <Avatar name={session.name} image={session.image} size={34} />
               <div className="flex-1 min-w-0">
                 <p
                   className="text-[13px] font-semibold truncate"
@@ -783,7 +801,7 @@ function ProfileDropdown({ session }: { session: Session }) {
                       }}
                     >
                       <span
-                        className="flex-shrink-0"
+                        className="shrink-0"
                         style={{
                           color: isActive ? C.tealLight : C.dropTextMuted,
                         }}
@@ -807,10 +825,11 @@ function ProfileDropdown({ session }: { session: Session }) {
               className="p-2"
               style={{ borderTop: `1px solid ${C.dropDarkBorder}` }}
             >
-              {/* TODO BE: signOut() */}
               <button
-                onClick={() => {
+                onClick={async () => {
                   setOpen(false);
+                  await authClient.signOut();
+                  window.location.href = "/login";
                 }}
                 className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
                 style={{ color: "#F87171" }}
@@ -888,7 +907,7 @@ function MobileMenu({
                 }
               >
                 <span
-                  className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-lg"
+                  className="shrink-0 flex items-center justify-center w-6 h-6 rounded-lg"
                   style={{ background: C.tealGhost, color: C.teal }}
                 >
                   {i === 0 ? <IcHome /> : <IcSection />}
@@ -939,7 +958,7 @@ function MobileMenu({
             ) : (
               <>
                 <div className="flex items-center gap-3 px-3 py-2 mb-1">
-                  <Avatar name={session.name} size={32} />
+                  <Avatar name={session.name} image={session.image} size={32} />
                   <div>
                     <p
                       className="text-[13px] font-semibold"
@@ -973,8 +992,10 @@ function MobileMenu({
                   );
                 })}
                 <button
-                  onClick={() => {
-                    onClose(); /* TODO BE: signOut() */
+                  onClick={async () => {
+                    onClose();
+                    await authClient.signOut();
+                    window.location.href = "/login";
                   }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium mt-1"
                   style={{ color: "#EF4444" }}
@@ -1052,11 +1073,49 @@ export function Navbar() {
   const pathname = usePathname();
   const smoothScroll = useSmoothScroll();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const session = useMockSession();
+  const [session, setSession] = useState<Session>(guestSession);
   const isLoggedIn = session.role !== "guest";
 
   useEffect(() => {
     setMobileOpen(false);
+  }, [pathname]);
+
+  // Loads the current Better Auth session so navbar can switch between guest and profile states.
+  useEffect(() => {
+    let mounted = true;
+
+    const syncSession = async () => {
+      try {
+        const { data } = await authClient.getSession();
+
+        if (!mounted) {
+          return;
+        }
+
+        if (!data?.user) {
+          setSession(guestSession);
+          return;
+        }
+
+        setSession({
+          role: "user",
+          name: data.user.name,
+          email: data.user.email,
+          image: data.user.image,
+        });
+      } catch (error) {
+        console.error("Navbar session error:", error);
+        if (mounted) {
+          setSession(guestSession);
+        }
+      }
+    };
+
+    void syncSession();
+
+    return () => {
+      mounted = false;
+    };
   }, [pathname]);
 
   const isHome = pathname === "/";
@@ -1078,7 +1137,7 @@ export function Navbar() {
     >
       <div className="max-w-6xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between gap-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
+        <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <Image
             src="/img/LOGO_TEMANTUMBUH.svg"
             alt="TemanTumbuh"
@@ -1115,7 +1174,7 @@ export function Navbar() {
         </nav>
 
         {/* Desktop right: Login · Register atau Profile */}
-        <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+        <div className="hidden md:flex items-center gap-2 shrink-0">
           {!isLoggedIn ? (
             <>
               <Link
