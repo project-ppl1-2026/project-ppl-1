@@ -102,8 +102,23 @@ const mainNavItems = [
   { label: "Harga", href: "/harga", sectionId: null },
 ];
 
+function IcUserCircle() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <circle cx="7.5" cy="4.5" r="3" stroke="currentColor" strokeWidth="1.3" />
+      <path
+        d="M13.5 13.5c0-3-2.5-4.5-6-4.5s-6 1.5-6 4.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 // ─── User menu ────────────────────────────────────────────────
 const userMenuItems = [
+  { label: "Profile", href: "/profile", icon: <IcUserCircle /> },
   { label: "Dashboard", href: "/dashboard", icon: <IcGrid /> },
   { label: "Diary", href: "/diary", icon: <IcDiary /> },
   { label: "Recommendation", href: "/recommendation", icon: <IcStar /> },
