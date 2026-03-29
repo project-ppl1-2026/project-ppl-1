@@ -982,6 +982,43 @@ function RegisterPageContent() {
     null,
   );
 
+  const resolveRegisterErrorMessage = useCallback(
+    (error: { status?: number; message?: string; code?: string }) => {
+      const message = (error.message || "").toLowerCase();
+      const code = (error.code || "").toLowerCase();
+
+      if (
+        error.status === 400 &&
+        (message.includes("exist") || code.includes("already_exists"))
+      ) {
+        return "Email ini sudah terdaftar. Silakan login.";
+      }
+
+      if (message.includes("gagal mengirim email")) {
+        return "Gagal mengirim email verifikasi. Akun gagal dibuat. Silakan coba lagi.";
+      }
+
+      if (
+        error.status === 429 ||
+        message.includes("too many") ||
+        message.includes("rate")
+      ) {
+        return "Terlalu banyak percobaan. Coba lagi beberapa saat.";
+      }
+
+      if (message.includes("password") && message.includes("8")) {
+        return "Password minimal 8 karakter.";
+      }
+
+      if (message.includes("email") && message.includes("invalid")) {
+        return "Format email tidak valid.";
+      }
+
+      return error.message || "Gagal mendaftar. Silakan coba lagi.";
+    },
+    [],
+  );
+
   const handleStep1 = useCallback(
     async (data: Step1) => {
       setStep1Data(data);
@@ -991,6 +1028,31 @@ function RegisterPageContent() {
       try {
         if (isCompleteProfileFlow) {
           setStep(1);
+          return;
+        }
+
+        // Cegah false-success: jika email sudah ada, hentikan sebelum sign-up.
+        const precheckResponse = await fetch("/api/auth/register-status", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: data.email }),
+        });
+
+        if (!precheckResponse.ok) {
+          toast.error(
+            "Status pendaftaran tidak dapat diverifikasi. Silakan coba lagi.",
+          );
+          return;
+        }
+
+        const precheckResult = (await precheckResponse.json()) as {
+          exists?: boolean;
+        };
+
+        if (precheckResult.exists) {
+          toast.error("Email ini sudah terdaftar. Silakan login.");
           return;
         }
 
@@ -1005,24 +1067,7 @@ function RegisterPageContent() {
         });
 
         if (response.error) {
-          const message =
-            response.error.message || "Gagal mendaftar. Silakan coba lagi.";
-
-          if (
-            response.error.status === 400 ||
-            message.toLowerCase().includes("exist") ||
-            response.error.code === "USER_ALREADY_EXISTS"
-          ) {
-            toast.error(
-              "Email ini sudah terdaftar! Silakan pindah ke menu Login.",
-            );
-          } else if (message.toLowerCase().includes("gagal mengirim email")) {
-            toast.error(
-              "Gagal mengirim email verifikasi. Akun gagal dibuat. Silakan coba lagi.",
-            );
-          } else {
-            toast.error(message);
-          }
+          toast.error(resolveRegisterErrorMessage(response.error));
         } else {
           const statusResponse = await fetch("/api/auth/register-status", {
             method: "POST",
@@ -1064,7 +1109,7 @@ function RegisterPageContent() {
         setLoading(false);
       }
     },
-    [isCompleteProfileFlow],
+    [isCompleteProfileFlow, resolveRegisterErrorMessage],
   );
 
   const handleStep2 = useCallback((data: Step2) => {

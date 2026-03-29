@@ -15,13 +15,6 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
-    onExistingUserSignUp: async ({ user }) => {
-      void sendEmail({
-        to: user.email,
-        subject: "Sign-up attempt detected",
-        text: "Someone tried to sign up using your email. If this was you, try signing in instead.",
-      });
-    },
   },
   // Sends verification links through SMTP and avoids timing attacks by not awaiting from auth flow.
   emailVerification: {

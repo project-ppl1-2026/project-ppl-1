@@ -9,7 +9,7 @@
 // FIX: Blob `animate` prop typed as `TargetAndTransition` (framer-motion)
 // ============================================================
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -363,6 +363,46 @@ export default function LoginPage() {
   const [serverError, setServerError] = useState("");
   const shouldReduce = useReducedMotion();
 
+  const resolveLoginErrorMessage = useCallback(
+    (error: { status?: number; message?: string; code?: string }) => {
+      const message = (error.message || "").toLowerCase();
+      const code = (error.code || "").toLowerCase();
+
+      if (
+        error.status === 403 ||
+        message.includes("verify") ||
+        message.includes("verifikasi")
+      ) {
+        return "Email belum terverifikasi. Silakan cek inbox/spam untuk verifikasi.";
+      }
+
+      if (
+        error.status === 429 ||
+        message.includes("too many") ||
+        message.includes("rate")
+      ) {
+        return "Terlalu banyak percobaan login. Coba lagi beberapa saat.";
+      }
+
+      if (
+        error.status === 401 ||
+        error.status === 400 ||
+        message.includes("invalid") ||
+        message.includes("credential") ||
+        code.includes("invalid")
+      ) {
+        return "Email atau password tidak valid.";
+      }
+
+      if (message.includes("not found") || code.includes("not_found")) {
+        return "Akun tidak ditemukan. Silakan daftar terlebih dahulu.";
+      }
+
+      return error.message ?? "Gagal login. Silakan coba lagi.";
+    },
+    [],
+  );
+
   const {
     register,
     handleSubmit,
@@ -425,12 +465,7 @@ export default function LoginPage() {
       });
 
       if (response.error) {
-        const isVerificationError = response.error.status === 403;
-        setServerError(
-          isVerificationError
-            ? "Email belum terverifikasi. Kami sudah mengirim ulang link verifikasi ke email kamu."
-            : (response.error.message ?? "Email atau password tidak valid."),
-        );
+        setServerError(resolveLoginErrorMessage(response.error));
         return;
       }
 
