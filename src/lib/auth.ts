@@ -3,7 +3,9 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 // If your Prisma file is located elsewhere, you can change the path
 
 import { sendEmail } from "./email";
+import { requestParentConsentEmail } from "./parent-consent";
 import prisma from "./prisma";
+import { openAPI } from "better-auth/plugins";
 
 export const auth = betterAuth({
   // Uses the app URL so OAuth redirects always resolve to this Next.js app.
@@ -11,6 +13,109 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  user: {
+    additionalFields: {
+      birthYear: {
+        type: "number",
+        required: false,
+      },
+      gender: {
+        type: "string",
+        required: false,
+      },
+      parentEmail: {
+        type: "string",
+        required: false,
+      },
+      profileFilled: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
+    },
+  },
+  databaseHooks: {
+    user: {
+      update: {
+        before: async (data, ctx) => {
+          const incoming = { ...(data as Record<string, unknown>) };
+
+          if (!("parentEmail" in incoming)) {
+            return { data: incoming };
+          }
+
+          const rawParentEmail =
+            typeof incoming.parentEmail === "string"
+              ? incoming.parentEmail.trim().toLowerCase()
+              : "";
+          const normalizedIncomingParentEmail = rawParentEmail || null;
+
+          if (!normalizedIncomingParentEmail) {
+            return {
+              data: {
+                ...incoming,
+                parentEmail: null,
+              },
+            };
+          }
+
+          const userId = ctx?.context?.session?.user?.id;
+          if (!userId) {
+            return { data: incoming };
+          }
+
+          const currentUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+              name: true,
+              parentEmail: true,
+            },
+          });
+
+          if (!currentUser) {
+            return { data: incoming };
+          }
+
+          const normalizedCurrentParentEmail =
+            currentUser.parentEmail?.toLowerCase() || null;
+
+          if (normalizedCurrentParentEmail === normalizedIncomingParentEmail) {
+            return {
+              data: {
+                ...incoming,
+                parentEmail: normalizedIncomingParentEmail,
+              },
+            };
+          }
+
+          const appUrl =
+            process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+
+          if (!appUrl) {
+            throw new Error(
+              "BETTER_AUTH_URL atau NEXT_PUBLIC_APP_URL belum dikonfigurasi.",
+            );
+          }
+
+          await requestParentConsentEmail({
+            userId,
+            childName:
+              (typeof incoming.name === "string" && incoming.name.trim()) ||
+              currentUser.name,
+            parentEmail: normalizedIncomingParentEmail,
+            appUrl,
+          });
+
+          return {
+            data: {
+              ...incoming,
+              parentEmail: null,
+            },
+          };
+        },
+      },
+    },
+  },
   // Enables email/password sign up and requires verification before login.
   emailAndPassword: {
     enabled: true,
@@ -126,4 +231,5 @@ export const auth = betterAuth({
       prompt: "select_account consent",
     },
   },
+  plugins: [openAPI()],
 });

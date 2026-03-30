@@ -64,6 +64,11 @@ type ProfileStatus = {
   userName?: string;
 };
 
+type SessionUser = {
+  name?: string | null;
+  profileFilled?: boolean | null;
+};
+
 // ─── Animated blob ────────────────────────────────────────────
 // FIX: `animate` typed as `TargetAndTransition` bukan `object`
 function Blob({
@@ -1001,31 +1006,6 @@ function RegisterPageContent() {
           return;
         }
 
-        // Cegah false-success: jika email sudah ada, hentikan sebelum sign-up.
-        const precheckResponse = await fetch("/api/auth/register-status", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email: data.email }),
-        });
-
-        if (!precheckResponse.ok) {
-          toast.error(
-            "Status pendaftaran tidak dapat diverifikasi. Silakan coba lagi.",
-          );
-          return;
-        }
-
-        const precheckResult = (await precheckResponse.json()) as {
-          exists?: boolean;
-        };
-
-        if (precheckResult.exists) {
-          toast.error("Email ini sudah terdaftar. Silakan login.");
-          return;
-        }
-
         // Ambil nama dari username email untuk default awal
         const defaultName = data.email.split("@")[0] || "Pengguna";
 
@@ -1039,34 +1019,6 @@ function RegisterPageContent() {
         if (response.error) {
           toast.error(resolveRegisterErrorMessage(response.error));
         } else {
-          const statusResponse = await fetch("/api/auth/register-status", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email: data.email }),
-          });
-
-          if (!statusResponse.ok) {
-            setVerificationEmail(null);
-            toast.error(
-              "Status pendaftaran tidak dapat diverifikasi. Silakan coba lagi.",
-            );
-            return;
-          }
-
-          const statusResult = (await statusResponse.json()) as {
-            exists?: boolean;
-          };
-
-          if (!statusResult.exists) {
-            setVerificationEmail(null);
-            toast.error(
-              "Gagal mengirim email verifikasi. Akun gagal dibuat. Silakan coba lagi.",
-            );
-            return;
-          }
-
           setVerificationEmail(data.email);
           toast.success("Silakan periksa email Anda untuk verifikasi.");
           // Stay on step 0
@@ -1094,11 +1046,14 @@ function RegisterPageContent() {
       new Promise((resolve) => setTimeout(resolve, ms));
 
     const getProfileStatus = async (): Promise<ProfileStatus> => {
-      const response = await fetch("/api/profile/status", {
-        method: "GET",
-        cache: "no-store",
-      });
-      return (await response.json()) as ProfileStatus;
+      const { data } = await authClient.getSession();
+      const user = data?.user as SessionUser | undefined;
+
+      return {
+        isAuthenticated: Boolean(user),
+        isComplete: Boolean(user?.profileFilled),
+        userName: user?.name ?? "",
+      };
     };
 
     const checkSession = async () => {
@@ -1177,35 +1132,27 @@ function RegisterPageContent() {
     async (data: Step3) => {
       setLoading(true);
       try {
-        const completeResponse = await fetch("/api/profile/complete", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: step2Data.name,
-            birthYear: step2Data.birthYear,
-            gender: step2Data.gender,
-            parentEmail: data.parentEmail,
-          }),
+        const completeResponse = await authClient.updateUser({
+          name: step2Data.name,
+          birthYear: step2Data.birthYear
+            ? Number(step2Data.birthYear)
+            : undefined,
+          gender: step2Data.gender,
+          parentEmail: data.parentEmail || null,
+          profileFilled: true,
         });
 
-        if (!completeResponse.ok) {
-          toast.error("Gagal menyimpan data diri.");
+        if (completeResponse.error) {
+          toast.error(
+            completeResponse.error.message || "Gagal menyimpan data diri.",
+          );
           return;
         }
 
-        const completePayload = (await completeResponse.json()) as {
-          requiresParentConsent?: boolean;
-          pendingParentEmail?: string;
-          message?: string;
-        };
-
         setDone(true);
-        if (completePayload.requiresParentConsent) {
+        if (data.parentEmail) {
           toast.success(
-            completePayload.message ||
-              `Data diri tersimpan. Menunggu persetujuan orang tua (${completePayload.pendingParentEmail}).`,
+            "Data diri tersimpan. Jika email orang tua baru, permintaan persetujuan telah dikirim.",
           );
         } else {
           toast.success("Data diri berhasil dilengkapi.");

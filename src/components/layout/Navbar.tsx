@@ -1112,27 +1112,11 @@ export function Navbar() {
           return;
         }
 
-        let userImage = data.user.image;
-        if (!userImage) {
-          // Fallback: trigger API profil untuk ekstrak image (Google OAuth fallback)
-          try {
-            const profileRes = await fetch("/api/profile/me");
-            if (profileRes.ok) {
-              const profileData = await profileRes.json();
-              if (profileData.image) {
-                userImage = profileData.image;
-              }
-            }
-          } catch (e) {
-            console.error("Gagal mendapatkan gambar profil up-to-date", e);
-          }
-        }
-
         setSession({
           role: "user",
           name: data.user.name,
           email: data.user.email,
-          image: userImage,
+          image: data.user.image,
         });
       } catch (error) {
         console.error("Navbar session error:", error);

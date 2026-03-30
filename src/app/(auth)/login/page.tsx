@@ -23,6 +23,10 @@ import { authClient } from "@/lib/auth-client";
 import { loginSchema, type LoginInput } from "@/lib/validations";
 import { cn } from "@/lib/utils";
 
+type SessionUser = {
+  profileFilled?: boolean | null;
+};
+
 // ─── Color system ─────────────────────────────────────────────
 const C = {
   teal: "#1A9688",
@@ -413,20 +417,19 @@ export default function LoginPage() {
     defaultValues: { email: "", password: "" },
   });
 
+  const getProfileStatus = useCallback(async () => {
+    const { data } = await authClient.getSession();
+    const user = data?.user as SessionUser | undefined;
+
+    return {
+      isAuthenticated: Boolean(user),
+      isComplete: Boolean(user?.profileFilled),
+    };
+  }, []);
+
   // Redirects authenticated users to the data completion step after login.
   useEffect(() => {
     let mounted = true;
-
-    const getProfileStatus = async () => {
-      const response = await fetch("/api/profile/status", {
-        method: "GET",
-        cache: "no-store",
-      });
-      return (await response.json()) as {
-        isAuthenticated: boolean;
-        isComplete: boolean;
-      };
-    };
 
     const checkSession = async () => {
       try {
@@ -451,7 +454,7 @@ export default function LoginPage() {
     return () => {
       mounted = false;
     };
-  }, [router]);
+  }, [getProfileStatus, router]);
 
   // Signs in with email and redirects to the data completion step.
   const onSubmit = async (data: LoginInput) => {
@@ -469,14 +472,7 @@ export default function LoginPage() {
         return;
       }
 
-      const statusResponse = await fetch("/api/profile/status", {
-        method: "GET",
-        cache: "no-store",
-      });
-      const status = (await statusResponse.json()) as {
-        isAuthenticated: boolean;
-        isComplete: boolean;
-      };
+      const status = await getProfileStatus();
 
       toast.success("Login berhasil.");
       reset();

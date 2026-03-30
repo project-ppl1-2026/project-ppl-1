@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
+import { authClient } from "@/lib/auth-client";
 import {
   profileEditFormSchema,
   type ProfileEditFormInput,
@@ -26,13 +27,10 @@ interface UserProfile {
   pendingParentEmail?: string | null;
 }
 
-type ProfileUpdateResponse =
-  | UserProfile
+type UpdateUserData =
+  | Partial<UserProfile>
   | {
-      error?: string;
-      requiresParentConsent?: boolean;
-      pendingParentEmail?: string;
-      message?: string;
+      user?: Partial<UserProfile>;
     };
 
 export default function ProfilePage() {
@@ -62,29 +60,36 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch("/api/profile/me");
+        const { data } = await authClient.getSession();
+        const user = data?.user as UserProfile | undefined;
 
-        if (res.status === 401) {
+        if (!user) {
           router.replace("/login");
           return;
         }
 
-        if (res.ok) {
-          const data = await res.json();
-          setProfile(data);
-          setPendingParentEmail(data.pendingParentEmail || null);
-          reset({
-            name: data.name || "",
-            birthYear: data.birthYear ? String(data.birthYear) : "",
-            gender:
-              data.gender === "male" ||
-              data.gender === "female" ||
-              data.gender === "prefer_not"
-                ? data.gender
-                : "prefer_not",
-            parentEmail: data.parentEmail || "",
-          });
-        }
+        setProfile({
+          id: user.id,
+          name: user.name || "",
+          email: user.email,
+          image: user.image || null,
+          birthYear: user.birthYear ?? null,
+          gender: user.gender ?? null,
+          parentEmail: user.parentEmail ?? null,
+          profileFilled: Boolean(user.profileFilled),
+        });
+        setPendingParentEmail(null);
+        reset({
+          name: user.name || "",
+          birthYear: user.birthYear ? String(user.birthYear) : "",
+          gender:
+            user.gender === "male" ||
+            user.gender === "female" ||
+            user.gender === "prefer_not"
+              ? user.gender
+              : "prefer_not",
+          parentEmail: user.parentEmail || "",
+        });
       } catch (err) {
         console.error("Failed to fetch profile", err);
       } finally {
@@ -96,52 +101,65 @@ export default function ProfilePage() {
 
   const onSubmitProfile = async (data: ProfileEditFormInput) => {
     try {
-      const response = await fetch("/api/profile/me", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+      const normalizedParentEmail = data.parentEmail
+        ? data.parentEmail.trim().toLowerCase()
+        : null;
+
+      const response = await authClient.updateUser({
+        name: data.name,
+        birthYear: Number(data.birthYear),
+        gender: data.gender,
+        parentEmail: normalizedParentEmail,
+        profileFilled: true,
       });
 
-      if (response.status === 401) {
-        router.replace("/login");
+      if (response.error) {
+        toast.error(response.error.message || "Gagal memperbarui profil.");
         return;
       }
 
-      const payload = (await response.json()) as ProfileUpdateResponse;
+      const payload = response.data as UpdateUserData | undefined;
+      const updatedUser =
+        (payload as { user?: Partial<UserProfile> } | undefined)?.user ||
+        (payload as Partial<UserProfile> | undefined);
 
-      if (!response.ok) {
-        toast.error(
-          (payload as { error?: string }).error || "Gagal memperbarui profil.",
-        );
-        return;
+      const nextProfile: UserProfile | null = profile
+        ? {
+            ...profile,
+            name: updatedUser?.name ?? data.name,
+            image: updatedUser?.image ?? profile.image,
+            birthYear:
+              updatedUser?.birthYear === null || updatedUser?.birthYear
+                ? (updatedUser.birthYear as number | null)
+                : Number(data.birthYear),
+            gender:
+              (updatedUser?.gender as string | null | undefined) ?? data.gender,
+            parentEmail:
+              updatedUser?.parentEmail === null || updatedUser?.parentEmail
+                ? (updatedUser.parentEmail as string | null)
+                : profile.parentEmail,
+            profileFilled:
+              typeof updatedUser?.profileFilled === "boolean"
+                ? updatedUser.profileFilled
+                : true,
+          }
+        : null;
+
+      if (nextProfile) {
+        setProfile(nextProfile);
       }
 
-      if ("requiresParentConsent" in payload && payload.requiresParentConsent) {
-        setPendingParentEmail(payload.pendingParentEmail || null);
-        setProfile((prev) =>
-          prev
-            ? {
-                ...prev,
-                name: data.name,
-                birthYear: Number(data.birthYear),
-                gender: data.gender,
-              }
-            : prev,
-        );
-        setIsEditing(false);
+      if (normalizedParentEmail && !updatedUser?.parentEmail) {
+        setPendingParentEmail(normalizedParentEmail);
         toast.success(
-          payload.message ||
-            "Email persetujuan telah dikirim ke orang tua/wali. Menunggu persetujuan.",
+          "Email persetujuan telah dikirim ke orang tua/wali. Menunggu persetujuan.",
         );
-        return;
+      } else {
+        setPendingParentEmail(null);
+        toast.success("Profil berhasil diperbarui.");
       }
 
-      setProfile(payload as UserProfile);
-      setPendingParentEmail(null);
       setIsEditing(false);
-      toast.success("Profil berhasil diperbarui.");
     } catch (error) {
       console.error("Profile update error:", error);
       toast.error("Terjadi kesalahan sistem.");
