@@ -957,6 +957,33 @@ function RegisterPageContent() {
     null,
   );
 
+  useEffect(() => {
+    if (isCompleteProfileFlow || typeof window === "undefined") {
+      return;
+    }
+
+    const stored = window.sessionStorage.getItem("register:verificationEmail");
+    if (stored) {
+      setVerificationEmail(stored);
+    }
+  }, [isCompleteProfileFlow]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (verificationEmail && !isCompleteProfileFlow) {
+      window.sessionStorage.setItem(
+        "register:verificationEmail",
+        verificationEmail,
+      );
+      return;
+    }
+
+    window.sessionStorage.removeItem("register:verificationEmail");
+  }, [isCompleteProfileFlow, verificationEmail]);
+
   const resolveRegisterErrorMessage = useCallback(
     (error: { status?: number; message?: string; code?: string }) => {
       const message = (error.message || "").toLowerCase();

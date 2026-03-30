@@ -3,10 +3,6 @@ import { randomBytes, randomUUID } from "node:crypto";
 import prisma from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 
-function buildConsentIdentifier(userId: string, parentEmail: string) {
-  return `parent-consent:${userId}:${encodeURIComponent(parentEmail)}`;
-}
-
 export async function requestParentConsentEmail(input: {
   userId: string;
   childName: string;
@@ -15,26 +11,31 @@ export async function requestParentConsentEmail(input: {
 }) {
   const parentEmail = input.parentEmail.toLowerCase().trim();
   const parentConsentToken = randomBytes(32).toString("hex");
-  const verificationIdentifier = buildConsentIdentifier(
-    input.userId,
-    parentEmail,
-  );
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3);
 
-  await prisma.verification.deleteMany({
+  await prisma.parent.upsert({
     where: {
-      identifier: {
-        startsWith: `parent-consent:${input.userId}:`,
-      },
+      userId: input.userId,
     },
-  });
-
-  await prisma.verification.create({
-    data: {
+    create: {
       id: randomUUID(),
-      identifier: verificationIdentifier,
-      value: parentConsentToken,
+      userId: input.userId,
+      email: parentEmail,
+      status: "pending",
+      token: parentConsentToken,
+      requestedAt: new Date(),
+      lastSentAt: new Date(),
       expiresAt,
+    },
+    update: {
+      email: parentEmail,
+      status: "pending",
+      token: parentConsentToken,
+      requestedAt: new Date(),
+      lastSentAt: new Date(),
+      expiresAt,
+      verifiedAt: null,
+      rejectedAt: null,
     },
   });
 
@@ -81,26 +82,17 @@ export async function requestParentConsentEmail(input: {
       `,
     });
   } catch (error) {
-    await prisma.verification.deleteMany({
+    await prisma.parent.updateMany({
       where: {
-        value: parentConsentToken,
+        userId: input.userId,
+        token: parentConsentToken,
+      },
+      data: {
+        token: null,
       },
     });
     throw error;
   }
 
   return { pendingParentEmail: parentEmail };
-}
-
-export function extractPendingParentEmail(identifier: string) {
-  const parts = identifier.split(":");
-  if (parts.length < 3 || parts[0] !== "parent-consent") {
-    return null;
-  }
-
-  try {
-    return decodeURIComponent(parts.slice(2).join(":"));
-  } catch {
-    return null;
-  }
 }

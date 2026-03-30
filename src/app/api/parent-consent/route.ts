@@ -6,21 +6,35 @@ import {
   parentConsentTokenQuerySchema,
 } from "@/lib/validations";
 
-function decodeIdentifier(identifier: string) {
-  const parts = identifier.split(":");
-  if (parts.length < 3 || parts[0] !== "parent-consent") {
-    return null;
-  }
+type ParentConsentRow = {
+  id: string;
+  userId: string;
+  email: string;
+  status: "pending" | "verified" | "expired";
+  expiresAt: Date | null;
+};
 
-  const userId = parts[1];
-  const encodedEmail = parts.slice(2).join(":");
+async function getParentByToken(token: string) {
+  return prisma.parent.findFirst({
+    where: { token },
+    select: {
+      id: true,
+      userId: true,
+      email: true,
+      status: true,
+      expiresAt: true,
+    },
+  }) as Promise<ParentConsentRow | null>;
+}
 
-  try {
-    const parentEmail = decodeURIComponent(encodedEmail);
-    return { userId, parentEmail };
-  } catch {
-    return null;
-  }
+async function markParentExpired(parentId: string) {
+  await prisma.parent.update({
+    where: { id: parentId },
+    data: {
+      status: "expired",
+      token: null,
+    },
+  });
 }
 
 export async function GET(request: Request) {
@@ -55,24 +69,9 @@ export async function GET(request: Request) {
       );
     }
 
-    const verification = await prisma.verification.findFirst({
-      where: {
-        value: parsedQuery.data.token,
-        identifier: {
-          startsWith: "parent-consent:",
-        },
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-      select: {
-        id: true,
-        identifier: true,
-        expiresAt: true,
-      },
-    });
+    const parent = await getParentByToken(parsedQuery.data.token);
 
-    if (!verification) {
+    if (!parent) {
       return new NextResponse(
         '<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>Link kedaluwarsa</h2><p>Link persetujuan sudah tidak valid atau sudah pernah digunakan.</p></body></html>',
         {
@@ -82,10 +81,9 @@ export async function GET(request: Request) {
       );
     }
 
-    const decoded = decodeIdentifier(verification.identifier);
-    if (!decoded) {
+    if (parent.status !== "pending") {
       return new NextResponse(
-        '<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>Data verifikasi tidak valid</h2></body></html>',
+        '<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>Link tidak lagi aktif</h2><p>Permintaan ini sudah diproses sebelumnya.</p></body></html>',
         {
           status: 400,
           headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -93,39 +91,63 @@ export async function GET(request: Request) {
       );
     }
 
-    const isAccept = parsedQuery.data.decision === "accept";
-    const title = isAccept ? "Konfirmasi Persetujuan" : "Konfirmasi Penolakan";
-    const description = isAccept
-      ? `Anda akan menyetujui email ${decoded.parentEmail} untuk menerima laporan TemanTumbuh.`
-      : "Anda akan menolak penghubungan email ini dengan akun anak.";
-    const actionLabel = isAccept ? "Setujui Sekarang" : "Tolak Sekarang";
+    if (!parent.expiresAt || parent.expiresAt <= new Date()) {
+      await markParentExpired(parent.id);
+
+      return new NextResponse(
+        '<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>Link kedaluwarsa</h2><p>Link persetujuan sudah tidak valid atau sudah kedaluwarsa.</p></body></html>',
+        {
+          status: 404,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        },
+      );
+    }
+
+    if (parsedQuery.data.decision === "accept") {
+      await prisma.user.update({
+        where: { id: parent.userId },
+        data: {
+          parentEmail: parent.email,
+        },
+      });
+
+      await prisma.parent.update({
+        where: { id: parent.id },
+        data: {
+          status: "verified",
+          verifiedAt: new Date(),
+          token: null,
+        },
+      });
+    } else {
+      await prisma.user.update({
+        where: { id: parent.userId },
+        data: {
+          parentEmail: null,
+        },
+      });
+
+      await prisma.parent.update({
+        where: { id: parent.id },
+        data: {
+          status: "expired",
+          rejectedAt: new Date(),
+          token: null,
+        },
+      });
+    }
+
+    const title =
+      parsedQuery.data.decision === "accept"
+        ? "Persetujuan Berhasil"
+        : "Permintaan Ditolak";
+    const description =
+      parsedQuery.data.decision === "accept"
+        ? `Email ${parent.email} sekarang akan menerima laporan dari TemanTumbuh.`
+        : "Email tidak dihubungkan ke akun anak.";
 
     return new NextResponse(
-      `<!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>${title}</title>
-        </head>
-        <body style="font-family:Arial,sans-serif;padding:24px;background:#f3f8ff;color:#1f2937;">
-          <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #dbe7f3;border-radius:14px;overflow:hidden;">
-            <div style="background:linear-gradient(90deg,#0f6b60,#1a9688,#28b0a4);height:6px;"></div>
-            <div style="padding:24px;">
-              <h2 style="margin:0 0 12px;color:#0f6b60;">${title}</h2>
-              <p style="margin:0 0 18px;line-height:1.6;">${description}</p>
-              <form method="POST" action="/api/parent-consent" style="margin:0;">
-                <input type="hidden" name="token" value="${parsedQuery.data.token}" />
-                <input type="hidden" name="decision" value="${parsedQuery.data.decision}" />
-                <button type="submit" style="border:0;background:${isAccept ? "#1a9688" : "#ef4444"};color:#fff;font-weight:700;font-size:14px;padding:12px 22px;border-radius:10px;cursor:pointer;">
-                  ${actionLabel}
-                </button>
-              </form>
-              <p style="margin:14px 0 0;font-size:12px;color:#6b7280;">Langkah ini mencegah tautan otomatis dari email scanner menghabiskan token.</p>
-            </div>
-          </div>
-        </body>
-      </html>`,
+      `<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>${title}</h2><p>${description}</p></body></html>`,
       {
         status: 200,
         headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -158,54 +180,57 @@ export async function POST(request: Request) {
       );
     }
 
-    const verification = await prisma.verification.findFirst({
-      where: {
-        value: parsed.data.token,
-        identifier: {
-          startsWith: "parent-consent:",
-        },
-      },
-      select: {
-        id: true,
-        identifier: true,
-        expiresAt: true,
-      },
-    });
+    const parent = await getParentByToken(parsed.data.token);
 
-    if (!verification || verification.expiresAt <= new Date()) {
+    if (!parent || parent.status !== "pending") {
       return NextResponse.json(
         { error: "Link sudah tidak valid." },
         { status: 404 },
       );
     }
 
-    const decoded = decodeIdentifier(verification.identifier);
-    if (!decoded) {
+    if (!parent.expiresAt || parent.expiresAt <= new Date()) {
+      await markParentExpired(parent.id);
+
       return NextResponse.json(
-        { error: "Data verifikasi tidak valid." },
-        { status: 400 },
+        { error: "Link sudah tidak valid." },
+        { status: 404 },
       );
     }
 
     if (parsed.data.decision === "accept") {
       await prisma.user.update({
-        where: { id: decoded.userId },
+        where: { id: parent.userId },
         data: {
-          parentEmail: decoded.parentEmail,
+          parentEmail: parent.email,
+        },
+      });
+
+      await prisma.parent.update({
+        where: { id: parent.id },
+        data: {
+          status: "verified",
+          verifiedAt: new Date(),
+          token: null,
         },
       });
     } else {
       await prisma.user.update({
-        where: { id: decoded.userId },
+        where: { id: parent.userId },
         data: {
           parentEmail: null,
         },
       });
-    }
 
-    await prisma.verification.delete({
-      where: { id: verification.id },
-    });
+      await prisma.parent.update({
+        where: { id: parent.id },
+        data: {
+          status: "expired",
+          rejectedAt: new Date(),
+          token: null,
+        },
+      });
+    }
 
     if (!contentType.includes("application/json")) {
       const title =
@@ -214,7 +239,7 @@ export async function POST(request: Request) {
           : "Permintaan Ditolak";
       const description =
         parsed.data.decision === "accept"
-          ? `Email ${decoded.parentEmail} sekarang akan menerima laporan dari TemanTumbuh.`
+          ? `Email ${parent.email} sekarang akan menerima laporan dari TemanTumbuh.`
           : "Email tidak dihubungkan ke akun anak.";
 
       return new NextResponse(

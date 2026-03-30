@@ -33,6 +33,12 @@ type UpdateUserData =
       user?: Partial<UserProfile>;
     };
 
+type ParentStatusResponse = {
+  email: string | null;
+  status: "pending" | "verified" | "expired" | null;
+  expiresAt: string | null;
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -41,6 +47,9 @@ export default function ProfilePage() {
   const [pendingParentEmail, setPendingParentEmail] = useState<string | null>(
     null,
   );
+  const [parentStatus, setParentStatus] = useState<
+    "pending" | "verified" | "expired" | null
+  >(null);
 
   const {
     register,
@@ -78,7 +87,26 @@ export default function ProfilePage() {
           parentEmail: user.parentEmail ?? null,
           profileFilled: Boolean(user.profileFilled),
         });
-        setPendingParentEmail(null);
+
+        const parentStatusResponse = await fetch("/api/parent/status", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (parentStatusResponse.ok) {
+          const parentStatusPayload =
+            (await parentStatusResponse.json()) as ParentStatusResponse;
+          setPendingParentEmail(
+            parentStatusPayload.status === "pending"
+              ? parentStatusPayload.email
+              : null,
+          );
+          setParentStatus(parentStatusPayload.status);
+        } else {
+          setPendingParentEmail(null);
+          setParentStatus(null);
+        }
+
         reset({
           name: user.name || "",
           birthYear: user.birthYear ? String(user.birthYear) : "",
@@ -149,13 +177,30 @@ export default function ProfilePage() {
         setProfile(nextProfile);
       }
 
-      if (normalizedParentEmail && !updatedUser?.parentEmail) {
-        setPendingParentEmail(normalizedParentEmail);
+      const parentStatusResponse = await fetch("/api/parent/status", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      let latestParentStatus: ParentStatusResponse["status"] = null;
+
+      if (parentStatusResponse.ok) {
+        const parentStatusPayload =
+          (await parentStatusResponse.json()) as ParentStatusResponse;
+        setPendingParentEmail(
+          parentStatusPayload.status === "pending"
+            ? parentStatusPayload.email
+            : null,
+        );
+        setParentStatus(parentStatusPayload.status);
+        latestParentStatus = parentStatusPayload.status;
+      }
+
+      if (normalizedParentEmail && latestParentStatus === "pending") {
         toast.success(
           "Email persetujuan telah dikirim ke orang tua/wali. Menunggu persetujuan.",
         );
       } else {
-        setPendingParentEmail(null);
         toast.success("Profil berhasil diperbarui.");
       }
 
@@ -347,7 +392,7 @@ export default function ProfilePage() {
                   <label className="block text-sm font-medium text-gray-500">
                     Email Orang Tua (Wali)
                   </label>
-                  {pendingParentEmail && !profile.parentEmail && (
+                  {pendingParentEmail && parentStatus === "pending" && (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                       Menunggu Persetujuan
                     </span>
@@ -372,7 +417,7 @@ export default function ProfilePage() {
                     {profile.parentEmail || pendingParentEmail || "-"}
                   </div>
                 )}
-                {pendingParentEmail && !profile.parentEmail && (
+                {pendingParentEmail && parentStatus === "pending" && (
                   <p className="mt-1 text-xs text-amber-700">
                     Status: menunggu orang tua/wali menyetujui email ini.
                   </p>
