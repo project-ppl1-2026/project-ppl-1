@@ -26,6 +26,27 @@ export default function ForgotPasswordPage() {
 
   const onSubmit = async (data: ForgotPasswordInput) => {
     try {
+      const statusResponse = await fetch("/api/auth/user-exists", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: data.email }),
+      });
+
+      if (!statusResponse.ok) {
+        toast.error("Status email tidak dapat diverifikasi.");
+        return;
+      }
+
+      const statusPayload = (await statusResponse.json()) as {
+        exists?: boolean;
+      };
+      if (!statusPayload.exists) {
+        toast.error("Email belum terdaftar. Silakan register terlebih dahulu.");
+        return;
+      }
+
       const redirectTo = `${window.location.origin}/reset-password`;
       const response = await authClient.requestPasswordReset({
         email: data.email,
@@ -40,7 +61,7 @@ export default function ForgotPasswordPage() {
       }
 
       setIsSubmitted(true);
-      toast.success("Jika email terdaftar, link reset password sudah dikirim.");
+      toast.success("Link reset password berhasil dikirim ke email tersebut.");
     } catch (error) {
       console.error("Request reset password error:", error);
       toast.error("Terjadi kesalahan sistem.");

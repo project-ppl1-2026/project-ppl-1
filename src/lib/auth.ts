@@ -7,6 +7,64 @@ import { requestParentConsentEmail } from "./parent-consent";
 import prisma from "./prisma";
 import { openAPI } from "better-auth/plugins";
 
+function getGooglePictureFromIdToken(idToken?: string | null) {
+  if (!idToken) {
+    return null;
+  }
+
+  try {
+    const payloadPart = idToken.split(".")[1];
+    if (!payloadPart) {
+      return null;
+    }
+
+    const normalized = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      "=",
+    );
+    const payload = JSON.parse(
+      Buffer.from(padded, "base64").toString("utf8"),
+    ) as {
+      picture?: string;
+    };
+
+    return payload.picture || null;
+  } catch {
+    return null;
+  }
+}
+
+async function syncGoogleImageForUser(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { image: true },
+  });
+
+  if (!user || user.image) {
+    return;
+  }
+
+  const googleAccount = await prisma.account.findFirst({
+    where: {
+      userId,
+      providerId: "google",
+    },
+    orderBy: { createdAt: "desc" },
+    select: { idToken: true },
+  });
+
+  const picture = getGooglePictureFromIdToken(googleAccount?.idToken);
+  if (!picture) {
+    return;
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { image: picture },
+  });
+}
+
 export const auth = betterAuth({
   // Uses the app URL so OAuth redirects always resolve to this Next.js app.
   baseURL: process.env.BETTER_AUTH_URL,
@@ -109,9 +167,25 @@ export const auth = betterAuth({
           return {
             data: {
               ...incoming,
-              parentEmail: null,
+              parentEmail: normalizedIncomingParentEmail,
             },
           };
+        },
+      },
+    },
+    account: {
+      create: {
+        after: async (account) => {
+          if (account.providerId === "google") {
+            await syncGoogleImageForUser(account.userId);
+          }
+        },
+      },
+    },
+    session: {
+      create: {
+        after: async (session) => {
+          await syncGoogleImageForUser(session.userId);
         },
       },
     },
@@ -229,6 +303,9 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       accessType: "offline",
       prompt: "select_account consent",
+      mapProfileToUser: (profile) => ({
+        image: profile.picture,
+      }),
     },
   },
   plugins: [openAPI()],

@@ -93,30 +93,39 @@ export async function GET(request: Request) {
       );
     }
 
-    if (parsedQuery.data.decision === "accept") {
-      await prisma.user.update({
-        where: { id: decoded.userId },
-        data: {
-          parentEmail: decoded.parentEmail,
-        },
-      });
-    }
-
-    await prisma.verification.delete({
-      where: { id: verification.id },
-    });
-
-    const title =
-      parsedQuery.data.decision === "accept"
-        ? "Persetujuan Berhasil"
-        : "Permintaan Ditolak";
-    const description =
-      parsedQuery.data.decision === "accept"
-        ? `Email ${decoded.parentEmail} sekarang akan menerima laporan dari TemanTumbuh.`
-        : "Email tidak akan dihubungkan ke akun tersebut.";
+    const isAccept = parsedQuery.data.decision === "accept";
+    const title = isAccept ? "Konfirmasi Persetujuan" : "Konfirmasi Penolakan";
+    const description = isAccept
+      ? `Anda akan menyetujui email ${decoded.parentEmail} untuk menerima laporan TemanTumbuh.`
+      : "Anda akan menolak penghubungan email ini dengan akun anak.";
+    const actionLabel = isAccept ? "Setujui Sekarang" : "Tolak Sekarang";
 
     return new NextResponse(
-      `<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>${title}</h2><p>${description}</p></body></html>`,
+      `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>${title}</title>
+        </head>
+        <body style="font-family:Arial,sans-serif;padding:24px;background:#f3f8ff;color:#1f2937;">
+          <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #dbe7f3;border-radius:14px;overflow:hidden;">
+            <div style="background:linear-gradient(90deg,#0f6b60,#1a9688,#28b0a4);height:6px;"></div>
+            <div style="padding:24px;">
+              <h2 style="margin:0 0 12px;color:#0f6b60;">${title}</h2>
+              <p style="margin:0 0 18px;line-height:1.6;">${description}</p>
+              <form method="POST" action="/api/parent-consent" style="margin:0;">
+                <input type="hidden" name="token" value="${parsedQuery.data.token}" />
+                <input type="hidden" name="decision" value="${parsedQuery.data.decision}" />
+                <button type="submit" style="border:0;background:${isAccept ? "#1a9688" : "#ef4444"};color:#fff;font-weight:700;font-size:14px;padding:12px 22px;border-radius:10px;cursor:pointer;">
+                  ${actionLabel}
+                </button>
+              </form>
+              <p style="margin:14px 0 0;font-size:12px;color:#6b7280;">Langkah ini mencegah tautan otomatis dari email scanner menghabiskan token.</p>
+            </div>
+          </div>
+        </body>
+      </html>`,
       {
         status: 200,
         headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -136,7 +145,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const rawBody = await request.json();
+    const contentType = request.headers.get("content-type") || "";
+    const rawBody = contentType.includes("application/json")
+      ? await request.json()
+      : Object.fromEntries(await request.formData());
     const parsed = parentConsentDecisionSchema.safeParse(rawBody);
 
     if (!parsed.success) {
@@ -182,16 +194,39 @@ export async function POST(request: Request) {
           parentEmail: decoded.parentEmail,
         },
       });
+    } else {
+      await prisma.user.update({
+        where: { id: decoded.userId },
+        data: {
+          parentEmail: null,
+        },
+      });
     }
 
     await prisma.verification.delete({
       where: { id: verification.id },
     });
 
-    return NextResponse.json({
-      success: true,
-      decision: parsed.data.decision,
-    });
+    if (!contentType.includes("application/json")) {
+      const title =
+        parsed.data.decision === "accept"
+          ? "Persetujuan Berhasil"
+          : "Permintaan Ditolak";
+      const description =
+        parsed.data.decision === "accept"
+          ? `Email ${decoded.parentEmail} sekarang akan menerima laporan dari TemanTumbuh.`
+          : "Email tidak dihubungkan ke akun anak.";
+
+      return new NextResponse(
+        `<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>${title}</h2><p>${description}</p></body></html>`,
+        {
+          status: 200,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        },
+      );
+    }
+
+    return NextResponse.json({ success: true, decision: parsed.data.decision });
   } catch (error: unknown) {
     console.error("Parent consent POST error:", error);
     return NextResponse.json(

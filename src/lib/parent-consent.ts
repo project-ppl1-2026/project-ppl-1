@@ -19,7 +19,7 @@ export async function requestParentConsentEmail(input: {
     input.userId,
     parentEmail,
   );
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3);
 
   await prisma.verification.deleteMany({
     where: {
@@ -51,7 +51,7 @@ export async function requestParentConsentEmail(input: {
         "Pilih salah satu keputusan berikut:\n" +
         `Setuju: ${acceptUrl}\n` +
         `Tolak: ${rejectUrl}\n\n` +
-        "Link berlaku 24 jam.",
+        "Link berlaku 3 hari.",
       html: `
         <div style="background:#f3f8ff;padding:24px 12px;font-family:Arial,sans-serif;color:#1f2937;">
           <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #dbe7f3;border-radius:14px;overflow:hidden;">
@@ -74,7 +74,7 @@ export async function requestParentConsentEmail(input: {
                 <a href="${rejectUrl}" style="color:#0f6b60;font-size:13px;">Tolak: ${rejectUrl}</a>
               </p>
 
-              <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#6b7280;">Link berlaku selama 24 jam.</p>
+              <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#6b7280;">Link berlaku selama 3 hari.</p>
             </div>
           </div>
         </div>
