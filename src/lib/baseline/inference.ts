@@ -64,7 +64,9 @@ function resolveBaselineModelPath() {
 
 async function loadOnnxRuntime() {
   onnxRuntimePromise ??= Promise.resolve().then(() => {
-    const loadedModule = require("onnxruntime-node");
+    const loadedModule = require("onnxruntime-node") as {
+      default?: OrtModule;
+    } & OrtModule;
     return (loadedModule.default ?? loadedModule) as OrtModule;
   });
 
