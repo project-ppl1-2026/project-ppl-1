@@ -43,6 +43,8 @@ model User {
   parent        Parent?
   payments      Payment[]
   subscription  Subscription?
+  baseline      Baseline?
+  moodLogs      MoodLog[]
 
   @@unique([email])
   @@map("user")
@@ -156,4 +158,27 @@ model Subscription {
 
   @@index([paymentId])
   @@map("subscription")
+}
+
+model Baseline {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isBeginner        Boolean  @default(true)
+  mlConfidenceScore Decimal?
+  analyzedAt        DateTime @default(now())
+
+  @@map("baseline")
+}
+
+model MoodLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moodScore Int
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("mood_log")
 }
