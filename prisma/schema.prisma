@@ -45,6 +45,7 @@ model User {
   subscription  Subscription?
   baseline      Baseline?
   moodLogs      MoodLog[]
+  diaries       Diary[]
 
   @@unique([email])
   @@map("user")
@@ -181,4 +182,35 @@ model MoodLog {
 
   @@index([userId])
   @@map("mood_log")
+}
+
+enum Sender {
+  USER
+  AI
+}
+
+model Diary {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime       @db.Date
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+
+  messages  DiaryMessage[]
+
+  @@index([userId])
+  @@map("diary")
+}
+
+model DiaryMessage {
+  id         String   @id @default(cuid())
+  diaryId    String
+  diary      Diary    @relation(fields: [diaryId], references: [id], onDelete: Cascade)
+  senderType Sender
+  content    String   @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([diaryId])
+  @@map("diary_message")
 }
