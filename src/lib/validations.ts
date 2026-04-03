@@ -82,7 +82,7 @@ export const registerStep2Schema = z.object({
     .refine((y) => {
       const yr = parseInt(y, 10);
       return yr >= uiCurrentYear - 29 && yr <= uiCurrentYear - 10;
-    }, "Usia harus antara 10–29 tahun"),
+    }, "Usia harus antara 10-29 tahun"),
   gender: z.enum(["male", "female", "prefer_not"], {
     error: "Pilih salah satu",
   }),
