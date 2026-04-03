@@ -90,6 +90,26 @@ export const auth = betterAuth({
         required: false,
         defaultValue: false,
       },
+      isPremium: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
+      currentStreak: {
+        type: "number",
+        required: false,
+        defaultValue: 0,
+      },
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "user",
+      },
+      status: {
+        type: "string",
+        required: false,
+        defaultValue: "Aktif",
+      },
     },
   },
   databaseHooks: {
