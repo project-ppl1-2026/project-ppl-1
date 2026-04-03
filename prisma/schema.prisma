@@ -47,6 +47,7 @@ model User {
   moodLogs      MoodLog[]
   diaries       Diary[]
   quizLogs      QuizLog[]
+  insights      Insight[]
 
   @@unique([email])
   @@map("user")
@@ -256,4 +257,38 @@ model QuizLog {
   @@index([userId])
   @@index([questionId])
   @@map("quiz_log")
+}
+
+enum Priority {
+  TINGGI
+  SEDANG
+  RENDAH
+}
+
+model Insight {
+  id               String                  @id @default(cuid())
+  userId           String
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date             DateTime                @db.Date
+  averageScore     Decimal
+  analysisText     String                  @db.Text
+  cognitivePattern String?                 @db.Text
+  affirmation      String?                 @db.Text
+  createdAt        DateTime                @default(now())
+
+  recommendations  InsightRecommendation[]
+
+  @@index([userId])
+  @@map("insight")
+}
+
+model InsightRecommendation {
+  id         String   @id @default(cuid())
+  insightId  String
+  insight    Insight  @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  priority   Priority
+  actionText String   @db.Text
+
+  @@index([insightId])
+  @@map("insight_recommendation")
 }
