@@ -7,6 +7,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   motion,
   useInView,
@@ -1233,7 +1234,9 @@ export default function LandingPage() {
             {[
               {
                 icon: (
-                  <img
+                  <Image
+                    width={60}
+                    height={60}
                     src="/img/DigitalDiaryLogo.svg"
                     alt="Digital Diary"
                     className="w-15 h-15"
@@ -1244,7 +1247,9 @@ export default function LandingPage() {
               },
               {
                 icon: (
-                  <img
+                  <Image
+                    width={60}
+                    height={60}
                     src="/img/BraveChoiceLogo.svg"
                     alt="Brave Choice"
                     className="w-15 h-15"
@@ -1255,7 +1260,9 @@ export default function LandingPage() {
               },
               {
                 icon: (
-                  <img
+                  <Image
+                    width={60}
+                    height={60}
                     src="/img/MoodCheckinLogo.svg"
                     alt="Mood Check-in"
                     className="w-15 h-15"
@@ -1266,7 +1273,9 @@ export default function LandingPage() {
               },
               {
                 icon: (
-                  <img
+                  <Image
+                    width={60}
+                    height={60}
                     src="/img/InsightDashboardLogo.svg"
                     alt="Insight Dashboard"
                     className="w-15 h-15"
