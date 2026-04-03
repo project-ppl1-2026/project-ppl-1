@@ -46,6 +46,7 @@ model User {
   baseline      Baseline?
   moodLogs      MoodLog[]
   diaries       Diary[]
+  quizLogs      QuizLog[]
 
   @@unique([email])
   @@map("user")
@@ -213,4 +214,46 @@ model DiaryMessage {
 
   @@index([diaryId])
   @@map("diary_message")
+}
+
+enum AgeSegment {
+  ANAK
+  REMAJA
+  MAHASISWA
+  DEWASA_MUDA
+}
+
+model QuizQuestion {
+  id                   String     @id @default(cuid())
+  ageSegment           AgeSegment
+  category             String
+  scenario             String     @db.Text
+  optionA              String
+  optionB              String
+  correctOption        String
+  explanationCorrect   String     @db.Text
+  explanationIncorrect String     @db.Text
+  isActive             Boolean    @default(true)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  quizLogs             QuizLog[]
+
+  @@index([ageSegment])
+  @@map("quiz_question")
+}
+
+model QuizLog {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     QuizQuestion @relation(fields: [questionId], references: [id])
+  chosenOption String
+  isCorrect    Boolean
+  createdAt    DateTime     @default(now())
+
+  @@index([userId])
+  @@index([questionId])
+  @@map("quiz_log")
 }
