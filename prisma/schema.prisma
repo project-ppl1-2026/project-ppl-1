@@ -41,6 +41,8 @@ model User {
   sessions      Session[]
   accounts      Account[]
   parent        Parent?
+  payments      Payment[]
+  subscription  Subscription?
 
   @@unique([email])
   @@map("user")
@@ -120,4 +122,38 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grossAmount  Decimal
+  status       String
+  paymentType  String
+  vaNumber     String?
+  paidAt       DateTime?
+  expiredAt    DateTime?
+  createdAt    DateTime      @default(now())
+
+  subscriptions Subscription[]
+
+  @@index([userId])
+  @@map("payment")
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentId String
+  payment   Payment  @relation(fields: [paymentId], references: [id])
+  startedAt DateTime
+  expiresAt DateTime
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([paymentId])
+  @@map("subscription")
 }
