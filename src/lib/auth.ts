@@ -127,8 +127,14 @@ export const auth = betterAuth({
               ? incoming.parentEmail.trim().toLowerCase()
               : "";
           const normalizedIncomingParentEmail = rawParentEmail || null;
+          const userId = ctx?.context?.session?.user?.id;
 
           if (!normalizedIncomingParentEmail) {
+            if (userId) {
+              await prisma.parent.deleteMany({
+                where: { userId },
+              });
+            }
             return {
               data: {
                 ...incoming,
@@ -137,7 +143,6 @@ export const auth = betterAuth({
             };
           }
 
-          const userId = ctx?.context?.session?.user?.id;
           if (!userId) {
             return { data: incoming };
           }
