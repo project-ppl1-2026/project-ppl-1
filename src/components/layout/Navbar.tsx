@@ -1174,7 +1174,7 @@ export function Navbar() {
           <NavLink
             label="About Us"
             isActive={false}
-            onClick={() => smoothScroll("about", "/(main)/about")}
+            onClick={() => smoothScroll("about", "/about")}
           />
 
           {/* Fitur → scroll ke #features */}
