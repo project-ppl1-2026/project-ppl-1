@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -56,10 +57,12 @@ export function FeaturesHero() {
           {/* Right */}
           <div className="flex-1 w-full relative">
             <div className="rounded-[2rem] overflow-hidden border-2 border-teal-50 shadow-2xl relative bg-teal-50 aspect-[4/3] lg:aspect-[5/4]">
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1622997074056-9e652a0cf5bf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxJbmRvbmVzaWFuJTIwdGVlbmFnZSUyMHN0dWRlbnRzJTIwdXNpbmclMjBwaG9uZSUyMGxhcHRvcCUyMHN0dWR5aW5nJTIwdG9nZXRoZXJ8ZW58MXx8fHwxNzc1MDQwOTg3fDA&ixlib=rb-4.1.0&q=80&w=1080"
                 alt="TemanTumbuh youth using app"
-                className="w-full h-full object-cover block"
+                fill
+                className="object-cover block"
+                unoptimized
               />
               <div className="absolute inset-0 bg-gradient-to-t from-teal-950/60 via-transparent to-transparent pointer-events-none" />
 
