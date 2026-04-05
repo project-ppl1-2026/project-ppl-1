@@ -3,8 +3,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { resetStreakIfMissed } from "@/lib/mood/service";
 
-export const runtime = "nodejs";
-
 /**
  * Helper untuk mendapatkan ID user yang sedang login dari session.
  */

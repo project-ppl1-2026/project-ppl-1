@@ -4,8 +4,6 @@ import { auth } from "@/lib/auth";
 import { createMoodLog, getMoodLogs } from "@/lib/mood/service";
 import { moodSubmitSchema } from "@/lib/mood/validation";
 
-export const runtime = "nodejs";
-
 /**
  * Helper untuk mendapatkan ID user yang sedang login dari session.
  */

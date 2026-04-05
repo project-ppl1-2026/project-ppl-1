@@ -7,8 +7,6 @@ import {
 } from "@/lib/baseline/service";
 import { baselineAnswersSchema } from "@/lib/baseline/validation";
 
-export const runtime = "nodejs";
-
 async function getAuthenticatedUserId(request: Request) {
   const session = await auth.api.getSession({
     headers: request.headers,
