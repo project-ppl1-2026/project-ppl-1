@@ -13,11 +13,21 @@ export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col font-sans">
       <main className="flex-1">
-        <HeroSection />
-        <FeaturesSection />
-        <PurposeSection />
-        <HowItWorksSection />
-        <TestimonialsSection />
+        <section id="hero">
+          <HeroSection />
+        </section>
+        <section id="features">
+          <FeaturesSection />
+        </section>
+        <section id="purpose">
+          <PurposeSection />
+        </section>
+        <section id="how">
+          <HowItWorksSection />
+        </section>
+        <section id="testi">
+          <TestimonialsSection />
+        </section>
         <CTASection />
       </main>
     </div>

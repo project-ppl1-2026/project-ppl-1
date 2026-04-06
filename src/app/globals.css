@@ -100,6 +100,26 @@
   --about-text-muted: #4a7070;
   --about-sdg-blue: #1a3d7c;
   --about-sdg-gold: #d4af37;
+  --brand-primary: #1a9688;
+  --brand-primary-dark: #0f6b60;
+  --brand-primary-mid: #28b0a4;
+  --brand-primary-light: #4ecfc3;
+  --brand-primary-ghost: #ddf5f2;
+  --brand-primary-pale: #a8e0da;
+  --brand-border: #c8dced;
+  --brand-text-primary: #1a2840;
+  --brand-text-secondary: #3a5068;
+  --brand-text-muted: #7090a8;
+  --brand-footer-bg: #1c3848;
+  --brand-footer-mid: #253f50;
+  --brand-footer-card: #2e4e62;
+  --brand-footer-text: #eef8ff;
+  --brand-footer-subtext: #88c8d8;
+  --brand-drop-dark: #1c2b38;
+  --brand-drop-dark-border: rgba(255, 255, 255, 0.08);
+  --brand-drop-dark-hover: #374d60;
+  --brand-drop-text: #e8f0f8;
+  --brand-drop-text-muted: #7a9bb8;
 }
 
 .dark {
