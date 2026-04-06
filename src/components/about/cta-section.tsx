@@ -46,11 +46,11 @@ export function AboutCtaSection() {
 
         <div className="flex flex-wrap items-center justify-center gap-5 pt-2 text-sm text-white/75">
           <a
-            href="mailto:TemanTumbuh@gmail.com"
+            href="mailto:temantumbuh.team@gmail.com"
             className="inline-flex items-center gap-2 hover:opacity-90"
           >
             <Mail className="h-4 w-4" />
-            TemanTumbuh@gmail.com
+            temantumbuh.team@gmail.com
           </a>
           <span className="hidden h-4 w-px bg-white/30 sm:block" />
           <span className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 text-white/90">

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Instagram, Mail, Phone, Twitter, Youtube } from "lucide-react";
+import { Instagram, Mail, Twitter, Youtube } from "lucide-react";
 
 const footerLinks = [
   { label: "Tentang TemanTumbuh", href: "/about" },
@@ -51,18 +51,11 @@ export function Footer() {
 
             <div className="flex flex-col gap-3">
               <a
-                href="mailto:TemanTumbuh@gmail.com"
+                href="mailto:temantumbuh.team@gmail.com"
                 className="flex cursor-pointer items-center gap-2 text-sm text-(--brand-footer-subtext) transition-opacity duration-150 hover:opacity-70"
               >
                 <Mail size={14} />
-                TemanTumbuh@gmail.com
-              </a>
-              <a
-                href="tel:+6281234567"
-                className="flex cursor-pointer items-center gap-2 text-sm text-(--brand-footer-subtext) transition-opacity duration-150 hover:opacity-70"
-              >
-                <Phone size={14} />
-                +62 8123-4567
+                temantumbuh.team@gmail.com
               </a>
             </div>
           </div>
