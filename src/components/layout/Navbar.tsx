@@ -1147,7 +1147,7 @@ export function Navbar() {
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderBottom: `1px solid ${C.border}`,
-        fontFamily: "var(--font-plus-jakarta, sans-serif)",
+        fontFamily: "var(--font-plus-jakarta )",
       }}
     >
       <div className="max-w-6xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between gap-6">
