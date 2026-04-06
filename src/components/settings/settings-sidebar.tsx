@@ -49,10 +49,10 @@ export function SettingsSidebar({
   };
 
   return (
-    <aside className="sticky top-20 flex flex-col overflow-hidden rounded-[18px] border border-slate-200 bg-white shadow-sm w-full">
+    <aside className="sticky top-20 flex w-full flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
       {/* Profile Card */}
       <div className="border-b border-slate-200 bg-slate-50 px-5 py-6 flex flex-col items-center">
-        <div className="relative mx-auto mb-3.5 flex h-16 w-16 items-center justify-center rounded-full bg-teal-800 text-white shadow-md">
+        <div className="relative mx-auto mb-3.5 flex h-16 w-16 items-center justify-center rounded-full bg-(--brand-primary-dark) text-white shadow-md">
           {profile?.image ? (
             <Image
               src={profile.image}
@@ -87,9 +87,9 @@ export function SettingsSidebar({
       <div className="py-2">
         <button
           onClick={() => onTabChange(0)}
-          className={`flex w-full items-center gap-3 border-l-[3px] px-5 py-3.5 text-left text-sm font-bold transition-all ${
+          className={`flex w-full cursor-pointer items-center gap-3 border-l-[3px] px-5 py-3.5 text-left text-sm font-bold transition-all ${
             activeTab === 0
-              ? "border-teal-800 bg-teal-50 text-teal-800"
+              ? "border-(--brand-primary) bg-(--brand-primary-ghost) text-(--brand-primary-dark)"
               : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-semibold"
           }`}
         >
@@ -98,9 +98,9 @@ export function SettingsSidebar({
         </button>
         <button
           onClick={() => onTabChange(1)}
-          className={`flex w-full items-center gap-3 border-l-[3px] px-5 py-3.5 text-left text-sm font-bold transition-all ${
+          className={`flex w-full cursor-pointer items-center gap-3 border-l-[3px] px-5 py-3.5 text-left text-sm font-bold transition-all ${
             activeTab === 1
-              ? "border-teal-800 bg-teal-50 text-teal-800"
+              ? "border-(--brand-primary) bg-(--brand-primary-ghost) text-(--brand-primary-dark)"
               : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-semibold"
           }`}
         >
@@ -113,7 +113,7 @@ export function SettingsSidebar({
       <div className="border-t border-slate-200 pb-1.5 pt-2.5">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 px-5 py-3.5 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-red-50"
+          className="flex w-full cursor-pointer items-center gap-3 px-5 py-3.5 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-red-50"
         >
           <LogOut className="h-4 w-4" />
           Keluar
