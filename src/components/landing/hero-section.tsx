@@ -106,16 +106,26 @@ export function HeroSection() {
                   Mood Hari Ini
                 </p>
                 <div className="flex gap-1.5">
-                  {["😢", "😟", "😐", "🙂", "😄"].map((e, i) => (
+                  {[
+                    "/img/FaceVerySad.png",
+                    "/img/FaceSad.png",
+                    "/img/FaceNeutral.png",
+                    "/img/FaceHappy.png",
+                    "/img/FaceVeryHappy.png",
+                  ].map((src, i) => (
                     <div
                       key={i}
-                      className={`flex h-7 w-7 items-center justify-center rounded-lg text-sm ${
+                      className={`flex h-7 w-7 items-center justify-center rounded-lg ${
                         i === 4
-                          ? "bg-teal-50 ring-2 ring-teal-500 text-teal-600"
+                          ? "bg-teal-50 ring-2 ring-teal-500"
                           : "bg-slate-50"
                       }`}
                     >
-                      {e}
+                      <img
+                        src={src}
+                        alt="mood"
+                        className="h-5 w-5 object-contain"
+                      />
                     </div>
                   ))}
                 </div>
