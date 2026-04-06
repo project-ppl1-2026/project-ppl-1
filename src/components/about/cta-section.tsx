@@ -37,8 +37,7 @@ export function AboutCtaSection() {
           </Button>
           <Button
             asChild
-            variant="outline"
-            className="h-14 rounded-2xl border-white/50 px-10 text-white hover:bg-white/10 hover:text-white"
+            className="h-14 rounded-2xl bg-white px-10 font-bold text-about-dark-teal shadow-[0_8px_32px_rgba(0,0,0,0.20)] hover:bg-white/95"
           >
             <Link href="/">Lihat Platform</Link>
           </Button>

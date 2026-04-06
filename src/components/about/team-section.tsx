@@ -30,10 +30,8 @@ export function AboutTeamSection() {
               </div>
               <div>
                 <p className="text-sm font-bold text-about-text-dark">
-                  Universitas Padjadjaran · Program Studi Informatika
-                </p>
-                <p className="text-sm text-about-text-muted">
-                  Proyek Perangkat Lunak I · Tahun Akademik 2024/2025
+                  Teman Tumbuh <span className="font-extrabold">·</span>{" "}
+                  Universitas Padjadjaran
                 </p>
               </div>
             </div>
@@ -45,7 +43,7 @@ export function AboutTeamSection() {
                 variant="outline"
                 className="rounded-xl border-2 border-about-dark-teal px-4 py-2 text-about-dark-teal"
               >
-                Informatika 2022
+                Informatika 2023
               </Badge>
             </div>
           </CardContent>
@@ -54,7 +52,7 @@ export function AboutTeamSection() {
         <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
           {teamMembers.map((member) => (
             <TeamCard
-              key={`${member.role}-${member.subtitle}`}
+              key={member.name}
               name={member.name}
               role={member.role}
               subtitle={member.subtitle}
