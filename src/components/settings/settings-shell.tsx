@@ -2,12 +2,12 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 import { PageLoader } from "@/components/ui/page-loader";
 import { BrandPageBackground } from "@/components/layout/brand-page-background";
 import { SettingsSidebar } from "@/components/settings/settings-sidebar";
-import { ArrowLeft } from "lucide-react";
 
 type ParentStatus = "pending" | "verified" | "expired" | null;
 
@@ -30,18 +30,24 @@ type ParentStatusResponse = {
   expiresAt: string | null;
 };
 
+type SecurityStateResponse = {
+  success: boolean;
+  hasPassword: boolean;
+  isGoogleLinked: boolean;
+  providerIds: string[];
+};
+
 export type ProfileQueryData = {
   user: UserProfile;
   parentStatus: ParentStatus;
   pendingParentEmail: string | null;
   isGoogleLinked: boolean;
+  hasPassword: boolean;
 };
 
 export async function fetchProfileData(): Promise<ProfileQueryData> {
   const { data } = await authClient.getSession();
-  const user = data?.user as
-    | (UserProfile & { accounts?: Array<{ providerId?: string }> })
-    | undefined;
+  const user = data?.user as UserProfile | undefined;
 
   if (!user) {
     throw new Error("UNAUTHORIZED");
@@ -66,9 +72,21 @@ export async function fetchProfileData(): Promise<ProfileQueryData> {
         : null;
   }
 
-  const isGoogleLinked = Boolean(
-    user.accounts?.some((account) => account.providerId === "google"),
-  );
+  let hasPassword = false;
+  let isGoogleLinked = false;
+
+  const securityStateResponse = await fetch("/api/profile/security-state", {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  if (securityStateResponse.ok) {
+    const securityStatePayload =
+      (await securityStateResponse.json()) as SecurityStateResponse;
+
+    hasPassword = Boolean(securityStatePayload.hasPassword);
+    isGoogleLinked = Boolean(securityStatePayload.isGoogleLinked);
+  }
 
   return {
     user: {
@@ -91,6 +109,7 @@ export async function fetchProfileData(): Promise<ProfileQueryData> {
     parentStatus,
     pendingParentEmail,
     isGoogleLinked,
+    hasPassword,
   };
 }
 
@@ -123,8 +142,9 @@ export function SettingsShell({ children }: SettingsShellProps) {
 
   return (
     <BrandPageBackground>
-      <section className="mx-auto w-full max-w-6xl px-4 pb-8 pt-6 sm:px-5 md:px-6 md:pt-8 lg:px-8">
+      <section className="mx-auto w-full max-w-6xl px-4 pb-10 pt-6 sm:px-5 md:px-6 md:pt-8 lg:px-8">
         <button
+          type="button"
           onClick={() => router.back()}
           className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-brand-teal)] transition hover:opacity-80"
         >
@@ -148,8 +168,8 @@ export function SettingsShell({ children }: SettingsShellProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[240px_minmax(0,820px)] lg:gap-5 lg:items-start">
-          <div className="w-full lg:max-w-[240px]">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start">
+          <div className="w-full self-start lg:max-w-[260px]">
             <SettingsSidebar
               profile={{
                 name: data.user.name,
@@ -160,7 +180,7 @@ export function SettingsShell({ children }: SettingsShellProps) {
             />
           </div>
 
-          <div className="min-w-0 w-full max-w-full lg:max-w-[820px]">
+          <div className="min-w-0 w-full">
             {children({
               data,
               refresh: async () => {

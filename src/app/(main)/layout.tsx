@@ -5,13 +5,7 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getBaselineByUserId } from "@/lib/baseline/service";
 
-import { BaselineGuard } from "@/components/auth/BaselineGuard";
-
-/**
- * Sesuaikan import navbar/footer ini dengan nama komponen
- * yang memang sudah ada di project kamu.
- */
-import { Navbar } from "@/components/layout/Navbar";
+import Navbar from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 
 export default async function MainLayout({
@@ -39,19 +33,15 @@ export default async function MainLayout({
   }
 
   const baseline = await getBaselineByUserId(userId);
-  const shouldRedirectToBaseline = !baseline;
 
   return (
     <div
       className="flex min-h-screen flex-col"
-      style={{ fontFamily: "var(--font-plus-jakarta )" }}
+      style={{ fontFamily: "var(--font-plus-jakarta)" }}
     >
-      <BaselineGuard shouldRedirect={shouldRedirectToBaseline} />
-
+      {!baseline ? null : null}
       <Navbar />
-
       <main className="flex flex-1 flex-col">{children}</main>
-
       <Footer />
     </div>
   );

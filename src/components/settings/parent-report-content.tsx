@@ -1,8 +1,8 @@
 "use client";
 
-import { Mail, ShieldCheck, Unlink2, Users } from "lucide-react";
+import { ShieldCheck, Unlink2, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -65,18 +65,21 @@ export function ParentReportContent({
   const queryClient = useQueryClient();
   const [isEditingEmail, setIsEditingEmail] = useState(false);
 
-  const { watch, setValue, reset } = useForm<FormValues>({
+  const { control, setValue, reset } = useForm<FormValues>({
     defaultValues: {
       parentEmail: "",
     },
+  });
+
+  const watchedParentEmail = useWatch({
+    control,
+    name: "parentEmail",
   });
 
   const currentStoredEmail =
     parentStatus === "pending"
       ? pendingParentEmail || ""
       : profile.parentEmail || "";
-
-  const watchedParentEmail = watch("parentEmail");
 
   useEffect(() => {
     reset({
@@ -236,9 +239,10 @@ export function ParentReportContent({
                   })
                 }
                 placeholder="ortu@email.com"
-                className="h-10 flex-1 rounded-xl text-sm"
-                readOnly={!isEditingEmail}
+                className={`h-10 flex-1 rounded-xl text-sm 
+                ${!isEditingEmail ? "cursor-not-allowed bg-slate-50 text-slate-500" : ""}`}
                 disabled={
+                  !isEditingEmail ||
                   saveParentEmailMutation.isPending ||
                   disconnectParentEmailMutation.isPending
                 }
@@ -312,7 +316,6 @@ export function ParentReportContent({
         <div className="px-4 py-4 sm:px-5 md:px-6">
           {parentStatus === "pending" ? (
             <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
-              <Mail className="mt-0.5 h-4 w-4 shrink-0" />
               <p className="text-xs leading-relaxed">
                 Permintaan persetujuan telah dikirim ke{" "}
                 <strong>{currentStoredEmail}</strong>.
@@ -322,7 +325,6 @@ export function ParentReportContent({
 
           {parentStatus === "expired" ? (
             <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">
-              <Mail className="mt-0.5 h-4 w-4 shrink-0" />
               <p className="text-xs leading-relaxed">
                 Tautan konfirmasi untuk <strong>{currentStoredEmail}</strong>{" "}
                 telah kedaluwarsa. Silakan edit lalu simpan ulang untuk mengirim
@@ -333,7 +335,6 @@ export function ParentReportContent({
 
           {!currentStoredEmail && parentStatus === null ? (
             <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-600">
-              <Mail className="mt-0.5 h-4 w-4 shrink-0" />
               <p className="text-xs leading-relaxed">
                 Belum ada email orang tua yang terhubung.
               </p>

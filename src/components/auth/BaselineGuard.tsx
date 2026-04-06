@@ -3,8 +3,6 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-import { PageLoader } from "@/components/ui/page-loader";
-
 interface BaselineGuardProps {
   shouldRedirect: boolean;
 }
@@ -20,10 +18,6 @@ export function BaselineGuard({ shouldRedirect }: BaselineGuardProps) {
       router.replace("/baseline");
     }
   }, [shouldRedirect, isOnBaselinePage, router]);
-
-  if (shouldRedirect && !isOnBaselinePage) {
-    return <PageLoader message="Mengarahkan ke baseline..." fullscreen />;
-  }
 
   return null;
 }

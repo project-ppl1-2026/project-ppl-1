@@ -57,6 +57,7 @@ export function SettingsSidebar({ profile }: SettingsSidebarProps) {
           <p className="mb-1 line-clamp-2 text-base font-bold text-slate-900 sm:text-lg">
             {profile?.name || "Memuat..."}
           </p>
+
           <p className="mb-3 break-all text-xs text-slate-500 sm:text-[13px]">
             {profile?.email || "memuat@email.com"}
           </p>

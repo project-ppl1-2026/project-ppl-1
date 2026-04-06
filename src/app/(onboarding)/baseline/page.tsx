@@ -2,7 +2,6 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
-import { getBaselineByUserId } from "@/lib/baseline/service";
 import prisma from "@/lib/prisma";
 
 import BaselinePageClient from "./BaselinePageClient";
@@ -25,12 +24,6 @@ export default async function BaselinePage() {
 
   if (!user?.profileFilled) {
     redirect("/register?completeProfile=1");
-  }
-
-  const baseline = await getBaselineByUserId(userId);
-
-  if (baseline) {
-    redirect("/");
   }
 
   return <BaselinePageClient />;

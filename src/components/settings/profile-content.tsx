@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ShieldCheck, User } from "lucide-react";
+import { User } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -34,6 +34,7 @@ type ProfileContentProps = {
   parentStatus: ParentStatus;
   pendingParentEmail: string | null;
   isGoogleLinked: boolean;
+  hasPassword: boolean;
   onRefresh: () => Promise<void>;
 };
 
@@ -61,6 +62,7 @@ export function ProfileContent({
   parentStatus,
   pendingParentEmail,
   isGoogleLinked,
+  hasPassword,
   onRefresh,
 }: ProfileContentProps) {
   const queryClient = useQueryClient();
@@ -174,6 +176,18 @@ export function ProfileContent({
   const readonlyFieldClass =
     "flex min-h-12 w-full items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-900";
 
+  const passwordActionHref = hasPassword
+    ? "/profile/change-password"
+    : "/profile/create-password";
+
+  const passwordActionLabel = hasPassword ? "Ganti Password" : "Buat Password";
+
+  const passwordActionDescription = hasPassword
+    ? "Password sudah tersedia untuk akun ini."
+    : isGoogleLinked
+      ? "Akun Google ini belum punya password. Buat password agar nanti bisa login juga dengan email."
+      : "Akun ini belum punya password. Buat password terlebih dahulu.";
+
   return (
     <div className="space-y-4">
       {pendingParentEmail && parentStatus === "pending" ? (
@@ -229,7 +243,9 @@ export function ProfileContent({
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500 sm:text-xs">
                 {isGoogleLinked
                   ? "Terhubung melalui Google"
-                  : "Email & kata sandi"}
+                  : hasPassword
+                    ? "Email & kata sandi"
+                    : "Email akun aktif"}
               </p>
             </div>
 
@@ -238,9 +254,16 @@ export function ProfileContent({
                 <span className="min-w-0 flex-1 break-all">
                   {profile.email}
                 </span>
+
                 {isGoogleLinked ? (
                   <span className="shrink-0 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600">
                     Google
+                  </span>
+                ) : null}
+
+                {hasPassword ? (
+                  <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                    Password
                   </span>
                 ) : null}
               </div>
@@ -348,17 +371,36 @@ export function ProfileContent({
             </div>
           </div>
 
+          <div className={rowBaseClass}>
+            <div className={leftColClass}>
+              <p className="text-sm font-bold text-slate-900">Keamanan Akun</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-500 sm:text-xs">
+                {passwordActionDescription}
+              </p>
+            </div>
+
+            <div className="min-w-0 w-full">
+              <div className="flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-900">
+                <div className="flex items-center gap-2">
+                  <span>
+                    {hasPassword
+                      ? "Password sudah dibuat"
+                      : "Belum ada password"}
+                  </span>
+                </div>
+
+                <Link
+                  href={passwordActionHref}
+                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  {passwordActionLabel}
+                </Link>
+              </div>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-3 bg-slate-50/60 px-4 py-4 sm:px-5 md:px-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap md:justify-end">
-              {!isGoogleLinked && !isEditingProfile ? (
-                <Link
-                  href="/profile/change-password"
-                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                >
-                  Ganti Password
-                </Link>
-              ) : null}
-
               {isEditingProfile ? (
                 <>
                   <Button
@@ -400,7 +442,6 @@ export function ProfileContent({
 
       <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-4 sm:px-5 md:px-6">
-          <ShieldCheck className="h-6 w-6 shrink-0 text-emerald-600" />
           <div>
             <div className="mb-1 flex flex-wrap items-center gap-2">
               <p className="text-sm font-extrabold text-slate-900 sm:text-[15px]">

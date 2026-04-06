@@ -12,6 +12,7 @@ export default function ProfilePage() {
           parentStatus={data.parentStatus}
           pendingParentEmail={data.pendingParentEmail}
           isGoogleLinked={data.isGoogleLinked}
+          hasPassword={data.hasPassword}
           onRefresh={refresh}
         />
       )}

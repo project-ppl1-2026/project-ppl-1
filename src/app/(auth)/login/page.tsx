@@ -28,7 +28,6 @@ import { GoogleIcon } from "@/components/ui/google-icon";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { AuthField } from "@/components/auth/auth-field";
-import { BaselineGuard } from "@/components/auth/BaselineGuard";
 import { BrandPageBackground } from "@/components/layout/brand-page-background";
 
 type SessionUser = {
@@ -97,8 +96,6 @@ function LoginPageContent() {
   const shouldReduce = useReducedMotion();
 
   const [serverError, setServerError] = useState("");
-  const [shouldRedirectToBaseline, setShouldRedirectToBaseline] =
-    useState(false);
 
   const {
     register,
@@ -119,7 +116,6 @@ function LoginPageContent() {
 
   useEffect(() => {
     if (isSessionLoading || !sessionData?.isAuthenticated) return;
-    setShouldRedirectToBaseline(true);
   }, [isSessionLoading, sessionData]);
 
   const loginMutation = useMutation<
@@ -143,7 +139,6 @@ function LoginPageContent() {
     onSuccess: () => {
       toast.success("Login berhasil.");
       reset();
-      setShouldRedirectToBaseline(true);
     },
     onError: (error) => {
       setServerError(resolveLoginErrorMessage(error));
@@ -174,10 +169,6 @@ function LoginPageContent() {
 
   if (isSessionLoading) {
     return <PageLoader message="Memeriksa sesi..." />;
-  }
-
-  if (shouldRedirectToBaseline) {
-    return <BaselineGuard shouldRedirect />;
   }
 
   return (
