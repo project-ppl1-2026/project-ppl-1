@@ -40,19 +40,21 @@ export default function RootLayout({
       className={plusJakartaSans.variable}
       suppressHydrationWarning
     >
-      <body className="font-sans antialiased">
-        {/* Toast notification — global */}
-        <Toaster
-          position="top-center"
-          richColors
-          toastOptions={{
-            style: {
-              fontFamily: "var(--font-plus-jakarta)",
-              borderRadius: "12px",
-            },
-          }}
-        />
-        <QueryProvider>{children}</QueryProvider>
+      <body suppressHydrationWarning className="font-sans antialiased">
+        <QueryProvider>
+          {children}
+
+          <Toaster
+            position="top-center"
+            richColors
+            toastOptions={{
+              style: {
+                fontFamily: "var(--font-plus-jakarta)",
+                borderRadius: "12px",
+              },
+            }}
+          />
+        </QueryProvider>
       </body>
     </html>
   );
