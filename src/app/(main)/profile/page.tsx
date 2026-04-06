@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SettingsSidebar } from "@/components/sections/settings/settings-sidebar";
-import { ProfileContent } from "@/components/sections/settings/profile-content";
+import { SettingsSidebar } from "@/components/settings/settings-sidebar";
+import { ProfileContent } from "@/components/settings/profile-content";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
