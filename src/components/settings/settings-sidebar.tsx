@@ -5,38 +5,25 @@ import { Badge } from "@/components/ui/badge";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
 import Image from "next/image";
 
 interface SettingsSidebarProps {
   activeTab: number;
   onTabChange: (tabIndex: number) => void;
+  profile: {
+    name: string;
+    email: string;
+    image?: string | null;
+    isPremium: boolean;
+  } | null;
 }
 
 export function SettingsSidebar({
   activeTab,
   onTabChange,
+  profile,
 }: SettingsSidebarProps) {
   const router = useRouter();
-  const [profile, setProfile] = useState<{
-    name: string;
-    email: string;
-    image?: string | null;
-  } | null>(null);
-
-  useEffect(() => {
-    const fetchSession = async () => {
-      const { data } = await authClient.getSession();
-      if (data?.user) {
-        setProfile({
-          name: data.user.name,
-          email: data.user.email,
-          image: data.user.image,
-        });
-      }
-    };
-    fetchSession();
-  }, []);
 
   const handleLogout = async () => {
     try {
@@ -49,7 +36,7 @@ export function SettingsSidebar({
   };
 
   return (
-    <aside className="sticky top-20 flex w-full flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
+    <aside className="flex w-full flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
       {/* Profile Card */}
       <div className="border-b border-slate-200 bg-slate-50 px-5 py-6 flex flex-col items-center">
         <div className="relative mx-auto mb-3.5 flex h-16 w-16 items-center justify-center rounded-full bg-(--brand-primary-dark) text-white shadow-md">
@@ -78,7 +65,7 @@ export function SettingsSidebar({
             className="gap-1.5 rounded-full border-slate-200 text-[11px] font-bold text-slate-600 bg-slate-100"
           >
             <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-            Free Plan
+            {profile?.isPremium ? "Premium Plan" : "Free Plan"}
           </Badge>
         </div>
       </div>

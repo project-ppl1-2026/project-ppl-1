@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Mail, ShieldCheck, User, Users } from "lucide-react";
+import { ChevronDown, Mail, ShieldCheck, User, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -28,43 +28,48 @@ type ProfileData = {
   email: string;
   createdAt?: string | null;
   birthYear?: number | null;
+  gender?: "male" | "female" | "prefer_not" | null;
   parentEmail?: string | null;
+  isPremium?: boolean;
 };
 
 type ProfileSettingsFormInput = Pick<
   ProfileEditFormInput,
-  "name" | "birthYear" | "parentEmail"
+  "name" | "birthYear" | "gender" | "parentEmail"
 >;
 
 const profileSettingsSchema = profileEditFormSchema.pick({
   name: true,
   birthYear: true,
+  gender: true,
   parentEmail: true,
 });
 
+const genderLabelMap: Record<"male" | "female" | "prefer_not", string> = {
+  male: "Laki-laki",
+  female: "Perempuan",
+  prefer_not: "Tidak ingin menyebutkan",
+};
+
 interface ProfileContentProps {
   activeTab: number;
+  initialProfile: ProfileData | null;
+  initialIsGoogleLinked: boolean;
 }
 
-function getAccountTypeLabelFromBirthYear(
-  birthYear: string | number | null | undefined,
-) {
-  const year = Number(birthYear);
-  if (!Number.isFinite(year) || year < 1900) {
-    return "Belum diatur";
-  }
-
-  const age = new Date().getFullYear() - year;
-  return age <= 29 ? "Pelajar / Remaja (Usia 10-29)" : "Dewasa (> 29 Tahun)";
-}
-
-export function ProfileContent({ activeTab }: ProfileContentProps) {
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+export function ProfileContent({
+  activeTab,
+  initialProfile,
+  initialIsGoogleLinked,
+}: ProfileContentProps) {
+  const [profile, setProfile] = useState<ProfileData | null>(initialProfile);
   const [parentStatus, setParentStatus] = useState<ParentStatus>(null);
   const [parentEmailServer, setParentEmailServer] = useState<string | null>(
     null,
   );
-  const [isGoogleLinked, setIsGoogleLinked] = useState<boolean>(false);
+  const [isGoogleLinked, setIsGoogleLinked] = useState<boolean>(
+    initialIsGoogleLinked,
+  );
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isSavingParentEmail, setIsSavingParentEmail] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -83,54 +88,34 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
     defaultValues: {
       name: "",
       birthYear: "",
+      gender: "prefer_not",
       parentEmail: "",
     },
   });
 
   const watchedBirthYear = watch("birthYear");
+  const watchedGender = watch("gender");
   const watchedParentEmail = watch("parentEmail");
 
-  const accountTypeLabel = useMemo(
-    () =>
-      getAccountTypeLabelFromBirthYear(
-        watchedBirthYear || profile?.birthYear || null,
-      ),
-    [profile?.birthYear, watchedBirthYear],
+  const planLabel = useMemo(
+    () => (profile?.isPremium ? "Premium Plan" : "Free Plan"),
+    [profile?.isPremium],
   );
 
   useEffect(() => {
-    const fetchSessionAndParentStatus = async () => {
+    setProfile(initialProfile);
+  }, [initialProfile]);
+
+  useEffect(() => {
+    setIsGoogleLinked(initialIsGoogleLinked);
+  }, [initialIsGoogleLinked]);
+
+  useEffect(() => {
+    const fetchParentStatus = async () => {
       try {
-        const [{ data: sessionData }, statusResponse, accountsResponse] =
-          await Promise.all([
-            authClient.getSession(),
-            fetch("/api/parent/status", { cache: "no-store" }),
-            authClient.listAccounts(),
-          ]);
-
-        if (sessionData?.user) {
-          const userProfile: ProfileData = {
-            name: sessionData.user.name,
-            email: sessionData.user.email,
-            createdAt: sessionData.user.createdAt
-              ? new Date(sessionData.user.createdAt).toISOString()
-              : null,
-            birthYear:
-              (sessionData.user as { birthYear?: number }).birthYear ?? null,
-            parentEmail:
-              (sessionData.user as { parentEmail?: string }).parentEmail ??
-              null,
-          };
-
-          setProfile(userProfile);
-          reset({
-            name: userProfile.name,
-            birthYear: userProfile.birthYear
-              ? String(userProfile.birthYear)
-              : "",
-            parentEmail: userProfile.parentEmail || "",
-          });
-        }
+        const statusResponse = await fetch("/api/parent/status", {
+          cache: "no-store",
+        });
 
         if (statusResponse.ok) {
           const parentResult =
@@ -141,22 +126,28 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
             setValue("parentEmail", parentResult.email, { shouldDirty: false });
           }
         }
-
-        if (accountsResponse?.data) {
-          setIsGoogleLinked(
-            accountsResponse.data.some(
-              (account: { providerId: string }) =>
-                account.providerId === "google",
-            ),
-          );
-        }
       } catch {
-        toast.error("Gagal memuat data profil.");
+        toast.error("Gagal memuat status orang tua.");
       }
     };
 
-    void fetchSessionAndParentStatus();
-  }, [reset, setValue]);
+    void fetchParentStatus();
+  }, [setValue]);
+
+  useEffect(() => {
+    if (!initialProfile) {
+      return;
+    }
+
+    reset({
+      name: initialProfile.name,
+      birthYear: initialProfile.birthYear
+        ? String(initialProfile.birthYear)
+        : "",
+      gender: initialProfile.gender || "prefer_not",
+      parentEmail: initialProfile.parentEmail || "",
+    });
+  }, [initialProfile, reset]);
 
   const handleSaveProfile = handleSubmit(async (formValues) => {
     setIsUpdatingProfile(true);
@@ -165,6 +156,7 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
       const response = await authClient.updateUser({
         name: formValues.name.trim(),
         birthYear: Number(formValues.birthYear),
+        gender: formValues.gender,
       });
 
       if (response.error) {
@@ -177,6 +169,7 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
             ...profile,
             name: formValues.name.trim(),
             birthYear: Number(formValues.birthYear),
+            gender: formValues.gender,
           }
         : null;
 
@@ -199,6 +192,7 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
     reset({
       name: profile.name,
       birthYear: profile.birthYear ? String(profile.birthYear) : "",
+      gender: profile.gender || "prefer_not",
       parentEmail: getValues("parentEmail") || profile.parentEmail || "",
     });
     setIsEditingProfile(false);
@@ -250,7 +244,7 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
         <Card className="w-full rounded-[20px] border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-200 px-8 py-6">
             <div className="flex items-center gap-2.5">
-              <User className="h-4 w-4 text-(--brand-primary)" />
+              <User className="h-5 w-5 text-(--brand-primary)" />
               <CardTitle className="text-base font-extrabold text-(--brand-text-primary)">
                 Informasi Profil
               </CardTitle>
@@ -304,29 +298,36 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
 
             <div className="grid grid-cols-1 items-start gap-2 border-b border-slate-200 px-8 py-5 md:grid-cols-[250px_1fr] md:items-center md:gap-6">
               <div>
-                <p className="text-sm font-bold text-slate-900">
-                  Tahun Lahir ({accountTypeLabel})
-                </p>
+                <p className="text-sm font-bold text-slate-900">Tahun Lahir</p>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
                   Pilih tahun lahir Anda.
                 </p>
               </div>
-              <div className="w-full max-w-md">
-                <select
-                  {...register("birthYear")}
-                  disabled={!isEditingProfile || isUpdatingProfile}
-                  className="h-11 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-900 transition focus:border-(--brand-primary) focus:outline-none focus:ring-1 focus:ring-(--brand-primary) disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  <option value="">Pilih Tahun</option>
-                  {Array.from(
-                    { length: 100 },
-                    (_, index) => new Date().getFullYear() - index,
-                  ).map((year) => (
-                    <option key={year} value={year.toString()}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
+              <div className="w-full max-w-md md:mr-auto">
+                {isEditingProfile ? (
+                  <div className="relative">
+                    <select
+                      {...register("birthYear")}
+                      disabled={isUpdatingProfile}
+                      className="h-11 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-3.5 pr-10 text-sm font-semibold text-slate-900 transition focus:border-(--brand-primary) focus:outline-none focus:ring-1 focus:ring-(--brand-primary) disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      <option value="">Pilih Tahun</option>
+                      {Array.from(
+                        { length: 100 },
+                        (_, index) => new Date().getFullYear() - index,
+                      ).map((year) => (
+                        <option key={year} value={year.toString()}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                  </div>
+                ) : (
+                  <div className="inline-flex h-11 w-full items-center rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-900">
+                    {watchedBirthYear || profile?.birthYear || "Belum diatur"}
+                  </div>
+                )}
                 {errors.birthYear?.message && (
                   <p className="mt-1 text-xs text-red-600">
                     {errors.birthYear.message}
@@ -335,16 +336,57 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
               </div>
             </div>
 
-            <div className="flex flex-col gap-4 rounded-b-[20px] bg-slate-50/60 px-8 py-5 md:flex-row md:items-center md:justify-between">
-              <p className="text-xs text-slate-500">
-                Profil hanya bisa diubah setelah menekan tombol Edit Profile.
-              </p>
+            <div className="grid grid-cols-1 items-start gap-2 border-b border-slate-200 px-8 py-5 md:grid-cols-[250px_1fr] md:items-center md:gap-6">
+              <div>
+                <p className="text-sm font-bold text-slate-900">
+                  Jenis Kelamin
+                </p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                  Data ini tersimpan dari proses registrasi.
+                </p>
+              </div>
+              <div className="w-full max-w-md md:mr-auto">
+                {isEditingProfile ? (
+                  <div className="relative">
+                    <select
+                      {...register("gender")}
+                      disabled={isUpdatingProfile}
+                      className="h-11 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-3.5 pr-10 text-sm font-semibold text-slate-900 transition focus:border-(--brand-primary) focus:outline-none focus:ring-1 focus:ring-(--brand-primary) disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      <option value="male">Laki-laki</option>
+                      <option value="female">Perempuan</option>
+                      <option value="prefer_not">
+                        Tidak ingin menyebutkan
+                      </option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                  </div>
+                ) : (
+                  <div className="inline-flex h-11 w-full items-center rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-900">
+                    {
+                      genderLabelMap[
+                        (watchedGender || profile?.gender || "prefer_not") as
+                          | "male"
+                          | "female"
+                          | "prefer_not"
+                      ]
+                    }
+                  </div>
+                )}
+                {errors.gender?.message && (
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.gender.message}
+                  </p>
+                )}
+              </div>
+            </div>
 
-              <div className="flex flex-wrap items-center gap-2.5">
-                {!isGoogleLinked && (
+            <div className="flex flex-col gap-4 rounded-b-[20px] bg-slate-50/60 px-8 py-5">
+              <div className="flex flex-col gap-2.5 sm:flex-row md:ml-auto md:justify-end">
+                {!isGoogleLinked && !isEditingProfile && (
                   <Link
                     href="/profile/change-password"
-                    className="inline-flex h-10 cursor-pointer items-center rounded-xl border border-(--brand-border) bg-white px-4 text-sm font-semibold text-(--brand-text-secondary) transition-colors hover:bg-slate-50"
+                    className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-(--brand-border) bg-white px-4 text-sm font-semibold text-(--brand-text-secondary) transition-colors hover:bg-slate-50"
                   >
                     Reset Password
                   </Link>
@@ -356,7 +398,7 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
                       type="button"
                       onClick={handleCancelEdit}
                       disabled={isUpdatingProfile}
-                      className="inline-flex h-10 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Batal
                     </button>
@@ -364,7 +406,7 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
                       type="button"
                       onClick={handleSaveProfile}
                       disabled={isUpdatingProfile || !isValid}
-                      className="inline-flex h-10 cursor-pointer items-center rounded-xl bg-(--brand-primary) px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-(--brand-primary) px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isUpdatingProfile ? "Menyimpan..." : "Simpan Perubahan"}
                     </button>
@@ -373,7 +415,7 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
                   <button
                     type="button"
                     onClick={() => setIsEditingProfile(true)}
-                    className="inline-flex h-10 cursor-pointer items-center rounded-xl bg-(--brand-primary) px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-(--brand-primary) px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                   >
                     Edit Profile
                   </button>
@@ -385,10 +427,8 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
 
         <Card className="w-full rounded-[20px] border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-200 px-8 py-6">
-            <div className="flex items-center gap-3.5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-600">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
+            <div className="flex items-center gap-4">
+              <ShieldCheck className="h-8 w-8 shrink-0 text-emerald-600" />
               <div>
                 <div className="mb-1 flex items-center gap-2">
                   <p className="text-[15px] font-extrabold text-(--brand-text-primary)">
@@ -414,7 +454,7 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
                         )
                       : "Memuat..."}
                   </strong>{" "}
-                  · Free Plan
+                  · {planLabel}
                 </p>
               </div>
             </div>
@@ -472,8 +512,8 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
       )}
 
       <Card className="w-full rounded-[20px] border-slate-200 shadow-sm">
-        <CardHeader className="flex flex-row items-center gap-2.5 border-b border-slate-200 px-8 py-6">
-          <Users className="h-4 w-4 text-(--brand-primary)" />
+        <CardHeader className="flex flex-row items-center gap-5 border-b border-slate-200 px-8 py-6">
+          <Users className="h-5 w-5 text-(--brand-primary)" />
           <div>
             <CardTitle className="text-base font-extrabold text-(--brand-text-primary)">
               Konfigurasi Laporan
@@ -494,7 +534,13 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
                 Laporan mingguan akan dikirimkan ke email ini.
               </p>
             </div>
-            <div className="flex w-full gap-2.5">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleSaveParentEmail();
+              }}
+              className="flex w-full gap-2.5"
+            >
               <input
                 type="email"
                 placeholder="ortu@email.com"
@@ -505,7 +551,7 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
                 className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-900 transition focus:border-(--brand-primary) focus:outline-none focus:ring-1 focus:ring-(--brand-primary)"
               />
               <button
-                onClick={handleSaveParentEmail}
+                type="submit"
                 disabled={
                   isSavingParentEmail ||
                   ((watchedParentEmail || "").trim().toLowerCase() ===
@@ -516,14 +562,14 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
               >
                 {isSavingParentEmail ? "Tunggu..." : "Simpan"}
               </button>
-            </div>
+            </form>
           </div>
         </CardContent>
       </Card>
 
       <Card className="w-full rounded-[20px] border-slate-200 bg-slate-50 shadow-sm">
         <CardHeader className="flex flex-row items-center gap-2.5 rounded-t-[20px] border-b border-slate-200 bg-white px-8 py-6">
-          <ShieldCheck className="h-4 w-4 text-(--brand-primary)" />
+          <ShieldCheck className="h-5 w-5 text-(--brand-primary)" />
           <div className="space-y-1">
             <CardTitle className="text-base font-extrabold text-(--brand-text-primary)">
               Yang Tidak Dikirim ke Orang Tua
@@ -542,11 +588,9 @@ export function ProfileContent({ activeTab }: ProfileContentProps) {
           ].map((item) => (
             <div
               key={item}
-              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+              className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
             >
-              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                <ShieldCheck className="h-3 w-3 text-emerald-700" />
-              </div>
+              <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-700" />
               <span className="text-[13px] font-medium text-slate-600">
                 {item}
               </span>

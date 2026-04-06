@@ -101,7 +101,7 @@ export function Footer() {
               href="/register"
               className="inline-flex w-full cursor-pointer items-center justify-center rounded-xl bg-(--brand-primary) px-4 py-2.5 text-sm font-semibold text-white transition-opacity duration-150 hover:opacity-90"
             >
-              Mulai Diary -&gt;
+              Mulai Diary
             </Link>
           </div>
         </div>
