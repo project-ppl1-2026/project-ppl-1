@@ -20,7 +20,7 @@ export default function AuthLayout({
     // font-family di sini agar sama persis dengan landing page
     <div
       className="min-h-screen flex flex-col"
-      style={{ fontFamily: "var(--font-plus-jakarta, sans-serif)" }}
+      style={{ fontFamily: "var(--font-plus-jakarta )" }}
     >
       <Navbar />
       <main className="flex-1">{children}</main>

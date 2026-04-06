@@ -1063,7 +1063,7 @@ export default function LandingPage() {
     <main
       style={{
         background: C.bg0,
-        fontFamily: "var(--font-plus-jakarta, sans-serif)",
+        fontFamily: "var(--font-plus-jakarta )",
       }}
     >
       {/* ══════════════ HERO ══════════════ */}

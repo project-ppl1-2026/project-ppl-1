@@ -1,17 +1,16 @@
 "use client";
 
 import { SettingsShell } from "@/components/settings/settings-shell";
-import { ProfileContent } from "@/components/settings/profile-content";
+import { ParentReportContent } from "@/components/settings/parent-report-content";
 
-export default function ProfilePage() {
+export default function ParentReportPage() {
   return (
     <SettingsShell>
       {({ data, refresh }) => (
-        <ProfileContent
+        <ParentReportContent
           profile={data.user}
           parentStatus={data.parentStatus}
           pendingParentEmail={data.pendingParentEmail}
-          isGoogleLinked={data.isGoogleLinked}
           onRefresh={refresh}
         />
       )}

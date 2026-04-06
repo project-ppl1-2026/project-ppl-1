@@ -771,7 +771,7 @@ export default function LandingPage() {
       className="min-h-screen flex flex-col"
       style={{
         background: C.bg0,
-        fontFamily: "var(--font-plus-jakarta, sans-serif)",
+        fontFamily: "var(--font-plus-jakarta )",
       }}
     >
       {/* ══════════════ NAVBAR ══════════════ */}

@@ -60,46 +60,52 @@ export async function GET(request: Request) {
         );
       }
 
-      return new NextResponse(
-        '<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>Link tidak valid</h2><p>Token atau parameter keputusan tidak valid.</p></body></html>',
+      return NextResponse.json(
         {
-          status: 400,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
+          success: false,
+          title: "Link tidak valid",
+          description: "Token atau parameter keputusan tidak valid.",
         },
+        { status: 400 },
       );
     }
 
     const parent = await getParentByToken(parsedQuery.data.token);
 
     if (!parent) {
-      return new NextResponse(
-        '<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>Link kedaluwarsa</h2><p>Link persetujuan sudah tidak valid atau sudah pernah digunakan.</p></body></html>',
+      return NextResponse.json(
         {
-          status: 404,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
+          success: false,
+          title: "Link kedaluwarsa",
+          description:
+            "Link persetujuan sudah tidak valid atau sudah pernah digunakan.",
         },
+        { status: 404 },
       );
     }
 
     if (parent.status !== "pending") {
-      return new NextResponse(
-        '<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>Link tidak lagi aktif</h2><p>Permintaan ini sudah diproses sebelumnya.</p></body></html>',
+      return NextResponse.json(
         {
-          status: 400,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
+          success: false,
+          title: "Link tidak lagi aktif",
+          description: "Permintaan ini sudah diproses sebelumnya.",
         },
+        { status: 400 },
       );
     }
 
     if (!parent.expiresAt || parent.expiresAt <= new Date()) {
       await markParentExpired(parent.id);
 
-      return new NextResponse(
-        '<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>Link kedaluwarsa</h2><p>Link persetujuan sudah tidak valid atau sudah kedaluwarsa.</p></body></html>',
+      return NextResponse.json(
         {
-          status: 404,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
+          success: false,
+          title: "Link kedaluwarsa",
+          description:
+            "Link persetujuan sudah tidak valid atau sudah kedaluwarsa.",
         },
+        { status: 404 },
       );
     }
 
@@ -146,21 +152,22 @@ export async function GET(request: Request) {
         ? `Email ${parent.email} sekarang akan menerima laporan dari TemanTumbuh.`
         : "Email tidak dihubungkan ke akun anak.";
 
-    return new NextResponse(
-      `<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>${title}</h2><p>${description}</p></body></html>`,
-      {
-        status: 200,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
-      },
-    );
+    return NextResponse.json({
+      success: true,
+      title,
+      description,
+      email: parent.email,
+      decision: parsedQuery.data.decision,
+    });
   } catch (error: unknown) {
     console.error("Parent consent GET error:", error);
-    return new NextResponse(
-      '<html><body style="font-family:Arial,sans-serif;padding:24px;"><h2>Terjadi kesalahan sistem</h2><p>Silakan coba lagi nanti.</p></body></html>',
+    return NextResponse.json(
       {
-        status: 500,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
+        success: false,
+        title: "Terjadi kesalahan sistem",
+        description: "Silakan coba lagi nanti.",
       },
+      { status: 500 },
     );
   }
 }
