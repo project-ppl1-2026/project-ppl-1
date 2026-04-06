@@ -107,11 +107,11 @@ export function HeroSection() {
                 </p>
                 <div className="flex gap-1.5">
                   {[
-                    "/img/FaceVerySad.png",
-                    "/img/FaceSad.png",
-                    "/img/FaceNeutral.png",
-                    "/img/FaceHappy.png",
-                    "/img/FaceVeryHappy.png",
+                    "/img/Emojis/FaceVerySad.png",
+                    "/img/Emojis/FaceSad.png",
+                    "/img/Emojis/FaceNeutral.png",
+                    "/img/Emojis/FaceHappy.png",
+                    "/img/Emojis/FaceVeryHappy.png",
                   ].map((src, i) => (
                     <div
                       key={i}
