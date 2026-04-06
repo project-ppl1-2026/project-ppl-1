@@ -20,7 +20,7 @@ export function BrandPageBackground({
     <div
       className={cn(
         "relative w-full overflow-hidden",
-        fillViewport ? "min-h-screen" : "flex-1 min-h-full h-full",
+        fillViewport ? "min-h-screen" : "min-h-full",
         className,
       )}
       style={{
@@ -62,9 +62,7 @@ export function BrandPageBackground({
         />
       </div>
 
-      <div className="relative z-10 flex h-full min-h-full flex-col">
-        {children}
-      </div>
+      <div className="relative z-10 flex min-h-screen flex-col">{children}</div>
     </div>
   );
 }
