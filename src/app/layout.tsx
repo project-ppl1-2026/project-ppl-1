@@ -1,14 +1,14 @@
 // ============================================================
 // src/app/layout.tsx
-// Root layout — wrap semua halaman
+// Root layout
 // ============================================================
 
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
+import QueryProvider from "@/components/providers/query-providers";
 
-// ─── Font ─────────────────────────────────────────────────────
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
   subsets: ["latin"],
@@ -16,7 +16,6 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-// ─── Metadata ─────────────────────────────────────────────────
 export const metadata: Metadata = {
   title: {
     template: "%s | TemanTumbuh",
@@ -27,7 +26,6 @@ export const metadata: Metadata = {
   keywords: ["kesehatan mental", "remaja", "refleksi diri", "emosi"],
 };
 
-// ─── Root Layout ──────────────────────────────────────────────
 export default function RootLayout({
   children,
 }: {
@@ -39,20 +37,21 @@ export default function RootLayout({
       className={plusJakartaSans.variable}
       suppressHydrationWarning
     >
-      <body className="font-sans antialiased">
-        {children}
+      <body className="font-sans antialiased" suppressHydrationWarning>
+        <QueryProvider>
+          {children}
 
-        {/* Toast notification — global */}
-        <Toaster
-          position="top-center"
-          richColors
-          toastOptions={{
-            style: {
-              fontFamily: "var(--font-plus-jakarta)",
-              borderRadius: "12px",
-            },
-          }}
-        />
+          <Toaster
+            position="top-center"
+            richColors
+            toastOptions={{
+              style: {
+                fontFamily: "var(--font-plus-jakarta)",
+                borderRadius: "12px",
+              },
+            }}
+          />
+        </QueryProvider>
       </body>
     </html>
   );

@@ -17,7 +17,6 @@ import {
   ChevronDown,
   FileText,
   Home,
-  LayoutGrid,
   List,
   LogOut,
   Menu,
@@ -28,6 +27,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { authClient } from "@/lib/auth-client";
 
@@ -62,10 +62,10 @@ const guestSession: Session = {
 
 const homeSections: HomeSection[] = [
   {
-    label: "Hero",
-    sectionId: "hero",
-    href: "/#hero",
-    desc: "Kembali ke atas halaman",
+    label: "Beranda",
+    sectionId: null,
+    href: "/",
+    desc: "Halaman utama pengguna",
   },
   {
     label: "Fitur",
@@ -95,7 +95,6 @@ const homeSections: HomeSection[] = [
 
 const userMenuItems: MenuItem[] = [
   { label: "Profile", href: "/profile", icon: <UserCircle size={15} /> },
-  { label: "Dashboard", href: "/dashboard", icon: <LayoutGrid size={15} /> },
   { label: "Diary", href: "/diary", icon: <BookText size={15} /> },
   {
     label: "Recommendation",
@@ -118,18 +117,29 @@ const adminMenuItems: MenuItem[] = [
   { label: "Simulator", href: "/admin/simulator", icon: <Zap size={15} /> },
 ];
 
+const C = {
+  teal: "#1A9688",
+  tealMid: "#28B0A4",
+  tealLight: "#4ECFC3",
+  tealPale: "#A8E0DA",
+  tealGhost: "#DDF5F2",
+  textPrimary: "#1A2840",
+  textSecondary: "#3A5068",
+  textMuted: "#7090A8",
+  border: "#C8DCED",
+  bg0: "#FAFBFF",
+  white: "#FFFFFF",
+};
+
 function useOutsideClick(cb: () => void) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClick = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        cb();
-      }
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) cb();
     };
-
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [cb]);
 
   return ref;
@@ -145,15 +155,15 @@ function useSmoothScroll() {
         if (pathname === "/") {
           window.scrollTo({ top: 0, behavior: "smooth" });
         } else {
-          router.push("/");
+          router.push(href);
         }
         return;
       }
 
       if (pathname === "/") {
-        const sectionElement = document.getElementById(sectionId);
-        if (sectionElement) {
-          sectionElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        const el = document.getElementById(sectionId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
           window.history.pushState(null, "", `/#${sectionId}`);
           return;
         }
@@ -176,7 +186,7 @@ function Avatar({
 }) {
   const initials = name
     .split(" ")
-    .map((word) => word[0])
+    .map((w) => w[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
@@ -188,8 +198,7 @@ function Avatar({
         width: size,
         height: size,
         fontSize: size < 30 ? 11 : 12,
-        background:
-          "linear-gradient(135deg, var(--brand-primary-dark), var(--brand-primary))",
+        background: `linear-gradient(135deg, ${C.teal}, ${C.tealMid})`,
         color: "#fff",
       }}
     >
@@ -219,12 +228,9 @@ function NavLink({
   href?: string;
   onClick?: () => void;
 }) {
-  const textStyle: CSSProperties = {
-    color: isActive ? "var(--brand-primary)" : "var(--brand-text-secondary)",
-  };
-
-  const underlineStyle: CSSProperties = {
-    background: "var(--brand-primary)",
+  const style: CSSProperties = { color: isActive ? C.teal : C.textSecondary };
+  const underline: CSSProperties = {
+    background: C.teal,
     transform: `scaleX(${isActive ? 1 : 0})`,
     opacity: isActive ? 1 : 0,
   };
@@ -232,14 +238,14 @@ function NavLink({
   const content = (
     <>
       <span
-        className="text-sm font-medium transition-colors duration-150 group-hover:text-(--brand-primary)"
-        style={textStyle}
+        className="text-sm font-medium transition-colors duration-150 group-hover:text-[#1A9688]"
+        style={style}
       >
         {label}
       </span>
       <span
-        className="absolute -bottom-0.5 left-0 right-0 h-0.5 origin-center rounded-full transition-all duration-150 group-hover:scale-x-100 group-hover:opacity-100"
-        style={underlineStyle}
+        className="absolute -bottom-0.5 left-0 right-0 h-0.5 origin-center rounded-full transition-all duration-200 group-hover:scale-x-100 group-hover:opacity-100"
+        style={underline}
       />
     </>
   );
@@ -249,6 +255,7 @@ function NavLink({
       <button
         onClick={onClick}
         className="group relative flex cursor-pointer flex-col items-center pb-0.5 outline-none"
+        type="button"
       >
         {content}
       </button>
@@ -265,95 +272,145 @@ function NavLink({
   );
 }
 
-function HomeDropdown({ isActive }: { isActive: boolean }) {
+function HomeDropdown({
+  isActive,
+  isUserHomepage = false,
+}: {
+  isActive: boolean;
+  isUserHomepage?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const smoothScroll = useSmoothScroll();
   const ref = useOutsideClick(() => setOpen(false));
 
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  const handleHomeClick = () => {
+    setOpen(false);
+
+    if (isUserHomepage) {
+      smoothScroll(null, "/home");
+      return;
+    }
+
+    smoothScroll(null, "/");
+  };
+
+  if (isUserHomepage) {
+    return (
+      <div className="relative">
+        <button
+          onClick={handleHomeClick}
+          className="group relative flex items-center gap-0.5 cursor-pointer pb-0.5 text-sm font-medium outline-none transition-colors duration-150 hover:text-[#1A9688]"
+          style={{ color: isActive ? C.teal : C.textSecondary }}
+          type="button"
+        >
+          Home
+          <span
+            className="absolute -bottom-0.5 left-0 right-0 h-0.5 origin-center rounded-full transition-all duration-200"
+            style={{
+              background: C.teal,
+              transform: `scaleX(${isActive ? 1 : 0})`,
+              opacity: isActive ? 1 : 0,
+            }}
+          />
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((value) => !value)}
-        className="group relative flex cursor-pointer items-center gap-1.5 pb-0.5 text-sm font-medium outline-none"
-        style={{
-          color:
-            isActive || open
-              ? "var(--brand-primary)"
-              : "var(--brand-text-secondary)",
-        }}
-        aria-expanded={open}
-        aria-haspopup="menu"
-      >
-        Home
-        <ChevronDown
-          size={14}
-          className={`transition-transform duration-200 ${open ? "rotate-180" : "rotate-0"}`}
-        />
+    <div
+      ref={ref}
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <div className="group relative flex items-center gap-0.5 cursor-pointer pb-0.5">
+        <button
+          onClick={handleHomeClick}
+          className="text-sm font-medium transition-colors duration-150 group-hover:text-[#1A9688] outline-none"
+          style={{ color: isActive || open ? C.teal : C.textSecondary }}
+          type="button"
+        >
+          Home
+        </button>
+
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="ml-0.5 flex items-center outline-none transition-colors duration-150"
+          style={{ color: isActive || open ? C.teal : C.textMuted }}
+          aria-expanded={open}
+          aria-haspopup="menu"
+          type="button"
+        >
+          <ChevronDown
+            size={14}
+            className={`transition-transform duration-200 ${
+              open ? "rotate-180" : "rotate-0"
+            }`}
+          />
+        </button>
+
         <span
-          className="absolute -bottom-0.5 left-0 right-0 h-0.5 origin-center rounded-full transition-all duration-150 group-hover:scale-x-100 group-hover:opacity-100"
+          className="absolute -bottom-0.5 left-0 right-0 h-0.5 origin-center rounded-full transition-all duration-200 group-hover:scale-x-100 group-hover:opacity-100"
           style={{
-            background: "var(--brand-primary)",
+            background: C.teal,
             transform: `scaleX(${isActive || open ? 1 : 0})`,
             opacity: isActive || open ? 1 : 0,
           }}
         />
-      </button>
-
-      <div
-        className={`absolute left-1/2 z-50 mt-4 w-64 -translate-x-1/2 overflow-hidden rounded-2xl transition-all duration-200 ${
-          open
-            ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none translate-y-2 scale-95 opacity-0"
-        }`}
-        style={{
-          background: "rgba(255,255,255,0.99)",
-          border: "1.5px solid var(--brand-border)",
-          boxShadow:
-            "0 20px 64px rgba(26,40,64,0.16), 0 4px 16px rgba(26,40,64,0.08)",
-        }}
-      >
-        <div className="p-2.5">
-          {homeSections.map((item, index) => (
-            <button
-              key={item.label}
-              onClick={() => {
-                setOpen(false);
-                smoothScroll(item.sectionId, item.href);
-              }}
-              className="group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-150"
-              onMouseEnter={(event) => {
-                event.currentTarget.style.background =
-                  "var(--brand-primary-ghost)";
-              }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.background = "transparent";
-              }}
-            >
-              <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-                style={{
-                  background: "var(--brand-primary-ghost)",
-                  color: "var(--brand-primary)",
-                }}
-              >
-                {index === 0 ? <Home size={13} /> : <List size={13} />}
-              </span>
-
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-semibold text-(--brand-text-primary)">
-                  {item.label}
-                </p>
-                <p className="truncate text-[11px] text-(--brand-text-muted)">
-                  {item.desc}
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
       </div>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute left-1/2 z-50 mt-3 w-64 -translate-x-1/2 overflow-hidden rounded-2xl"
+            style={{
+              background: "rgba(255,255,255,0.99)",
+              border: `1.5px solid ${C.border}`,
+              boxShadow:
+                "0 20px 64px rgba(26,40,64,0.16), 0 4px 16px rgba(26,40,64,0.08)",
+            }}
+          >
+            <div className="p-2.5">
+              {homeSections.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => {
+                    setOpen(false);
+                    smoothScroll(item.sectionId, item.href);
+                  }}
+                  className="group flex w-full cursor-pointer items-center rounded-xl px-3 py-2.5 text-left transition-colors duration-150 hover:bg-[#DDF5F2]"
+                  type="button"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="text-[13px] font-semibold"
+                      style={{ color: C.textPrimary }}
+                    >
+                      {item.label}
+                    </p>
+                    <p
+                      className="truncate text-[11px]"
+                      style={{ color: C.textMuted }}
+                    >
+                      {item.desc}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -369,122 +426,125 @@ function ProfileDropdown({ session }: { session: Session }) {
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen((value) => !value)}
-        className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 outline-none transition-all duration-150 active:scale-[0.98]"
+        onClick={() => setOpen((v) => !v)}
+        className="flex cursor-pointer items-center gap-2 rounded-full px-2.5 py-1.5 outline-none transition-all duration-150 active:scale-[0.98]"
         style={{
-          background: open ? "var(--brand-primary-ghost)" : "transparent",
-          border: `1.5px solid ${open ? "var(--brand-primary-pale)" : "var(--brand-border)"}`,
+          background: open ? "rgba(26,150,136,0.08)" : "rgba(26,150,136,0.04)",
+          border: `1.5px solid ${open ? C.tealPale : "rgba(26,150,136,0.12)"}`,
         }}
         aria-expanded={open}
-        aria-haspopup="menu"
+        type="button"
       >
-        <Avatar name={session.name} image={session.image} size={26} />
-        <span className="hidden max-w-25 truncate text-sm font-semibold text-(--brand-text-primary) sm:block">
-          {session.name}
-        </span>
+        <Avatar name={session.name} image={session.image} size={30} />
+
+        <div className="hidden text-left sm:block">
+          <p
+            className="max-w-[120px] truncate text-sm font-bold"
+            style={{ color: C.textPrimary }}
+          >
+            {session.name}
+          </p>
+          <p className="text-[11px] font-medium" style={{ color: C.textMuted }}>
+            {session.role === "admin" ? "Administrator" : "Free Plan"}
+          </p>
+        </div>
+
         <ChevronDown
           size={14}
-          className={`transition-transform duration-200 ${open ? "rotate-180" : "rotate-0"}`}
+          className={`transition-transform duration-200 ${
+            open ? "rotate-180" : "rotate-0"
+          }`}
+          style={{ color: C.textMuted }}
         />
       </button>
 
-      <div
-        className={`absolute right-0 z-50 mt-3 w-52 overflow-hidden rounded-2xl transition-all duration-200 ${
-          open
-            ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none translate-y-2 scale-95 opacity-0"
-        }`}
-        style={{
-          background: "var(--brand-drop-dark)",
-          border: "1px solid var(--brand-drop-dark-border)",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.35), 0 4px 16px rgba(0,0,0,0.2)",
-        }}
-      >
-        <div
-          className="flex items-center gap-3 px-4 py-3.5"
-          style={{ borderBottom: "1px solid var(--brand-drop-dark-border)" }}
-        >
-          <Avatar name={session.name} image={session.image} size={34} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-semibold text-(--brand-drop-text)">
-              {session.name}
-            </p>
-            <p className="truncate text-[11px] text-(--brand-drop-text-muted)">
-              {session.role === "admin" ? "Administrator" : "Pengguna"}
-            </p>
-          </div>
-        </div>
-
-        <div className="p-2">
-          {items.map((item) => {
-            const isActive =
-              pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150"
-                style={{
-                  color: isActive
-                    ? "var(--brand-primary-light)"
-                    : "var(--brand-drop-text)",
-                  background: isActive
-                    ? "rgba(78,207,195,0.12)"
-                    : "transparent",
-                }}
-                onMouseEnter={(event) => {
-                  if (!isActive) {
-                    event.currentTarget.style.background =
-                      "var(--brand-drop-dark-hover)";
-                  }
-                }}
-                onMouseLeave={(event) => {
-                  if (!isActive) {
-                    event.currentTarget.style.background = "transparent";
-                  }
-                }}
-              >
-                <span
-                  className="shrink-0"
-                  style={{
-                    color: isActive
-                      ? "var(--brand-primary-light)"
-                      : "var(--brand-drop-text-muted)",
-                  }}
-                >
-                  {item.icon}
-                </span>
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-
-        <div
-          className="p-2"
-          style={{ borderTop: "1px solid var(--brand-drop-dark-border)" }}
-        >
-          <button
-            onClick={async () => {
-              setOpen(false);
-              await authClient.signOut();
-              window.location.href = "/login";
-            }}
-            className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150"
-            style={{ color: "#F87171" }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.background = "rgba(248,113,113,0.1)";
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.background = "transparent";
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute right-0 z-50 mt-3 w-72 overflow-hidden rounded-[1.6rem]"
+            style={{
+              background: "rgba(255,255,255,0.98)",
+              border: `1px solid ${C.border}`,
+              boxShadow:
+                "0 24px 64px rgba(26,40,64,0.16), 0 6px 18px rgba(26,40,64,0.08)",
             }}
           >
-            <LogOut size={15} /> Keluar
-          </button>
-        </div>
-      </div>
+            <div
+              className="flex items-center gap-3 px-4 py-4"
+              style={{ borderBottom: `1px solid ${C.border}` }}
+            >
+              <Avatar name={session.name} image={session.image} size={42} />
+              <div className="min-w-0 flex-1">
+                <p
+                  className="truncate text-sm font-bold"
+                  style={{ color: C.textPrimary }}
+                >
+                  {session.name}
+                </p>
+                <p
+                  className="truncate text-xs font-medium"
+                  style={{ color: C.textMuted }}
+                >
+                  {session.email || "Pengguna TemanTumbuh"}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-2.5">
+              {items.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  pathname.startsWith(`${item.href}/`);
+
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-colors duration-150"
+                    style={{
+                      color: isActive ? C.teal : C.textSecondary,
+                      background: isActive ? C.tealGhost : "transparent",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: isActive ? C.teal : C.textMuted,
+                      }}
+                    >
+                      {item.icon}
+                    </span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div
+              className="p-2.5"
+              style={{ borderTop: `1px solid ${C.border}` }}
+            >
+              <button
+                onClick={async () => {
+                  setOpen(false);
+                  await authClient.signOut();
+                  window.location.href = "/login";
+                }}
+                className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition"
+                style={{ color: "#DC2626" }}
+                type="button"
+              >
+                <LogOut size={16} />
+                Keluar
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -492,222 +552,306 @@ function ProfileDropdown({ session }: { session: Session }) {
 function MobileMenu({
   open,
   session,
+  loading,
   onClose,
 }: {
   open: boolean;
   session: Session;
+  loading: boolean;
   onClose: () => void;
 }) {
   const pathname = usePathname();
   const smoothScroll = useSmoothScroll();
   const isLoggedIn = session.role !== "guest";
+  const isUserHomepage = isLoggedIn;
   const items = session.role === "admin" ? adminMenuItems : userMenuItems;
 
-  const handleSectionClick = (sectionId: string | null, href: string) => {
+  const handleSection = (sectionId: string | null, href: string) => {
     onClose();
     setTimeout(() => smoothScroll(sectionId, href), 140);
   };
 
+  const handleHomeMobile = () => {
+    onClose();
+    setTimeout(() => {
+      if (isUserHomepage) {
+        smoothScroll(null, "/home");
+      } else {
+        smoothScroll(null, "/");
+      }
+    }, 140);
+  };
+
   return (
-    <div
-      className={`overflow-hidden border-t transition-all duration-300 md:hidden ${
-        open ? "opacity-100" : "opacity-0"
-      }`}
-      style={{ borderColor: "var(--brand-border)", maxHeight: open ? 840 : 0 }}
-    >
-      <div className="flex flex-col gap-1 px-5 py-4">
-        <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-(--brand-text-muted)">
-          Halaman
-        </p>
-
-        {homeSections.map((item, index) => (
-          <button
-            key={item.label}
-            onClick={() => handleSectionClick(item.sectionId, item.href)}
-            className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-(--brand-text-secondary) transition-colors duration-150"
-            onMouseEnter={(event) => {
-              event.currentTarget.style.background =
-                "var(--brand-primary-ghost)";
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.background = "transparent";
-            }}
-          >
-            <span
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
-              style={{
-                background: "var(--brand-primary-ghost)",
-                color: "var(--brand-primary)",
-              }}
-            >
-              {index === 0 ? <Home size={12} /> : <List size={12} />}
-            </span>
-            {item.label}
-          </button>
-        ))}
-
-        <div className="my-2 h-px bg-(--brand-border)" />
-
-        <Link
-          href="/about"
-          onClick={onClose}
-          className="flex cursor-pointer items-center rounded-xl px-3 py-2.5 text-sm font-medium"
-          style={{
-            color: pathname.startsWith("/about")
-              ? "var(--brand-primary)"
-              : "var(--brand-text-secondary)",
-            background: pathname.startsWith("/about")
-              ? "var(--brand-primary-ghost)"
-              : "transparent",
-          }}
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="overflow-hidden border-t md:hidden"
+          style={{ borderColor: C.border }}
         >
-          About Us
-        </Link>
-
-        <Link
-          href="/features"
-          onClick={onClose}
-          className="flex cursor-pointer items-center rounded-xl px-3 py-2.5 text-sm font-medium"
-          style={{
-            color: pathname.startsWith("/features")
-              ? "var(--brand-primary)"
-              : "var(--brand-text-secondary)",
-            background: pathname.startsWith("/features")
-              ? "var(--brand-primary-ghost)"
-              : "transparent",
-          }}
-        >
-          Fitur
-        </Link>
-
-        <Link
-          href="/pricing"
-          onClick={onClose}
-          className="flex cursor-pointer items-center rounded-xl px-3 py-2.5 text-sm font-medium"
-          style={{
-            color: pathname.startsWith("/pricing")
-              ? "var(--brand-primary)"
-              : "var(--brand-text-secondary)",
-            background: pathname.startsWith("/pricing")
-              ? "var(--brand-primary-ghost)"
-              : "transparent",
-          }}
-        >
-          Harga
-        </Link>
-
-        <div className="my-2 h-px bg-(--brand-border)" />
-
-        {!isLoggedIn ? (
-          <>
-            <Link
-              href="/login"
-              onClick={onClose}
-              className="flex h-11 cursor-pointer items-center justify-center rounded-xl text-sm font-semibold"
-              style={{
-                border: "1.5px solid var(--brand-border)",
-                color: "var(--brand-primary)",
-              }}
+          <div className="flex flex-col gap-1 px-5 py-4">
+            <p
+              className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest"
+              style={{ color: C.textMuted }}
             >
-              Masuk
-            </Link>
+              Halaman
+            </p>
 
-            <Link
-              href="/register"
-              onClick={onClose}
-              className="flex h-11 cursor-pointer items-center justify-center rounded-xl text-sm font-semibold text-white"
-              style={{
-                background: "var(--brand-primary)",
-                boxShadow: "0 2px 12px rgba(26,150,136,0.28)",
-              }}
-            >
-              Daftar Gratis
-            </Link>
-          </>
-        ) : (
-          <>
-            <div className="mb-1 flex items-center gap-3 px-3 py-2">
-              <Avatar name={session.name} image={session.image} size={32} />
-              <div>
-                <p className="text-[13px] font-semibold text-(--brand-text-primary)">
-                  {session.name}
-                </p>
-                <p className="text-[11px] text-(--brand-text-muted)">
-                  {session.role === "admin" ? "Administrator" : "Pengguna"}
-                </p>
-              </div>
-            </div>
-
-            {items.map((item) => {
-              const active =
-                pathname === item.href || pathname.startsWith(`${item.href}/`);
-              return (
-                <Link
+            {isUserHomepage ? (
+              <button
+                onClick={handleHomeMobile}
+                className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors duration-150 hover:bg-[#DDF5F2]"
+                style={{
+                  color: pathname === "/home" ? C.teal : C.textSecondary,
+                  background:
+                    pathname === "/home" ? C.tealGhost : "transparent",
+                }}
+                type="button"
+              >
+                <span
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
+                  style={{ background: C.tealGhost, color: C.teal }}
+                >
+                  <Home size={12} />
+                </span>
+                Home
+              </button>
+            ) : (
+              homeSections.map((item, index) => (
+                <button
                   key={item.label}
-                  href={item.href}
-                  onClick={onClose}
-                  className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium"
-                  style={{
-                    color: active
-                      ? "var(--brand-primary)"
-                      : "var(--brand-text-secondary)",
-                    background: active
-                      ? "var(--brand-primary-ghost)"
-                      : "transparent",
-                  }}
+                  onClick={() => handleSection(item.sectionId, item.href)}
+                  className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors duration-150 hover:bg-[#DDF5F2]"
+                  style={{ color: C.textSecondary }}
+                  type="button"
                 >
                   <span
-                    style={{
-                      color: active
-                        ? "var(--brand-primary)"
-                        : "var(--brand-text-muted)",
-                    }}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
+                    style={{ background: C.tealGhost, color: C.teal }}
                   >
-                    {item.icon}
+                    {index === 0 ? <Home size={12} /> : <List size={12} />}
                   </span>
                   {item.label}
-                </Link>
-              );
-            })}
+                </button>
+              ))
+            )}
 
-            <button
-              onClick={async () => {
-                onClose();
-                await authClient.signOut();
-                window.location.href = "/login";
+            <div className="my-2 h-px" style={{ background: C.border }} />
+
+            <Link
+              href="/about"
+              onClick={onClose}
+              className="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium"
+              style={{
+                color: pathname.startsWith("/about") ? C.teal : C.textSecondary,
+                background: pathname.startsWith("/about")
+                  ? C.tealGhost
+                  : "transparent",
               }}
-              className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium"
-              style={{ color: "#EF4444" }}
             >
-              <LogOut size={15} /> Keluar
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+              Tentang Kami
+            </Link>
+
+            <Link
+              href="/features"
+              onClick={onClose}
+              className="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium"
+              style={{
+                color: pathname.startsWith("/features")
+                  ? C.teal
+                  : C.textSecondary,
+                background: pathname.startsWith("/features")
+                  ? C.tealGhost
+                  : "transparent",
+              }}
+            >
+              Fitur
+            </Link>
+
+            <Link
+              href="/pricing"
+              onClick={onClose}
+              className="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium"
+              style={{
+                color: pathname.startsWith("/pricing")
+                  ? C.teal
+                  : C.textSecondary,
+                background: pathname.startsWith("/pricing")
+                  ? C.tealGhost
+                  : "transparent",
+              }}
+            >
+              Langganan
+            </Link>
+
+            <div className="my-2 h-px" style={{ background: C.border }} />
+
+            {loading ? (
+              <div className="px-3 py-2 text-sm" style={{ color: C.textMuted }}>
+                Memuat sesi...
+              </div>
+            ) : !isLoggedIn ? (
+              <>
+                <Link
+                  href="/login"
+                  onClick={onClose}
+                  className="flex h-11 items-center justify-center rounded-xl text-sm font-semibold"
+                  style={{ border: `1.5px solid ${C.border}`, color: C.teal }}
+                >
+                  Masuk
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={onClose}
+                  className="flex h-11 items-center justify-center rounded-xl text-sm font-semibold text-white"
+                  style={{
+                    background: C.teal,
+                    boxShadow: "0 2px 12px rgba(26,150,136,0.28)",
+                  }}
+                >
+                  Daftar Gratis
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="mb-1 flex items-center gap-3 px-3 py-2">
+                  <Avatar name={session.name} image={session.image} size={32} />
+                  <div>
+                    <p
+                      className="text-[13px] font-semibold"
+                      style={{ color: C.textPrimary }}
+                    >
+                      {session.name}
+                    </p>
+                    <p className="text-[11px]" style={{ color: C.textMuted }}>
+                      {session.role === "admin" ? "Administrator" : "Pengguna"}
+                    </p>
+                  </div>
+                </div>
+
+                {items.map((item) => {
+                  const active =
+                    pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      onClick={onClose}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium"
+                      style={{
+                        color: active ? C.teal : C.textSecondary,
+                        background: active ? C.tealGhost : "transparent",
+                      }}
+                    >
+                      <span style={{ color: active ? C.teal : C.textMuted }}>
+                        {item.icon}
+                      </span>
+                      {item.label}
+                    </Link>
+                  );
+                })}
+
+                <button
+                  onClick={async () => {
+                    onClose();
+                    await authClient.signOut();
+                    window.location.href = "/login";
+                  }}
+                  className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium"
+                  style={{ color: "#EF4444" }}
+                  type="button"
+                >
+                  <LogOut size={15} /> Keluar
+                </button>
+              </>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
+}
+
+function DesktopAuthActions({
+  loading,
+  isLoggedIn,
+  session,
+}: {
+  loading: boolean;
+  isLoggedIn: boolean;
+  session: Session;
+}) {
+  if (loading) {
+    return (
+      <div
+        className="h-10 w-24 animate-pulse rounded-xl"
+        style={{ background: "#E4EEFA" }}
+      />
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <>
+        <Link
+          href="/login"
+          className="relative inline-flex overflow-hidden rounded-xl px-4 py-2 text-sm font-semibold transition-colors duration-150 hover:bg-[#DDF5F2]"
+          style={{ color: C.teal }}
+        >
+          Masuk
+        </Link>
+        <Link
+          href="/register"
+          className="relative inline-flex rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all active:scale-[0.97]"
+          style={{
+            background: `linear-gradient(135deg, ${C.teal} 0%, ${C.tealMid} 100%)`,
+            boxShadow: "0 2px 14px rgba(26,150,136,0.32)",
+          }}
+        >
+          Daftar Gratis
+        </Link>
+      </>
+    );
+  }
+
+  return <ProfileDropdown session={session} />;
 }
 
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [session, setSession] = useState<Session>(guestSession);
+  const [loading, setLoading] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
+
   const isLoggedIn = session.role !== "guest";
+  const isUserHomepage = isLoggedIn;
+  const homeIsActive = pathname === "/" || pathname === "/home";
 
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
   useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
 
-    const syncSession = async () => {
+    const sync = async () => {
+      setLoading(true);
       try {
         const { data } = await authClient.getSession();
 
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
 
         if (!data?.user) {
           setSession(guestSession);
@@ -715,21 +859,21 @@ export function Navbar() {
         }
 
         const role = (data.user as { role?: string }).role;
+
         setSession({
           role: role === "admin" ? "admin" : "user",
-          name: data.user.name,
-          email: data.user.email,
-          image: data.user.image,
+          name: data.user.name ?? "User",
+          email: data.user.email ?? "",
+          image: data.user.image ?? null,
         });
       } catch {
-        if (mounted) {
-          setSession(guestSession);
-        }
+        if (mounted) setSession(guestSession);
+      } finally {
+        if (mounted) setLoading(false);
       }
     };
 
-    void syncSession();
-
+    void sync();
     return () => {
       mounted = false;
     };
@@ -737,17 +881,23 @@ export function Navbar() {
 
   return (
     <header
-      className="sticky top-0 z-50"
+      className="sticky top-0 z-50 transition-shadow duration-300"
       style={{
-        background: "rgba(250,251,255,0.96)",
+        background: scrolled
+          ? "rgba(250,251,255,0.97)"
+          : "rgba(250,251,255,0.92)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid var(--brand-border)",
-        fontFamily: "var(--font-plus-jakarta, sans-serif)",
+        borderBottom: `1px solid ${scrolled ? C.border : "transparent"}`,
+        boxShadow: scrolled ? "0 2px 20px rgba(26,40,64,0.08)" : "none",
+        fontFamily: "var(--font-plus-jakarta)",
       }}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-6">
-        <Link href="/" className="flex cursor-pointer items-center gap-2.5">
+        <Link
+          href={isLoggedIn ? "/home" : "/"}
+          className="flex items-center gap-2.5"
+        >
           <Image
             src="/img/LOGO_TEMANTUMBUH.svg"
             alt="TemanTumbuh"
@@ -761,9 +911,12 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden flex-1 items-center justify-center gap-7 md:flex">
-          <HomeDropdown isActive={pathname === "/"} />
+          <HomeDropdown
+            isActive={homeIsActive}
+            isUserHomepage={isUserHomepage}
+          />
           <NavLink
-            label="About Us"
+            label="Tentang Kami"
             isActive={pathname.startsWith("/about")}
             href="/about"
           />
@@ -773,55 +926,31 @@ export function Navbar() {
             href="/features"
           />
           <NavLink
-            label="Harga"
+            label="Langganan"
             isActive={pathname.startsWith("/pricing")}
             href="/pricing"
           />
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          {!isLoggedIn ? (
-            <>
-              <Link
-                href="/login"
-                className="relative inline-flex cursor-pointer overflow-hidden rounded-xl px-4 py-2 text-sm font-semibold"
-                style={{ color: "var(--brand-primary)" }}
-              >
-                <span
-                  className="absolute inset-0 rounded-xl opacity-0 transition-opacity duration-150 hover:opacity-100"
-                  style={{ background: "var(--brand-primary-ghost)" }}
-                />
-                <span className="relative">Masuk</span>
-              </Link>
-
-              <Link
-                href="/register"
-                className="relative inline-flex cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-transform active:scale-[0.97]"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--brand-primary-dark) 0%, var(--brand-primary) 60%, var(--brand-primary-mid) 100%)",
-                  boxShadow: "0 2px 14px rgba(26,150,136,0.32)",
-                }}
-              >
-                <span className="absolute inset-0 rounded-xl bg-white/0 transition-colors duration-150 hover:bg-white/10" />
-                <span className="relative">Daftar Gratis</span>
-              </Link>
-            </>
-          ) : (
-            <ProfileDropdown session={session} />
-          )}
+          <DesktopAuthActions
+            loading={loading}
+            isLoggedIn={isLoggedIn}
+            session={session}
+          />
         </div>
 
         <button
-          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl md:hidden"
-          onClick={() => setMobileOpen((value) => !value)}
+          className="flex h-9 w-9 items-center justify-center rounded-xl md:hidden transition-colors duration-150 hover:bg-[#DDF5F2]"
+          onClick={() => setMobileOpen((v) => !v)}
           aria-label="Toggle menu"
           aria-expanded={mobileOpen}
+          type="button"
         >
           {mobileOpen ? (
-            <X size={20} className="text-(--brand-text-primary)" />
+            <X size={20} style={{ color: C.textPrimary }} />
           ) : (
-            <Menu size={20} className="text-(--brand-text-primary)" />
+            <Menu size={20} style={{ color: C.textPrimary }} />
           )}
         </button>
       </div>
@@ -829,6 +958,7 @@ export function Navbar() {
       <MobileMenu
         open={mobileOpen}
         session={session}
+        loading={loading}
         onClose={() => setMobileOpen(false)}
       />
     </header>

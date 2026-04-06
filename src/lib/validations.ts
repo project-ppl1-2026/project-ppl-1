@@ -81,8 +81,8 @@ export const registerStep2Schema = z.object({
     .regex(/^\d{4}$/, "Tahun tidak valid")
     .refine((y) => {
       const yr = parseInt(y, 10);
-      return yr >= uiCurrentYear - 29 && yr <= uiCurrentYear - 10;
-    }, "Usia harus antara 10-29 tahun"),
+      return yr >= 1950 && yr <= uiCurrentYear;
+    }, "Tahun lahir tidak valid"),
   gender: z.enum(["male", "female", "prefer_not"], {
     error: "Pilih salah satu",
   }),
@@ -220,8 +220,8 @@ export const profileEditFormSchema = z.object({
     .regex(/^\d{4}$/, "Tahun lahir tidak valid")
     .refine((y) => {
       const yr = parseInt(y, 10);
-      return yr >= uiCurrentYear - 29 && yr <= uiCurrentYear - 10;
-    }, "Usia harus antara 10-29 tahun"),
+      return yr >= 1950 && yr <= uiCurrentYear;
+    }, "Tahun lahir tidak valid"),
   gender: z.enum(["male", "female", "prefer_not"], {
     error: "Pilih jenis kelamin",
   }),

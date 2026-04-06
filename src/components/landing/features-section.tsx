@@ -1,79 +1,157 @@
-import * as React from "react";
+"use client";
+
+// ============================================================
+// features-section.tsx — TemanTumbuh Features Section
+// Paste1 visual style + Paste2 lucide icons + stagger animation
+// ============================================================
+
+import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { ArrowRight, BookOpen, Brain, Heart, BarChart2 } from "lucide-react";
 import {
-  FloatingBubble,
-  IconBox,
-  SectionHeader,
-  WhiteCard,
+  WaveTop,
+  WaveBottom,
+  FloatingBubbles,
+  Reveal,
+  Pill,
+  SectionH2,
 } from "./landing-primitives";
-import { features } from "./landing-data";
-
-const iconMap: Record<string, React.ElementType> = {
-  BookOpen: BookOpen,
-  Brain: Brain,
-  Heart: Heart,
-  BarChart2: BarChart2,
-};
+import { C, features, featuresBubbles } from "@/lib/landing-data";
+import { staggerContainer, staggerItem } from "@/lib/animations";
 
 export function FeaturesSection() {
   return (
-    <section className="relative overflow-hidden bg-white py-24">
-      <FloatingBubble size={400} top="6%" right="4%" opacity={0.06} />
-      <FloatingBubble
-        size={300}
-        bottom="6%"
-        left="3%"
-        color="#10b981"
-        opacity={0.05}
-      />
+    <section
+      id="features"
+      className="relative py-20 md:py-28"
+      style={{
+        background: `linear-gradient(180deg, ${C.bg1} 0%, ${C.bg2} 100%)`,
+        paddingTop: 72,
+        paddingBottom: 72,
+      }}
+    >
+      <WaveTop fill={C.bg1} />
+      <WaveBottom fill={C.bg2} />
+      <FloatingBubbles bubbles={featuresBubbles} />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-6">
-        <SectionHeader
-          label="FITUR KAMI"
-          title="TemanTumbuh's Fitur"
-          description="Formulas utama yang membuatkan dinilai terbaik oleh para ahli kesehatan mental remaja"
-        />
+      <div
+        className="relative max-w-6xl mx-auto px-6 lg:px-8"
+        style={{ zIndex: 2 }}
+      >
+        <Reveal>
+          <Pill text="Fitur Unggulan" />
+          <SectionH2
+            accent="TemanTumbuh"
+            title="'s Fitur"
+            sub="Semua yang kamu butuhkan untuk memahami diri sendiri dan tumbuh lebih baik setiap harinya."
+          />
+        </Reveal>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {features.map((feat, i) => {
-            const Icon = iconMap[feat.iconName];
-            return (
-              <WhiteCard key={i} className="cursor-pointer space-y-4 p-6" hover>
-                <div className="flex items-start justify-between">
-                  <IconBox size={48}>
-                    {feat.imageSrc ? (
-                      <Image
-                        src={feat.imageSrc}
-                        alt={feat.title}
-                        width={28}
-                        height={28}
-                        className="h-7 w-7 object-contain"
-                      />
-                    ) : (
-                      <Icon className="h-5.5 w-5.5 text-teal-600" />
-                    )}
-                  </IconBox>
-                  <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-600">
-                    {feat.tag}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="mb-2 font-bold text-slate-900">
-                    {feat.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-slate-500">
-                    {feat.desc}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1 text-sm font-semibold text-teal-600">
-                  Pelajari lebih <ArrowRight className="h-3.5 w-3.5" />
-                </div>
-              </WhiteCard>
-            );
-          })}
-        </div>
+        {/* Staggered grid */}
+        <motion.div
+          className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+        >
+          {features.map((feat) => (
+            <motion.div
+              key={feat.title}
+              variants={staggerItem}
+              className="h-full"
+            >
+              <FeatureCard feat={feat} />
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
     </section>
   );
+}
+
+// ── Feature Card ──────────────────────────────────────────────
+function FeatureCard({ feat }: { feat: (typeof features)[number] }) {
+  return (
+    <motion.div
+      whileHover={{ y: -6, scale: 1.01 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className="rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden h-full bg-white"
+      style={{
+        border: `1.5px solid ${C.border}`,
+        boxShadow: "0 2px 16px rgba(26,40,64,0.07)",
+      }}
+    >
+      {/* Background number */}
+      <span
+        className="absolute top-4 right-5 text-6xl font-bold leading-none select-none pointer-events-none"
+        style={{ color: C.bg1, fontVariantNumeric: "tabular-nums" }}
+      >
+        {feat.num}
+      </span>
+
+      {/* Icon */}
+      <div
+        className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+        style={{ background: `${C.teal}1A` }}
+      >
+        {feat.imageSrc ? (
+          <Image
+            src={feat.imageSrc}
+            alt={feat.title}
+            width={32}
+            height={32}
+            className="object-contain"
+          />
+        ) : (
+          <FeatIcon name={feat.iconName} />
+        )}
+      </div>
+
+      {/* Tag */}
+      <span
+        className="self-start text-xs font-semibold px-2.5 py-1 rounded-full"
+        style={{
+          background: C.tealGhost,
+          color: C.teal,
+          border: `1px solid ${C.tealPale}`,
+        }}
+      >
+        {feat.tag}
+      </span>
+
+      <h3 className="text-sm font-semibold" style={{ color: C.textPrimary }}>
+        {feat.title}
+      </h3>
+      <p
+        className="text-xs leading-relaxed flex-1"
+        style={{ color: C.textSecondary }}
+      >
+        {feat.desc}
+      </p>
+
+      <Link
+        href={feat.learnHref}
+        className="inline-flex items-center gap-1 text-xs font-semibold transition-opacity hover:opacity-70"
+        style={{ color: C.teal }}
+      >
+        Pelajari <ArrowRight className="h-3 w-3" />
+      </Link>
+    </motion.div>
+  );
+}
+
+// ── Icon resolver (lucide-react) ──────────────────────────────
+const iconMap: Record<string, React.ElementType> = {
+  BookOpen,
+  Brain,
+  Heart,
+  BarChart2,
+};
+
+function FeatIcon({ name }: { name: string }) {
+  const Icon = iconMap[name];
+  if (!Icon) return null;
+  return <Icon className="h-5 w-5 text-teal-600" />;
 }

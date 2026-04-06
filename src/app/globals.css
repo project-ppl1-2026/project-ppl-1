@@ -7,8 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+
+  --font-sans: var(--font-plus-jakarta);
   --font-mono: var(--font-geist-mono);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -38,16 +40,6 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --color-about-dark-teal: var(--about-dark-teal);
-  --color-about-light-teal: var(--about-light-teal);
-  --color-about-surface: var(--about-surface);
-  --color-about-bg-section: var(--about-bg-section);
-  --color-about-accent: var(--about-accent);
-  --color-about-accent-soft: var(--about-accent-soft);
-  --color-about-text-dark: var(--about-text-dark);
-  --color-about-text-muted: var(--about-text-muted);
-  --color-about-sdg-blue: var(--about-sdg-blue);
-  --color-about-sdg-gold: var(--about-sdg-gold);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -58,6 +50,40 @@
 }
 
 :root {
+  --color-brand-teal: #1a9688;
+  --color-brand-teal-mid: #28b0a4;
+  --color-brand-teal-light: #4ecfc3;
+  --color-brand-teal-pale: #a8e0da;
+  --color-brand-teal-ghost: #ddf5f2;
+  --color-brand-teal-dark: #0f6b60;
+
+  --color-page-bg0: #fafbff;
+  --color-page-bg1: #eef4fb;
+  --color-page-how-bg: #e0f5f0;
+
+  --color-accent-coral: #fde8dc;
+  --color-accent-gold: #fdf0cc;
+
+  --color-brand-border: #c8dced;
+
+  --color-text-brand-primary: #1a2840;
+  --color-text-brand-secondary: #3a5068;
+  --color-text-brand-muted: #7090a8;
+
+  --gradient-brand-btn: linear-gradient(
+    135deg,
+    #0f6b60 0%,
+    #1a9688 60%,
+    #28b0a4 100%
+  );
+  --gradient-brand-bar: linear-gradient(90deg, #0f6b60, #1a9688, #4ecfc3);
+  --gradient-brand-page: linear-gradient(
+    160deg,
+    #fafbff 0%,
+    #eef4fb 55%,
+    #e0f5f0 100%
+  );
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -90,6 +116,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
   --about-dark-teal: #1b6b6b;
   --about-light-teal: #d0eeee;
   --about-surface: #ffffff;
@@ -100,6 +127,7 @@
   --about-text-muted: #4a7070;
   --about-sdg-blue: #1a3d7c;
   --about-sdg-gold: #d4af37;
+
   --brand-primary: #1a9688;
   --brand-primary-dark: #0f6b60;
   --brand-primary-mid: #28b0a4;
@@ -120,6 +148,34 @@
   --brand-drop-dark-hover: #374d60;
   --brand-drop-text: #e8f0f8;
   --brand-drop-text-muted: #7a9bb8;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  button,
+  input,
+  textarea,
+  select {
+    font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+  }
 }
 
 .dark {
@@ -154,16 +210,4 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
 }

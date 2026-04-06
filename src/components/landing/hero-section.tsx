@@ -7,7 +7,7 @@ import {
   PolaroidCard,
   SectionLabel,
 } from "./landing-primitives";
-
+import Image from "next/image";
 const heroImg1 =
   "https://images.unsplash.com/photo-1758272424285-32dde2c2548a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZWVuYWdlJTIwZ2lybCUyMGpvdXJuYWxpbmclMjB3cml0aW5nJTIwcGVhY2VmdWwlMjBiZWRyb29tfGVufDF8fHx8MTc3NDkzMzA1MHww&ixlib=rb-4.1.0&q=80&w=400";
 const heroImg2 =
@@ -121,10 +121,12 @@ export function HeroSection() {
                           : "bg-slate-50"
                       }`}
                     >
-                      <img
+                      <Image
                         src={src}
                         alt="mood"
-                        className="h-5 w-5 object-contain"
+                        width={20}
+                        height={20}
+                        className="object-contain"
                       />
                     </div>
                   ))}

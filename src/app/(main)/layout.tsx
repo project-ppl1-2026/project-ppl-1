@@ -1,37 +1,47 @@
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { getBaselineByUserId } from "@/lib/baseline/service";
+
+import Navbar from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 
 export default async function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // SERVER SIDE AUTH GUARD
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (session?.user) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { profileFilled: true },
-    });
-    if (user && !user.profileFilled) {
-      redirect("/register?completeProfile=1");
-    }
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    redirect("/login");
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { profileFilled: true },
+  });
+
+  if (!user?.profileFilled) {
+    redirect("/register?completeProfile=1");
+  }
+
+  const baseline = await getBaselineByUserId(userId);
 
   return (
     <div
-      className="min-h-screen flex flex-col"
-      style={{ fontFamily: "var(--font-plus-jakarta, sans-serif)" }}
+      className="flex min-h-screen flex-col"
+      style={{ fontFamily: "var(--font-plus-jakarta)" }}
     >
+      {!baseline ? null : null}
       <Navbar />
-      <main className="flex-1">{children}</main>
+      <main className="flex flex-1 flex-col">{children}</main>
       <Footer />
     </div>
   );

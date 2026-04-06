@@ -16,10 +16,10 @@ export default async function RegisterLayout({
   if (session?.user?.id) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { profileFilled: true },
     });
 
-    if (user?.profileFilled) {
+    // Kalau user sudah isi profile
+    if (user && user.profileFilled) {
       redirect("/");
     }
   }
