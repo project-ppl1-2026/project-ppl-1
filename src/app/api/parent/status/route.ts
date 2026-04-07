@@ -1,21 +1,19 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth";
+import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 export async function GET(request: Request) {
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+    const userId = await getAuthenticatedUserIdFromRequest(request);
 
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const parent = await prisma.parent.findFirst({
       where: {
-        userId: session.user.id,
+        userId,
       },
       select: {
         email: true,
@@ -39,7 +37,7 @@ export async function GET(request: Request) {
     ) {
       await prisma.parent.update({
         where: {
-          userId: session.user.id,
+          userId,
         },
         data: {
           status: "expired",

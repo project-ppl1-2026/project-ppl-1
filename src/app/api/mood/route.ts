@@ -1,19 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth";
+import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import { createMoodLog, getMoodLogs } from "@/lib/mood/service";
 import { moodSubmitSchema } from "@/lib/mood/validation";
-
-/**
- * Helper untuk mendapatkan ID user yang sedang login dari session.
- */
-async function getAuthenticatedUserId(request: Request) {
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
-
-  return session?.user?.id ?? null;
-}
 
 /**
  * GET /api/mood
@@ -22,7 +11,7 @@ async function getAuthenticatedUserId(request: Request) {
  */
 export async function GET(request: Request) {
   try {
-    const userId = await getAuthenticatedUserId(request);
+    const userId = await getAuthenticatedUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -60,7 +49,7 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const userId = await getAuthenticatedUserId(request);
+    const userId = await getAuthenticatedUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -335,3 +335,57 @@ export const auth = betterAuth({
   },
   plugins: [openAPI()],
 });
+
+/**
+ * Reads the logged-in user ID from a route handler request.
+ */
+export async function getAuthenticatedUserIdFromRequest(request: Request) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  return session?.user?.id ?? null;
+}
+
+/**
+ * Reads Better Auth account linkage/security state for a user.
+ */
+export async function getUserSecurityState(userId: string) {
+  const accounts = await prisma.account.findMany({
+    where: { userId },
+    select: {
+      providerId: true,
+      password: true,
+    },
+  });
+
+  const providerIds = accounts.map((account) => account.providerId);
+  const isGoogleLinked = providerIds.includes("google");
+  const hasPassword = accounts.some(
+    (account) =>
+      account.providerId === "credential" ||
+      (typeof account.password === "string" &&
+        account.password.trim().length > 0),
+  );
+
+  return {
+    hasPassword,
+    isGoogleLinked,
+    providerIds,
+  };
+}
+
+/**
+ * Updates the parent email field stored on Better Auth user table.
+ */
+export async function setUserParentEmail(
+  userId: string,
+  parentEmail: string | null,
+) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      parentEmail,
+    },
+  });
+}

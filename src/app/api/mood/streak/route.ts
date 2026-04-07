@@ -1,18 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth";
+import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import { resetStreakIfMissed } from "@/lib/mood/service";
-
-/**
- * Helper untuk mendapatkan ID user yang sedang login dari session.
- */
-async function getAuthenticatedUserId(request: Request) {
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
-
-  return session?.user?.id ?? null;
-}
 
 /**
  * PATCH /api/mood/streak
@@ -23,7 +12,7 @@ async function getAuthenticatedUserId(request: Request) {
  */
 export async function PATCH(request: Request) {
   try {
-    const userId = await getAuthenticatedUserId(request);
+    const userId = await getAuthenticatedUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

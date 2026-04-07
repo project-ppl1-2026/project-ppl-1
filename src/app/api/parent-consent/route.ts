@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { setUserParentEmail } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import {
   parentConsentDecisionSchema,
@@ -110,12 +111,7 @@ export async function GET(request: Request) {
     }
 
     if (parsedQuery.data.decision === "accept") {
-      await prisma.user.update({
-        where: { id: parent.userId },
-        data: {
-          parentEmail: parent.email,
-        },
-      });
+      await setUserParentEmail(parent.userId, parent.email);
 
       await prisma.parent.update({
         where: { id: parent.id },
@@ -126,12 +122,7 @@ export async function GET(request: Request) {
         },
       });
     } else {
-      await prisma.user.update({
-        where: { id: parent.userId },
-        data: {
-          parentEmail: null,
-        },
-      });
+      await setUserParentEmail(parent.userId, null);
 
       await prisma.parent.update({
         where: { id: parent.id },
@@ -206,12 +197,7 @@ export async function POST(request: Request) {
     }
 
     if (parsed.data.decision === "accept") {
-      await prisma.user.update({
-        where: { id: parent.userId },
-        data: {
-          parentEmail: parent.email,
-        },
-      });
+      await setUserParentEmail(parent.userId, parent.email);
 
       await prisma.parent.update({
         where: { id: parent.id },
@@ -222,12 +208,7 @@ export async function POST(request: Request) {
         },
       });
     } else {
-      await prisma.user.update({
-        where: { id: parent.userId },
-        data: {
-          parentEmail: null,
-        },
-      });
+      await setUserParentEmail(parent.userId, null);
 
       await prisma.parent.update({
         where: { id: parent.id },

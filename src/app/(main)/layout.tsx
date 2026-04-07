@@ -34,12 +34,15 @@ export default async function MainLayout({
 
   const baseline = await getBaselineByUserId(userId);
 
+  if (!baseline) {
+    redirect("/baseline");
+  }
+
   return (
     <div
       className="flex min-h-screen flex-col"
       style={{ fontFamily: "var(--font-plus-jakarta)" }}
     >
-      {!baseline ? null : null}
       <Navbar />
       <main className="flex flex-1 flex-col">{children}</main>
       <Footer />

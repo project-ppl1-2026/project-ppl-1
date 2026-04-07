@@ -1,22 +1,14 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth";
+import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import {
   analyzeAndSaveBaseline,
   getBaselineByUserId,
 } from "@/lib/baseline/service";
 import { baselineAnswersSchema } from "@/lib/baseline/validation";
 
-async function getAuthenticatedUserId(request: Request) {
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
-
-  return session?.user?.id ?? null;
-}
-
 async function saveBaselineResult(request: Request) {
-  const userId = await getAuthenticatedUserId(request);
+  const userId = await getAuthenticatedUserIdFromRequest(request);
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -60,7 +52,7 @@ async function saveBaselineResult(request: Request) {
  */
 export async function GET(request: Request) {
   try {
-    const userId = await getAuthenticatedUserId(request);
+    const userId = await getAuthenticatedUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

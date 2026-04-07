@@ -1,39 +1,20 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import {
+  getAuthenticatedUserIdFromRequest,
+  getUserSecurityState,
+} from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    const userId = session?.user?.id;
+    const userId = await getAuthenticatedUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const accounts = await prisma.account.findMany({
-      where: { userId },
-      select: {
-        providerId: true,
-        password: true,
-      },
-    });
-
-    const providerIds = accounts.map((account) => account.providerId);
-
-    const isGoogleLinked = providerIds.includes("google");
-
-    const hasPassword = accounts.some(
-      (account) =>
-        account.providerId === "credential" ||
-        (typeof account.password === "string" &&
-          account.password.trim().length > 0),
-    );
+    const { hasPassword, isGoogleLinked, providerIds } =
+      await getUserSecurityState(userId);
 
     return NextResponse.json({
       success: true,
