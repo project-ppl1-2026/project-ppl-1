@@ -1,15 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST, GET } from "@/app/api/mood/route";
-import { auth } from "@/lib/auth";
+import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 // Mocking dependencies
 vi.mock("@/lib/auth", () => ({
-  auth: {
-    api: {
-      getSession: vi.fn(),
-    },
-  },
+  getAuthenticatedUserIdFromRequest: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -27,13 +23,14 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-const mockGetSession = vi.mocked(auth.api.getSession);
+const mockGetAuthenticatedUserIdFromRequest = vi.mocked(
+  getAuthenticatedUserIdFromRequest,
+);
 const mockFindMany = vi.mocked(prisma.moodLog.findMany);
 const mockFindFirst = vi.mocked(prisma.moodLog.findFirst);
 const mockFindUnique = vi.mocked(prisma.user.findUnique);
 const mockTransaction = vi.mocked(prisma.$transaction);
 
-type MockSession = Awaited<ReturnType<typeof auth.api.getSession>>;
 type MockMoodLog = Awaited<ReturnType<typeof prisma.moodLog.findFirst>>;
 type MockUser = Awaited<ReturnType<typeof prisma.user.findUnique>>;
 
@@ -44,7 +41,7 @@ describe("Mood API Routes (/api/mood)", () => {
 
   describe("GET /api/mood", () => {
     it("Harus return 401 jika user belum login", async () => {
-      mockGetSession.mockResolvedValue(null);
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue(null);
       const req = new Request("http://localhost/api/mood", { method: "GET" });
       const res = await GET(req);
 
@@ -54,9 +51,7 @@ describe("Mood API Routes (/api/mood)", () => {
     });
 
     it("Harus mengembalikan daftar mood dari user yang login", async () => {
-      mockGetSession.mockResolvedValue({
-        user: { id: "user1" },
-      } as unknown as MockSession);
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
       const mockLogs = [{ id: "m1", moodScore: 4 }];
       mockFindMany.mockResolvedValue(
         mockLogs as unknown as Awaited<
@@ -76,7 +71,7 @@ describe("Mood API Routes (/api/mood)", () => {
 
   describe("POST /api/mood", () => {
     it("Harus return 401 jika user belum login", async () => {
-      mockGetSession.mockResolvedValue(null);
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue(null);
       const req = new Request("http://localhost/api/mood", { method: "POST" });
       const res = await POST(req);
 
@@ -84,9 +79,7 @@ describe("Mood API Routes (/api/mood)", () => {
     });
 
     it("Harus return 400 jika payload tidak valid", async () => {
-      mockGetSession.mockResolvedValue({
-        user: { id: "user1" },
-      } as unknown as MockSession);
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
 
       const req = new Request("http://localhost/api/mood", {
         method: "POST",
@@ -98,9 +91,7 @@ describe("Mood API Routes (/api/mood)", () => {
     });
 
     it("Harus return 200 dan menambah streak jika valid dan berhasil tambah", async () => {
-      mockGetSession.mockResolvedValue({
-        user: { id: "user1" },
-      } as unknown as MockSession);
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
 
       // Mock service db behaviors
       mockFindFirst.mockResolvedValue(null);
@@ -130,9 +121,7 @@ describe("Mood API Routes (/api/mood)", () => {
     });
 
     it("Harus menolak dengan 409 jika submit berkali-kali di hari yang sama (lokal)", async () => {
-      mockGetSession.mockResolvedValue({
-        user: { id: "user1" },
-      } as unknown as MockSession);
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
 
       // Simulasikan udah mengisi hari ini (jam terserah dalam UTC, formatter lokal sama)
       const now = new Date();

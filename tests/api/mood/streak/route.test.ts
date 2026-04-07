@@ -1,15 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PATCH } from "@/app/api/mood/streak/route";
-import { auth } from "@/lib/auth";
+import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 // Mock dependencies
 vi.mock("@/lib/auth", () => ({
-  auth: {
-    api: {
-      getSession: vi.fn(),
-    },
-  },
+  getAuthenticatedUserIdFromRequest: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -23,7 +19,9 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-const mockGetSession = vi.mocked(auth.api.getSession);
+const mockGetAuthenticatedUserIdFromRequest = vi.mocked(
+  getAuthenticatedUserIdFromRequest,
+);
 const mockFindFirst = vi.mocked(prisma.moodLog.findFirst);
 
 describe("Mood Streak API (/api/mood/streak)", () => {
@@ -32,7 +30,7 @@ describe("Mood Streak API (/api/mood/streak)", () => {
   });
 
   it("Harus return 401 jika user belum login", async () => {
-    mockGetSession.mockResolvedValue(null);
+    mockGetAuthenticatedUserIdFromRequest.mockResolvedValue(null);
     const req = new Request("http://localhost/api/mood/streak", {
       method: "PATCH",
     });
@@ -42,9 +40,7 @@ describe("Mood Streak API (/api/mood/streak)", () => {
   });
 
   it("Harus return 400 jika payload timezone tidak dikirim", async () => {
-    mockGetSession.mockResolvedValue({
-      user: { id: "user1" },
-    } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>);
+    mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
     const req = new Request("http://localhost/api/mood/streak", {
       method: "PATCH",
       body: JSON.stringify({}),
@@ -57,9 +53,7 @@ describe("Mood Streak API (/api/mood/streak)", () => {
   });
 
   it("Harus sukses dan memanggil reset function jika valid", async () => {
-    mockGetSession.mockResolvedValue({
-      user: { id: "user1" },
-    } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>);
+    mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
 
     // Mock findFirst agar tidak error di service, disimulasikan telat misal
     const d = new Date();
