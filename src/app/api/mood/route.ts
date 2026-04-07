@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import { createMoodLog, getMoodLogs } from "@/lib/mood/service";
-import { moodSubmitSchema } from "@/lib/mood/validation";
+import {
+  moodHistoryQuerySchema,
+  moodSubmitSchema,
+} from "@/lib/mood/validation";
 
 /**
  * GET /api/mood
@@ -18,13 +21,26 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const dateParam = searchParams.get("date");
-    const timezoneParam = searchParams.get("timezone");
+    const parsedQuery = moodHistoryQuerySchema.safeParse({
+      date: searchParams.get("date") || undefined,
+      timezone: searchParams.get("timezone") || undefined,
+    });
+
+    if (!parsedQuery.success) {
+      return NextResponse.json(
+        {
+          error:
+            parsedQuery.error.issues[0]?.message ||
+            "Parameter query mood tidak valid.",
+        },
+        { status: 400 },
+      );
+    }
 
     const logs = await getMoodLogs(
       userId,
-      dateParam || undefined,
-      timezoneParam || undefined,
+      parsedQuery.data.date,
+      parsedQuery.data.timezone,
     );
 
     return NextResponse.json({

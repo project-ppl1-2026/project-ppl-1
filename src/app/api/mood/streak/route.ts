@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import { resetStreakIfMissed } from "@/lib/mood/service";
+import { moodStreakPatchSchema } from "@/lib/mood/validation";
 
 /**
  * PATCH /api/mood/streak
@@ -19,15 +20,20 @@ export async function PATCH(request: Request) {
     }
 
     const payload = await request.json();
+    const parsedPayload = moodStreakPatchSchema.safeParse(payload);
 
-    if (!payload?.timezone || typeof payload.timezone !== "string") {
+    if (!parsedPayload.success) {
       return NextResponse.json(
-        { error: "Timezone identifier (misal: Asia/Jakarta) diperlukan." },
+        {
+          error:
+            parsedPayload.error.issues[0]?.message ||
+            "Timezone identifier (misal: Asia/Jakarta) diperlukan.",
+        },
         { status: 400 },
       );
     }
 
-    await resetStreakIfMissed(userId, payload.timezone);
+    await resetStreakIfMissed(userId, parsedPayload.data.timezone);
 
     return NextResponse.json({
       success: true,
