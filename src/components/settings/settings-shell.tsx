@@ -71,7 +71,12 @@ export async function fetchProfileData(): Promise<ProfileQueryData> {
 
     parentStatus = parentStatusPayload.status;
     parentStatusReason = parentStatusPayload.reason;
-    pendingParentEmail = parentStatusPayload.email;
+    pendingParentEmail =
+      parentStatusPayload.status === "pending" ||
+      (parentStatusPayload.status === "expired" &&
+        parentStatusPayload.reason === "expired")
+        ? parentStatusPayload.email
+        : null;
   }
 
   let hasPassword = false;
@@ -148,7 +153,7 @@ export function SettingsShell({ children }: SettingsShellProps) {
       <section className="mx-auto w-full max-w-6xl px-4 pb-10 pt-6 sm:px-5 md:px-6 md:pt-8 lg:px-8">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => router.push("/home")}
           className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-brand-teal)] transition hover:opacity-80"
         >
           <ArrowLeft className="h-4 w-4" />

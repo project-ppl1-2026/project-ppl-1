@@ -86,11 +86,26 @@ export function ParentReportContent({
     name: "parentEmail",
   });
 
-  const currentStoredEmail = (
-    profile.parentEmail ||
-    pendingParentEmail ||
-    ""
-  ).trim();
+  const currentStoredEmail = useMemo(() => {
+    if (profile.parentEmail) {
+      return profile.parentEmail.trim();
+    }
+
+    if (parentStatus === "pending") {
+      return (pendingParentEmail || "").trim();
+    }
+
+    if (parentStatus === "expired" && parentStatusReason === "expired") {
+      return (pendingParentEmail || "").trim();
+    }
+
+    return "";
+  }, [
+    profile.parentEmail,
+    parentStatus,
+    parentStatusReason,
+    pendingParentEmail,
+  ]);
 
   useEffect(() => {
     reset({
@@ -337,10 +352,8 @@ export function ParentReportContent({
           {parentStatus === "expired" && parentStatusReason === "rejected" ? (
             <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800">
               <p className="text-xs leading-relaxed">
-                Permintaan konfirmasi untuk{" "}
-                <strong>{currentStoredEmail || "email ini"}</strong> ditolak
-                oleh orang tua atau wali. Silakan edit lalu simpan ulang untuk
-                mengirim permintaan baru.
+                Permintaan konfirmasi ditolak oleh orang tua atau wali. Silakan
+                isi ulang email lalu simpan untuk mengirim permintaan baru.
               </p>
             </div>
           ) : null}
