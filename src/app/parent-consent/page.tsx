@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
 
@@ -150,7 +150,7 @@ function normalizeApiPayload(
   };
 }
 
-export default function ParentConsentPage() {
+function ParentConsentPageContent() {
   const searchParams = useSearchParams();
   const shouldReduce = useReducedMotion();
 
@@ -270,5 +270,24 @@ export default function ParentConsentPage() {
         shouldReduce={!!shouldReduce}
       />
     </div>
+  );
+}
+
+function ParentConsentLoadingFallback() {
+  return (
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-6"
+      style={{ background: "var(--color-page-bg1, #F8FBFD)" }}
+    >
+      <ConsentStatusCard variant="loading" result={null} shouldReduce />
+    </div>
+  );
+}
+
+export default function ParentConsentPage() {
+  return (
+    <Suspense fallback={<ParentConsentLoadingFallback />}>
+      <ParentConsentPageContent />
+    </Suspense>
   );
 }
