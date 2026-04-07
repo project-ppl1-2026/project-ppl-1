@@ -77,6 +77,25 @@ const FACES: FaceItem[] = [
   },
 ];
 
+function getLocalDateString(timezone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  if (!year || !month || !day) {
+    return new Date().toISOString().split("T")[0];
+  }
+
+  return `${year}-${month}-${day}`;
+}
+
 export function MoodCheckin({
   userName: initialUserName = "[Username]",
 }: {
@@ -105,6 +124,45 @@ export function MoodCheckin({
 
     void fetchUser();
   }, []);
+
+  useEffect(() => {
+    const ensureNoDuplicateCheckin = async () => {
+      try {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const localDate = getLocalDateString(timezone);
+
+        const response = await fetch(
+          `/api/mood?date=${encodeURIComponent(localDate)}&timezone=${encodeURIComponent(timezone)}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          },
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          success?: boolean;
+          data?: unknown[];
+        };
+
+        if (
+          payload.success &&
+          Array.isArray(payload.data) &&
+          payload.data.length > 0
+        ) {
+          toast.info("Kamu sudah mengisi mood hari ini.");
+          router.replace("/home");
+        }
+      } catch (error) {
+        console.error("Failed to validate today's mood check-in:", error);
+      }
+    };
+
+    void ensureNoDuplicateCheckin();
+  }, [router]);
 
   useEffect(() => {
     const evaluateStreak = async () => {
