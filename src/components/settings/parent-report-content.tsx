@@ -12,10 +12,12 @@ import { Input } from "@/components/ui/input";
 import type { UserProfile } from "@/components/settings/settings-shell";
 
 type ParentStatus = "pending" | "verified" | "expired" | null;
+type ParentStatusReason = "rejected" | "expired" | null;
 
 type ParentReportContentProps = {
   profile: UserProfile;
   parentStatus: ParentStatus;
+  parentStatusReason: ParentStatusReason;
   pendingParentEmail: string | null;
   onRefresh: () => Promise<void>;
 };
@@ -24,7 +26,7 @@ type FormValues = {
   parentEmail: string;
 };
 
-function getStatusBadge(status: ParentStatus) {
+function getStatusBadge(status: ParentStatus, reason: ParentStatusReason) {
   if (status === "verified") {
     return {
       label: "Terverifikasi",
@@ -40,6 +42,13 @@ function getStatusBadge(status: ParentStatus) {
   }
 
   if (status === "expired") {
+    if (reason === "rejected") {
+      return {
+        label: "Ditolak",
+        className: "border-rose-200 bg-rose-50 text-rose-700",
+      };
+    }
+
     return {
       label: "Kedaluwarsa",
       className: "border-red-200 bg-red-50 text-red-700",
@@ -59,6 +68,7 @@ function isValidEmail(email: string) {
 export function ParentReportContent({
   profile,
   parentStatus,
+  parentStatusReason,
   pendingParentEmail,
   onRefresh,
 }: ParentReportContentProps) {
@@ -76,10 +86,11 @@ export function ParentReportContent({
     name: "parentEmail",
   });
 
-  const currentStoredEmail =
-    parentStatus === "pending"
-      ? pendingParentEmail || ""
-      : profile.parentEmail || "";
+  const currentStoredEmail = (
+    profile.parentEmail ||
+    pendingParentEmail ||
+    ""
+  ).trim();
 
   useEffect(() => {
     reset({
@@ -97,9 +108,9 @@ export function ParentReportContent({
     [currentStoredEmail],
   );
 
-  const statusBadge = getStatusBadge(parentStatus);
+  const statusBadge = getStatusBadge(parentStatus, parentStatusReason);
 
-  const canDisconnect = Boolean(currentStoredEmail);
+  const canDisconnect = Boolean(profile.parentEmail);
   const isInputChanged = normalizedCurrentInput !== normalizedStoredEmail;
 
   const saveParentEmailMutation = useMutation({
@@ -323,7 +334,18 @@ export function ParentReportContent({
             </div>
           ) : null}
 
-          {parentStatus === "expired" ? (
+          {parentStatus === "expired" && parentStatusReason === "rejected" ? (
+            <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800">
+              <p className="text-xs leading-relaxed">
+                Permintaan konfirmasi untuk{" "}
+                <strong>{currentStoredEmail || "email ini"}</strong> ditolak
+                oleh orang tua atau wali. Silakan edit lalu simpan ulang untuk
+                mengirim permintaan baru.
+              </p>
+            </div>
+          ) : null}
+
+          {parentStatus === "expired" && parentStatusReason !== "rejected" ? (
             <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">
               <p className="text-xs leading-relaxed">
                 Tautan konfirmasi untuk <strong>{currentStoredEmail}</strong>{" "}

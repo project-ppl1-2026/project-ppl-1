@@ -10,6 +10,7 @@ export default function ParentReportPage() {
         <ParentReportContent
           profile={data.user}
           parentStatus={data.parentStatus}
+          parentStatusReason={data.parentStatusReason}
           pendingParentEmail={data.pendingParentEmail}
           onRefresh={refresh}
         />

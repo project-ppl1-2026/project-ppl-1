@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+type ParentStatusReason = "rejected" | "expired" | null;
+
 export async function GET(request: Request) {
   try {
     const userId = await getAuthenticatedUserIdFromRequest(request);
@@ -19,6 +21,7 @@ export async function GET(request: Request) {
         email: true,
         status: true,
         expiresAt: true,
+        rejectedAt: true,
       },
     });
 
@@ -27,6 +30,7 @@ export async function GET(request: Request) {
         email: null,
         status: null,
         expiresAt: null,
+        reason: null,
       });
     }
 
@@ -49,10 +53,23 @@ export async function GET(request: Request) {
         email: parent.email,
         status: "expired",
         expiresAt: parent.expiresAt,
+        reason: "expired" as ParentStatusReason,
       });
     }
 
-    return NextResponse.json(parent);
+    const reason: ParentStatusReason =
+      parent.status === "expired"
+        ? parent.rejectedAt
+          ? "rejected"
+          : "expired"
+        : null;
+
+    return NextResponse.json({
+      email: parent.email,
+      status: parent.status,
+      expiresAt: parent.expiresAt,
+      reason,
+    });
   } catch (error) {
     console.error("Parent status error:", error);
     return NextResponse.json(

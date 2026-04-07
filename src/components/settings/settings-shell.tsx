@@ -10,6 +10,7 @@ import { BrandPageBackground } from "@/components/layout/brand-page-background";
 import { SettingsSidebar } from "@/components/settings/settings-sidebar";
 
 type ParentStatus = "pending" | "verified" | "expired" | null;
+type ParentStatusReason = "rejected" | "expired" | null;
 
 export type UserProfile = {
   id: string;
@@ -28,6 +29,7 @@ type ParentStatusResponse = {
   email: string | null;
   status: ParentStatus;
   expiresAt: string | null;
+  reason: ParentStatusReason;
 };
 
 type SecurityStateResponse = {
@@ -40,6 +42,7 @@ type SecurityStateResponse = {
 export type ProfileQueryData = {
   user: UserProfile;
   parentStatus: ParentStatus;
+  parentStatusReason: ParentStatusReason;
   pendingParentEmail: string | null;
   isGoogleLinked: boolean;
   hasPassword: boolean;
@@ -54,6 +57,7 @@ export async function fetchProfileData(): Promise<ProfileQueryData> {
   }
 
   let parentStatus: ParentStatus = null;
+  let parentStatusReason: ParentStatusReason = null;
   let pendingParentEmail: string | null = null;
 
   const parentStatusResponse = await fetch("/api/parent/status", {
@@ -66,10 +70,8 @@ export async function fetchProfileData(): Promise<ProfileQueryData> {
       (await parentStatusResponse.json()) as ParentStatusResponse;
 
     parentStatus = parentStatusPayload.status;
-    pendingParentEmail =
-      parentStatusPayload.status === "pending"
-        ? parentStatusPayload.email
-        : null;
+    parentStatusReason = parentStatusPayload.reason;
+    pendingParentEmail = parentStatusPayload.email;
   }
 
   let hasPassword = false;
@@ -107,6 +109,7 @@ export async function fetchProfileData(): Promise<ProfileQueryData> {
       isPremium: Boolean(user.isPremium),
     },
     parentStatus,
+    parentStatusReason,
     pendingParentEmail,
     isGoogleLinked,
     hasPassword,
