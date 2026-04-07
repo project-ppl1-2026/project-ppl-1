@@ -21,6 +21,8 @@ import {
   getMoodColor,
 } from "@/components/home/home-visuals";
 import {
+  getLongestMoodStreak,
+  getMoodLabel,
   getWeekMoodData,
   hasMoodCheckinToday,
   type MoodLogLite,
@@ -196,7 +198,6 @@ export default async function MainHomePage() {
   const moodLogs = await prisma.moodLog.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
-    take: 30,
     select: {
       createdAt: true,
       moodScore: true,
@@ -216,7 +217,7 @@ export default async function MainHomePage() {
 
   const weekData = getWeekMoodData(typedMoodLogs, now);
   const totalMoodLogs = typedMoodLogs.length;
-  const longestStreak = user?.currentStreak ?? 0;
+  const longestStreak = getLongestMoodStreak(typedMoodLogs);
   const braveChoicePct = 88;
   const baselineBadge = getLevelBadgeStyles(baseline.label);
 
@@ -486,6 +487,7 @@ export default async function MainHomePage() {
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
             {weekData.map((item) => {
+              const hasMood = item.moodScore !== null;
               const moodColor = getMoodColor(item.moodScore);
 
               return (
@@ -504,7 +506,20 @@ export default async function MainHomePage() {
                   </p>
 
                   <div className="my-3 flex justify-center">
-                    <MoodFaceIcon score={item.moodScore} size={34} />
+                    {hasMood ? (
+                      <MoodFaceIcon score={item.moodScore} size={34} />
+                    ) : (
+                      <div
+                        className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
+                        style={{
+                          background: "#EFF6F6",
+                          border: "1px dashed rgba(26,150,136,0.25)",
+                          color: "#9AAEAC",
+                        }}
+                      >
+                        <span className="text-base font-semibold">-</span>
+                      </div>
+                    )}
                   </div>
 
                   <p className="text-xs font-semibold text-[var(--brand-text-muted)]">
@@ -513,9 +528,15 @@ export default async function MainHomePage() {
 
                   <p
                     className="mt-2 text-sm font-extrabold"
-                    style={{ color: moodColor }}
+                    style={{
+                      color: hasMood ? moodColor : "var(--brand-text-muted)",
+                    }}
                   >
-                    {item.moodScore ? `${item.moodScore}/5` : "-"}
+                    {hasMood ? `${item.moodScore}/5` : "-"}
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-semibold text-[var(--brand-text-muted)]">
+                    {getMoodLabel(item.moodScore)}
                   </p>
 
                   {item.isToday && (
