@@ -8,6 +8,8 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import QueryProvider from "@/components/providers/query-providers";
+import Nav from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -39,6 +41,7 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased" suppressHydrationWarning>
         <QueryProvider>
+          <Nav />
           {children}
 
           <Toaster
@@ -51,6 +54,7 @@ export default function RootLayout({
               },
             }}
           />
+          <Footer />
         </QueryProvider>
       </body>
     </html>

@@ -38,8 +38,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PageLoader, PageLoaderFallback } from "@/components/ui/page-loader";
-import { GoogleIcon } from "@/components/ui/google-icon";
+import {
+  PageLoader,
+  PageLoaderFallback,
+} from "@/components/ui/manual/page-loader";
+import { GoogleIcon } from "@/components/ui/manual/google-icon";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { AuthStepIndicator } from "@/components/auth/auth-step-indicator";

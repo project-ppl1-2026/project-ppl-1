@@ -27,7 +27,7 @@ import {
   purposeBubbles,
   testiBubbles,
   ctaBubbles,
-} from "@/components/ui/landing";
+} from "@/components/ui/manual/landing";
 
 function HowSectionCard({
   tag,

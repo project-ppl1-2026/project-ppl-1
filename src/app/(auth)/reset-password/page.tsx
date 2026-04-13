@@ -16,7 +16,7 @@ import { AuthInfoCard } from "@/components/auth/auth-info-card";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PageLoaderFallback } from "@/components/ui/page-loader";
+import { PageLoaderFallback } from "@/components/ui/manual/page-loader";
 
 import { authClient } from "@/lib/auth-client";
 import {
