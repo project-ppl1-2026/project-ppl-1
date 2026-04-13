@@ -23,8 +23,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PageLoader, PageLoaderFallback } from "@/components/ui/page-loader";
-import { GoogleIcon } from "@/components/ui/google-icon";
+import {
+  PageLoader,
+  PageLoaderFallback,
+} from "@/components/ui/manual/page-loader";
+import { GoogleIcon } from "@/components/ui/manual/google-icon";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { AuthField } from "@/components/auth/auth-field";

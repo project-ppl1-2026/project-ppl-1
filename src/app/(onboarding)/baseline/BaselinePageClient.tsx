@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import QueryProvider from "@/components/providers/query-providers";
 import { BrandPageBackground } from "@/components/layout/brand-page-background";
 import { Button } from "@/components/ui/button";
-import { PageLoader } from "@/components/ui/page-loader";
+import { PageLoader } from "@/components/ui/manual/page-loader";
 import { BaselineOptionButton } from "@/components/baseline/baseline-option-button";
 import { BaselineProgress } from "@/components/baseline/baseline-progress";
 

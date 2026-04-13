@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
-import { Blob } from "@/components/ui/blob";
+import { Blob } from "@/components/ui/manual/blob";
 
 interface BrandPageBackgroundProps {
   children: ReactNode;

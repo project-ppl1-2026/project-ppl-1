@@ -5,9 +5,6 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getBaselineByUserId } from "@/lib/baseline/service";
 
-import Navbar from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-
 export default async function MainLayout({
   children,
 }: {
@@ -43,9 +40,7 @@ export default async function MainLayout({
       className="flex min-h-screen flex-col"
       style={{ fontFamily: "var(--font-plus-jakarta)" }}
     >
-      <Navbar />
       <main className="flex flex-1 flex-col">{children}</main>
-      <Footer />
     </div>
   );
 }

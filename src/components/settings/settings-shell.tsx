@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { PageLoader } from "@/components/ui/manual/page-loader";
 import { BrandPageBackground } from "@/components/layout/brand-page-background";
 import { SettingsSidebar } from "@/components/settings/settings-sidebar";
 

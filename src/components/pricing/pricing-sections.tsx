@@ -24,7 +24,7 @@ const TABLE_ROWS = [
   { label: "Brave Choice", basic: "5/hari", single: "Unlimited" },
   { label: "Laporan Email ke Orang Tua", basic: true, single: true },
   {
-    label: "Insight Dashboard (Refleksi AI V3)",
+    label: "Insight Dashboard (Refleksi AI)",
     basic: false,
     single: true,
     highlight: true,

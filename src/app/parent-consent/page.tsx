@@ -7,7 +7,7 @@ import { useReducedMotion } from "framer-motion";
 import {
   ConsentStatusCard,
   type ConsentVariant,
-} from "@/components/ui/consent-status-card";
+} from "@/components/ui/manual/consent-status-card";
 
 type ConsentApiResult = {
   success?: boolean;
