@@ -43,6 +43,8 @@ const DEFAULT_TIMEZONE = "Asia/Jakarta";
 const FREE_DIARY_LIMIT_PER_MONTH = 15;
 const MAX_PROMPT_HISTORY_MESSAGES = 32;
 const PREVIEW_MAX_LENGTH = 96;
+const PERSIST_TRANSACTION_MAX_WAIT_MS = 10_000;
+const PERSIST_TRANSACTION_TIMEOUT_MS = 20_000;
 
 export class DiaryServiceError extends Error {
   status: number;
@@ -300,55 +302,61 @@ export async function persistDiaryChatSession({
     );
   }
 
-  const persisted = await prisma.$transaction(async (tx) => {
-    const finalDiary = session.diary
-      ? session.diary
-      : await tx.diary.create({
-          data: {
-            userId: session.userId,
-            date: session.todayDate,
-            isActive: true,
-          },
-          select: {
-            id: true,
-            date: true,
-          },
-        });
+  const persisted = await prisma.$transaction(
+    async (tx) => {
+      const finalDiary = session.diary
+        ? session.diary
+        : await tx.diary.create({
+            data: {
+              userId: session.userId,
+              date: session.todayDate,
+              isActive: true,
+            },
+            select: {
+              id: true,
+              date: true,
+            },
+          });
 
-    const userMessage = await tx.diaryMessage.create({
-      data: {
-        diaryId: finalDiary.id,
-        senderType: Sender.USER,
-        content: session.trimmedText,
-      },
-      select: {
-        id: true,
-        senderType: true,
-        content: true,
-        createdAt: true,
-      },
-    });
+      const userMessage = await tx.diaryMessage.create({
+        data: {
+          diaryId: finalDiary.id,
+          senderType: Sender.USER,
+          content: session.trimmedText,
+        },
+        select: {
+          id: true,
+          senderType: true,
+          content: true,
+          createdAt: true,
+        },
+      });
 
-    const aiMessage = await tx.diaryMessage.create({
-      data: {
-        diaryId: finalDiary.id,
-        senderType: Sender.AI,
-        content: normalizedAssistantText,
-      },
-      select: {
-        id: true,
-        senderType: true,
-        content: true,
-        createdAt: true,
-      },
-    });
+      const aiMessage = await tx.diaryMessage.create({
+        data: {
+          diaryId: finalDiary.id,
+          senderType: Sender.AI,
+          content: normalizedAssistantText,
+        },
+        select: {
+          id: true,
+          senderType: true,
+          content: true,
+          createdAt: true,
+        },
+      });
 
-    return {
-      finalDiary,
-      userMessage,
-      aiMessage,
-    };
-  });
+      return {
+        finalDiary,
+        userMessage,
+        aiMessage,
+      };
+    },
+    {
+      maxWait: PERSIST_TRANSACTION_MAX_WAIT_MS,
+      timeout: PERSIST_TRANSACTION_TIMEOUT_MS,
+    },
+  );
 
   const fullMessagesForEntry: DiaryMessageRecord[] = [
     ...session.promptHistory,
@@ -405,6 +413,18 @@ export function toDiaryServiceErrorForAiFailure(error: unknown) {
     );
   }
 
+  if (
+    /expired transaction|timeout for this transaction|transaction api error|\bP2028\b/i.test(
+      rawMessage,
+    )
+  ) {
+    return new DiaryServiceError(
+      "Penyimpanan chat sedang sibuk. Coba kirim ulang pesanmu.",
+      503,
+      "DIARY_PERSIST_TIMEOUT",
+    );
+  }
+
   return new DiaryServiceError(rawMessage, 503, "AI_UNAVAILABLE");
 }
 
@@ -423,10 +443,14 @@ export async function sendDiaryChatMessage(input: SendDiaryChatInput) {
     throw toDiaryServiceErrorForAiFailure(error);
   }
 
-  return persistDiaryChatSession({
-    session,
-    assistantText,
-  });
+  try {
+    return await persistDiaryChatSession({
+      session,
+      assistantText,
+    });
+  } catch (error) {
+    throw toDiaryServiceErrorForAiFailure(error);
+  }
 }
 
 async function findDiaryForUser({
