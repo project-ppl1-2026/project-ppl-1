@@ -32,12 +32,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import { authClient } from "@/lib/auth-client";
 
 type Role = "guest" | "user" | "admin";
+type UserPlan = "free" | "premium";
 
 type Session = {
   role: Role;
   name: string;
   email: string;
   image?: string | null;
+  plan: UserPlan;
+  isPremium: boolean;
 };
 
 type HomeSection = {
@@ -58,6 +61,8 @@ const guestSession: Session = {
   name: "Guest",
   email: "",
   image: null,
+  plan: "free",
+  isPremium: false,
 };
 
 const homeSections: HomeSection[] = [
@@ -129,6 +134,8 @@ const C = {
   border: "#C8DCED",
   bg0: "#FAFBFF",
   white: "#FFFFFF",
+  goldBg: "#FEF3C7",
+  goldText: "#D97706",
 };
 
 function useOutsideClick(cb: () => void) {
@@ -304,7 +311,7 @@ function HomeDropdown({
       <div className="relative">
         <button
           onClick={handleHomeClick}
-          className="group relative flex items-center gap-0.5 cursor-pointer pb-0.5 text-sm font-medium outline-none transition-colors duration-150 hover:text-[#1A9688]"
+          className="group relative flex cursor-pointer items-center gap-0.5 pb-0.5 text-sm font-medium outline-none transition-colors duration-150 hover:text-[#1A9688]"
           style={{ color: isActive ? C.teal : C.textSecondary }}
           type="button"
         >
@@ -329,10 +336,10 @@ function HomeDropdown({
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <div className="group relative flex items-center gap-0.5 cursor-pointer pb-0.5">
+      <div className="group relative flex cursor-pointer items-center gap-0.5 pb-0.5">
         <button
           onClick={handleHomeClick}
-          className="text-sm font-medium transition-colors duration-150 group-hover:text-[#1A9688] outline-none"
+          className="text-sm font-medium outline-none transition-colors duration-150 group-hover:text-[#1A9688]"
           style={{ color: isActive || open ? C.teal : C.textSecondary }}
           type="button"
         >
@@ -415,6 +422,32 @@ function HomeDropdown({
   );
 }
 
+function getPlanLabel(session: Session) {
+  if (session.role === "admin") return "Administrator";
+  return session.plan === "premium" ? "Premium Plan" : "Free Plan";
+}
+
+function getPlanBadgeStyle(session: Session): CSSProperties | undefined {
+  if (session.role === "admin") return undefined;
+
+  if (session.plan === "premium") {
+    return {
+      background: C.tealPale,
+      color: C.textPrimary,
+      borderRadius: 999,
+      padding: "2px 8px",
+      fontWeight: 800,
+      display: "inline-flex",
+      alignItems: "center",
+      width: "fit-content",
+    };
+  }
+
+  return {
+    color: C.textMuted,
+  };
+}
+
 function ProfileDropdown({ session }: { session: Session }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -427,7 +460,7 @@ function ProfileDropdown({ session }: { session: Session }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex cursor-pointer items-center gap-2 rounded-full px-2.5 py-1.5 outline-none transition-all duration-150 active:scale-[0.98]"
+        className="flex cursor-pointer items-center gap-2 rounded-full px-3 py-1 outline-none transition-all duration-150 active:scale-[0.98]"
         style={{
           background: open ? "rgba(26,150,136,0.08)" : "rgba(26,150,136,0.04)",
           border: `1.5px solid ${open ? C.tealPale : "rgba(26,150,136,0.12)"}`,
@@ -444,8 +477,11 @@ function ProfileDropdown({ session }: { session: Session }) {
           >
             {session.name}
           </p>
-          <p className="text-[11px] font-medium" style={{ color: C.textMuted }}>
-            {session.role === "admin" ? "Administrator" : "Free Plan"}
+          <p
+            className="text-[11px] font-medium"
+            style={getPlanBadgeStyle(session)}
+          >
+            {getPlanLabel(session)}
           </p>
         </div>
 
@@ -490,6 +526,12 @@ function ProfileDropdown({ session }: { session: Session }) {
                   style={{ color: C.textMuted }}
                 >
                   {session.email || "Pengguna TemanTumbuh"}
+                </p>
+                <p
+                  className="mt-1 text-[11px] font-semibold"
+                  style={getPlanBadgeStyle(session)}
+                >
+                  {getPlanLabel(session)}
                 </p>
               </div>
             </div>
@@ -727,8 +769,18 @@ function MobileMenu({
                     >
                       {session.name}
                     </p>
-                    <p className="text-[11px]" style={{ color: C.textMuted }}>
-                      {session.role === "admin" ? "Administrator" : "Pengguna"}
+                    <p
+                      className="text-[11px]"
+                      style={
+                        session.plan === "premium" && session.role !== "admin"
+                          ? {
+                              color: C.goldText,
+                              fontWeight: 800,
+                            }
+                          : { color: C.textMuted }
+                      }
+                    >
+                      {getPlanLabel(session)}
                     </p>
                   </div>
                 </div>
@@ -858,13 +910,25 @@ export function Navbar() {
           return;
         }
 
-        const role = (data.user as { role?: string }).role;
+        const user = data.user as {
+          role?: string;
+          name?: string | null;
+          email?: string | null;
+          image?: string | null;
+          isPremium?: boolean;
+          plan?: string | null;
+        };
+
+        const normalizedPlan: UserPlan =
+          user.plan === "premium" || user.isPremium ? "premium" : "free";
 
         setSession({
-          role: role === "admin" ? "admin" : "user",
-          name: data.user.name ?? "User",
-          email: data.user.email ?? "",
-          image: data.user.image ?? null,
+          role: user.role === "admin" ? "admin" : "user",
+          name: user.name ?? "User",
+          email: user.email ?? "",
+          image: user.image ?? null,
+          plan: normalizedPlan,
+          isPremium: normalizedPlan === "premium",
         });
       } catch {
         if (mounted) setSession(guestSession);
@@ -874,6 +938,7 @@ export function Navbar() {
     };
 
     void sync();
+
     return () => {
       mounted = false;
     };
@@ -941,7 +1006,7 @@ export function Navbar() {
         </div>
 
         <button
-          className="flex h-9 w-9 items-center justify-center rounded-xl md:hidden transition-colors duration-150 hover:bg-[#DDF5F2]"
+          className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-150 hover:bg-[#DDF5F2] md:hidden"
           onClick={() => setMobileOpen((v) => !v)}
           aria-label="Toggle menu"
           aria-expanded={mobileOpen}

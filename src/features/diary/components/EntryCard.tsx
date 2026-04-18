@@ -1,6 +1,5 @@
 // ============================================================
 //  src/features/diary/components/EntryCard.tsx
-//  Kartu entri diary di sidebar kiri
 // ============================================================
 
 import { Lock } from "lucide-react";
@@ -13,7 +12,6 @@ type Props = {
   isActive: boolean;
   onClick: () => void;
 };
-
 export function EntryCard({ entry, isActive, onClick }: Props) {
   const isPast = !entry.isToday;
 
@@ -21,7 +19,7 @@ export function EntryCard({ entry, isActive, onClick }: Props) {
     <div
       onClick={onClick}
       style={{
-        padding: "10px 11px",
+        padding: "10px 12px",
         borderRadius: 10,
         cursor: "pointer",
         border: isActive ? `1.5px solid ${C.ink}` : `1px solid ${C.bdL}`,
@@ -30,13 +28,12 @@ export function EntryCard({ entry, isActive, onClick }: Props) {
         userSelect: "none",
       }}
     >
-      {/* Header row */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 7,
-          marginBottom: 5,
+          gap: 8,
+          marginBottom: 6,
         }}
       >
         <MoodFace score={entry.mood} size={20} />
@@ -48,21 +45,30 @@ export function EntryCard({ entry, isActive, onClick }: Props) {
               color: isActive ? C.ink : C.muted,
               fontFamily: fonts.serif,
               margin: 0,
+              lineHeight: 1.2,
             }}
           >
             {entry.dateLabel}
           </p>
+
           {isPast && (
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 3,
-                marginTop: 1,
+                marginTop: 2,
               }}
             >
               <Lock size={9} color={C.sub} />
-              <span style={{ fontSize: 8, color: C.sub, fontWeight: 600 }}>
+              <span
+                style={{
+                  fontSize: 8,
+                  color: C.sub,
+                  fontWeight: 600,
+                  lineHeight: 1.1,
+                }}
+              >
                 Hanya baca
               </span>
             </div>
@@ -70,13 +76,12 @@ export function EntryCard({ entry, isActive, onClick }: Props) {
         </div>
       </div>
 
-      {/* Preview text */}
       <p
         style={{
           fontSize: 10,
           color: C.muted,
           fontStyle: "italic",
-          lineHeight: 1.5,
+          lineHeight: 1.45,
           overflow: "hidden",
           display: "-webkit-box",
           WebkitLineClamp: 2,

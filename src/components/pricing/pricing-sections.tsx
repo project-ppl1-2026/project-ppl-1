@@ -29,7 +29,6 @@ const TABLE_ROWS = [
     single: true,
     highlight: true,
   },
-  { label: "PDF Report Mingguan", basic: false, single: true, highlight: true },
   {
     label: "Rekomendasi Aksi Nyata (LLM)",
     basic: false,
@@ -166,12 +165,6 @@ export function PricingContent() {
       <div className="w-full bg-white rounded-[2rem] shadow-2xl border border-teal-100 overflow-hidden mb-12">
         {/* HEADER */}
         <div className="pt-12 pb-8 px-6 text-center relative bg-white">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 border border-teal-100 mb-6">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span className="text-xs font-bold text-teal-800 tracking-wide uppercase">
-              Transparan · Tidak ada biaya tersembunyi
-            </span>
-          </div>
           <h1 className="font-black text-3xl md:text-5xl text-teal-950 tracking-tight mb-4">
             Pilih Paket Pertumbuhanmu
           </h1>
@@ -245,7 +238,6 @@ export function PricingContent() {
               <PRow text="Akses Brave Choice Trivia (5/hari)" on />
               <div className="h-px bg-teal-100 my-4" />
               <PRow text="Insight Dashboard (Refleksi AI)" on={false} />
-              <PRow text="PDF Report Mingguan" on={false} />
               <PRow text="Rekomendasi Aksi Nyata (LLM)" on={false} />
             </div>
 
@@ -308,7 +300,6 @@ export function PricingContent() {
                 premium
                 highlight
               />
-              <PRow text="PDF Report Mingguan" on premium highlight />
               <PRow
                 text="Rekomendasi Aksi Nyata (LLM Analysis)"
                 on

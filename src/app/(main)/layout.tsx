@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getBaselineByUserId } from "@/lib/baseline/service";
 
+import { AppSidebarShell } from "@/components/layout/app-sidebar-shell";
+
 export default async function MainLayout({
   children,
 }: {
@@ -22,7 +24,12 @@ export default async function MainLayout({
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { profileFilled: true },
+    select: {
+      name: true,
+      email: true,
+      profileFilled: true,
+      isPremium: true,
+    },
   });
 
   if (!user?.profileFilled) {
@@ -36,11 +43,14 @@ export default async function MainLayout({
   }
 
   return (
-    <div
-      className="flex min-h-screen flex-col"
-      style={{ fontFamily: "var(--font-plus-jakarta)" }}
+    <AppSidebarShell
+      user={{
+        name: user.name ?? "Teman",
+        email: user.email ?? "",
+        isPremium: Boolean(user.isPremium),
+      }}
     >
-      <main className="flex flex-1 flex-col">{children}</main>
-    </div>
+      {children}
+    </AppSidebarShell>
   );
 }

@@ -130,9 +130,9 @@ export function DiaryRightPage({
         display: "flex",
         flexDirection: "column",
         position: "relative",
-        height: isMobile ? "calc(100vh - 180px)" : 720,
-        minHeight: isMobile ? 520 : 720,
-        maxHeight: isMobile ? "calc(100vh - 180px)" : 720,
+        height: "100%",
+        minHeight: 0,
+        maxHeight: "100%",
         overflow: "hidden",
       }}
     >
@@ -219,7 +219,7 @@ export function DiaryRightPage({
             style={{
               fontSize: 10.5,
               color: C.sub,
-              fontFamily: fonts.serif,
+              fontFamily: fonts.sans,
               margin: 0,
             }}
           >
@@ -495,7 +495,7 @@ function ChatInputRow({
             outline: "none",
             resize: "none",
             background: "transparent",
-            fontFamily: fonts.serif,
+            fontFamily: fonts.sans,
             fontStyle: "italic",
             fontSize: isMobile ? 12 : 12.5,
             color: C.text,

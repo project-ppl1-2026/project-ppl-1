@@ -62,6 +62,13 @@ const MOCK_ENTRIES: DiaryEntry[] = [
     preview: "Aku merasa lebih tenang minggu ini...",
     mood: 4,
   },
+  {
+    id: "entry-9",
+    date: "2026-04-08",
+    dateLabel: "Rabu, 8 Apr 2026",
+    preview: "Dapat nilai bagus di ujian fisika!",
+    mood: 5,
+  },
 ];
 
 const MOCK_MESSAGES: ChatMessage[] = [
