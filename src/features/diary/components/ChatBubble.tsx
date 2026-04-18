@@ -57,7 +57,7 @@ export function ChatBubble({ message }: Props) {
               fontSize: 12.5,
               lineHeight: 1.65,
               color: isAi ? C.text : C.white,
-              fontFamily: fonts.serif,
+              fontFamily: fonts.sans,
               margin: 0,
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",

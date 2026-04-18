@@ -1,6 +1,6 @@
 // ============================================================
 // src/app/layout.tsx
-// Root layout
+// Root layout — global only, tanpa navbar/footer khusus
 // ============================================================
 
 import type { Metadata } from "next";
@@ -8,13 +8,11 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import QueryProvider from "@/components/providers/query-providers";
-import Nav from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -41,7 +39,6 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased" suppressHydrationWarning>
         <QueryProvider>
-          <Nav />
           {children}
 
           <Toaster
@@ -54,7 +51,6 @@ export default function RootLayout({
               },
             }}
           />
-          <Footer />
         </QueryProvider>
       </body>
     </html>

@@ -3,6 +3,7 @@
 import QueryProvider from "@/components/providers/query-providers";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -33,25 +34,25 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { AuthField } from "@/components/auth/auth-field";
 import { BrandPageBackground } from "@/components/layout/brand-page-background";
 
-type SessionUser = {
-  profileFilled?: boolean | null;
-};
-
 type SessionStatus = {
   isAuthenticated: boolean;
-  isComplete: boolean;
+  nextRoute: string;
 };
 
-const SESSION_QUERY_KEY = ["login", "session"] as const;
+const SESSION_QUERY_KEY = ["login", "post-login-status"] as const;
 
 async function fetchSessionStatus(): Promise<SessionStatus> {
-  const { data } = await authClient.getSession();
-  const user = data?.user as SessionUser | undefined;
+  const response = await fetch("/api/auth/post-login-status", {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
 
-  return {
-    isAuthenticated: Boolean(user),
-    isComplete: Boolean(user?.profileFilled),
-  };
+  if (!response.ok) {
+    throw new Error("Gagal memeriksa status sesi.");
+  }
+
+  return response.json();
 }
 
 function resolveLoginErrorMessage(error: {
@@ -96,6 +97,7 @@ function resolveLoginErrorMessage(error: {
 }
 
 function LoginPageContent() {
+  const router = useRouter();
   const shouldReduce = useReducedMotion();
 
   const [serverError, setServerError] = useState("");
@@ -110,16 +112,25 @@ function LoginPageContent() {
     defaultValues: { email: "", password: "" },
   });
 
-  const { data: sessionData, isLoading: isSessionLoading } = useQuery({
+  const {
+    data: sessionData,
+    isLoading: isSessionLoading,
+    isError: isSessionError,
+  } = useQuery({
     queryKey: SESSION_QUERY_KEY,
     queryFn: fetchSessionStatus,
     retry: 1,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
-    if (isSessionLoading || !sessionData?.isAuthenticated) return;
-  }, [isSessionLoading, sessionData]);
+    if (isSessionLoading || isSessionError || !sessionData?.isAuthenticated) {
+      return;
+    }
+
+    router.replace(sessionData.nextRoute);
+  }, [isSessionLoading, isSessionError, sessionData, router]);
 
   const loginMutation = useMutation<
     unknown,
@@ -130,7 +141,7 @@ function LoginPageContent() {
       const response = await authClient.signIn.email({
         email: data.email,
         password: data.password,
-        callbackURL: "/baseline",
+        callbackURL: "/login",
       });
 
       if (response.error) {
@@ -142,6 +153,8 @@ function LoginPageContent() {
     onSuccess: () => {
       toast.success("Login berhasil.");
       reset();
+      // auth library biasanya akan redirect otomatis ke callbackURL (/login),
+      // lalu layout/login page akan meneruskan ke route berikutnya.
     },
     onError: (error) => {
       setServerError(resolveLoginErrorMessage(error));
@@ -152,7 +165,7 @@ function LoginPageContent() {
     mutationFn: async () => {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/baseline",
+        callbackURL: "/login",
       });
     },
     onError: (error) => {

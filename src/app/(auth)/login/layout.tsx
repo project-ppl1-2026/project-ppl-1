@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { getPostLoginRedirect } from "@/lib/get-post-login-redirect";
 
 export default async function LoginLayout({
   children,
@@ -13,13 +13,11 @@ export default async function LoginLayout({
     headers: await headers(),
   });
 
-  if (session?.user?.id) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { profileFilled: true },
-    });
+  const userId = session?.user?.id;
 
-    redirect(user?.profileFilled ? "/" : "/register?completeProfile=1");
+  if (userId) {
+    const nextRoute = await getPostLoginRedirect(userId);
+    redirect(nextRoute);
   }
 
   return <>{children}</>;

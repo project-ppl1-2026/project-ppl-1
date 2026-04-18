@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,9 +9,8 @@ import {
   Flame,
   BookMarked,
   AlertTriangle,
-  X,
-  PanelLeftOpen,
   PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 
 import { colors as C } from "../constants/tokens";
@@ -39,6 +39,11 @@ type Props = {
   onSelectDate: (date: Date | undefined) => void;
 };
 
+export const MOBILE_STRIP_WIDTH = 36;
+const MOBILE_PANEL_WIDTH = 330;
+
+const ENTRY_GAP = 8;
+
 export function DiaryLeftPage({
   mode,
   isOpen,
@@ -61,76 +66,114 @@ export function DiaryLeftPage({
 }: Props) {
   if (mode === "mobile") {
     return (
-      <>
-        <div
-          onClick={onClose}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(16, 28, 38, 0.34)",
-            opacity: isOpen ? 1 : 0,
-            pointerEvents: isOpen ? "auto" : "none",
-            transition: "opacity 220ms ease",
-            zIndex: 100,
-          }}
-        />
+      <aside
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: isOpen ? MOBILE_PANEL_WIDTH : MOBILE_STRIP_WIDTH,
+          background: C.paperL,
+          borderRight: `1px solid ${C.bdL}`,
+          boxShadow: isOpen
+            ? "20px 0 60px rgba(12, 24, 32, 0.16)"
+            : "6px 0 18px rgba(12, 24, 32, 0.06)",
+          transition: "width 260ms cubic-bezier(0.22,1,0.36,1)",
+          zIndex: 120,
+          display: "flex",
+          flexDirection: "row",
+          minHeight: 0,
+          height: "100dvh",
+          overflow: "hidden",
+        }}
+      >
+        {!isOpen && (
+          <div
+            style={{
+              width: MOBILE_STRIP_WIDTH,
+              minWidth: MOBILE_STRIP_WIDTH,
+              maxWidth: MOBILE_STRIP_WIDTH,
+              height: "100%",
+              background: C.paper,
+              borderRight: `1px solid ${C.bdL}`,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              paddingTop: 20,
+              gap: 12,
+              flexShrink: 0,
+            }}
+          >
+            {/* BACK BUTTON */}
+            <button
+              type="button"
+              onClick={() => (window.location.href = "/home")}
+              aria-label="Back to Home"
+              title="Back to Home"
+              style={railButtonStyle()}
+            >
+              <ChevronLeft size={18} />
+            </button>
 
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            bottom: 0,
-            width: "min(90vw, 380px)",
-            background: C.paperL,
-            borderRight: `1px solid ${C.bdL}`,
-            boxShadow: "20px 0 60px rgba(12, 24, 32, 0.16)",
-            transform: isOpen ? "translateX(0)" : "translateX(-104%)",
-            transition: "transform 260ms ease",
-            zIndex: 120,
-            display: "flex",
-            flexDirection: "column",
-            minHeight: 0,
-            overflow: "visible",
-          }}
-        >
-          <PanelContent
-            user={user}
-            entries={entries}
-            selectedEntry={selectedEntry}
-            activeMonth={activeMonth}
-            selectedDate={selectedDate}
-            planCfg={planCfg}
-            quizRemaining={quizRemaining}
-            canDoQuiz={canDoQuiz}
-            onSelectEntry={onSelectEntry}
-            onGoToToday={onGoToToday}
-            onOpenQuiz={onOpenQuiz}
-            onPrevMonth={onPrevMonth}
-            onNextMonth={onNextMonth}
-            onSelectDate={onSelectDate}
-            onClose={onClose}
-            showClose
-            mobileMode
-          />
-        </div>
-      </>
+            {/* OPEN HISTORY */}
+            <button
+              type="button"
+              onClick={onOpen}
+              aria-label="Buka riwayat diary"
+              title="Buka riwayat diary"
+              style={railButtonStyle()}
+            >
+              <PanelLeftOpen size={18} />
+            </button>
+          </div>
+        )}
+
+        {isOpen && (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              overflow: "hidden",
+            }}
+          >
+            <PanelContent
+              user={user}
+              entries={entries}
+              selectedEntry={selectedEntry}
+              activeMonth={activeMonth}
+              selectedDate={selectedDate}
+              planCfg={planCfg}
+              quizRemaining={quizRemaining}
+              canDoQuiz={canDoQuiz}
+              onSelectEntry={onSelectEntry}
+              onGoToToday={onGoToToday}
+              onOpenQuiz={onOpenQuiz}
+              onPrevMonth={onPrevMonth}
+              onNextMonth={onNextMonth}
+              onSelectDate={onSelectDate}
+              onClose={onClose}
+              mobileMode
+            />
+          </div>
+        )}
+      </aside>
     );
   }
 
   if (!isOpen) {
     return (
-      <div
-        className="hidden md:flex"
+      <aside
         style={{
-          width: 58,
-          minWidth: 58,
-          maxWidth: 58,
+          width: 56,
+          height: "100%",
           background: C.paper,
           borderRight: `1px solid ${C.bdL}`,
+          display: "flex",
           alignItems: "flex-start",
           justifyContent: "center",
           paddingTop: 14,
+          flexShrink: 0,
         }}
       >
         <button
@@ -138,39 +181,24 @@ export function DiaryLeftPage({
           onClick={onOpen}
           aria-label="Buka riwayat diary"
           title="Buka riwayat diary"
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 10,
-            border: `1px solid ${C.bdL}`,
-            background: C.white,
-            color: C.ink,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(13,70,70,0.06)",
-            flexShrink: 0,
-          }}
+          style={collapsedHandleBtn}
         >
-          <PanelLeftOpen size={16} />
+          <PanelLeftOpen size={18} />
         </button>
-      </div>
+      </aside>
     );
   }
 
   return (
-    <div
+    <aside
       style={{
-        width: 352,
-        minWidth: 352,
-        maxWidth: 352,
+        width: "100%",
+        height: "100%",
         background: C.paperL,
-        borderRight: `1px solid ${C.bdL}`,
         display: "flex",
         flexDirection: "column",
-        minHeight: 720,
-        overflow: "visible",
+        minHeight: 0,
+        overflow: "hidden",
       }}
     >
       <PanelContent
@@ -189,10 +217,9 @@ export function DiaryLeftPage({
         onNextMonth={onNextMonth}
         onSelectDate={onSelectDate}
         onClose={onClose}
-        showClose
         desktopCloseIcon
       />
-    </div>
+    </aside>
   );
 }
 
@@ -212,7 +239,6 @@ type PanelContentProps = {
   onNextMonth: () => void;
   onSelectDate: (date: Date | undefined) => void;
   onClose: () => void;
-  showClose: boolean;
   desktopCloseIcon?: boolean;
   mobileMode?: boolean;
 };
@@ -233,13 +259,13 @@ function PanelContent({
   onNextMonth,
   onSelectDate,
   onClose,
-  showClose,
-  desktopCloseIcon = false,
   mobileMode = false,
 }: PanelContentProps) {
+  const totalEntries = entries.length;
+
   const iconBtn: React.CSSProperties = {
-    width: 34,
-    height: 34,
+    width: 32,
+    height: 32,
     borderRadius: 10,
     border: `1px solid ${C.bdL}`,
     background: C.white,
@@ -248,21 +274,31 @@ function PanelContent({
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",
-    boxShadow: "0 2px 8px rgba(13,70,70,0.06)",
+    boxShadow: "0 2px 8px rgba(13,70,70,0.05)",
     flexShrink: 0,
   };
 
   return (
-    <>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        height: "100%",
+        overflow: "hidden",
+        background: C.paperL,
+      }}
+    >
       <div
         style={{
-          padding: "16px 14px 12px",
+          padding: "10px 10px 8px",
           borderBottom: `1px solid ${C.bdL}`,
           background: C.paper,
           position: "sticky",
           top: 0,
           zIndex: mobileMode ? 5 : 2,
           overflow: "visible",
+          flexShrink: 0,
         }}
       >
         <div
@@ -270,16 +306,17 @@ function PanelContent({
             display: "flex",
             alignItems: "center",
             gap: 8,
-            marginBottom: 12,
+            marginBottom: 8,
           }}
         >
           <div style={{ minWidth: 0 }}>
             <p
               style={{
                 margin: 0,
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: 800,
                 color: C.inkD,
+                lineHeight: 1.2,
               }}
             >
               Riwayat Diary
@@ -287,32 +324,28 @@ function PanelContent({
             <p
               style={{
                 margin: "2px 0 0",
-                fontSize: 10,
+                fontSize: 9,
                 color: C.sub,
                 fontWeight: 600,
               }}
             >
-              Total {user.totalEntries} entri
+              Total {totalEntries} entri
             </p>
           </div>
 
           <div style={{ flex: 1 }} />
 
-          {showClose ? (
+          {mobileMode && (
             <button
               type="button"
               onClick={onClose}
-              style={iconBtn}
               aria-label="Tutup riwayat diary"
               title="Tutup riwayat diary"
+              style={iconBtn}
             >
-              {desktopCloseIcon ? (
-                <PanelLeftClose size={16} />
-              ) : (
-                <X size={16} />
-              )}
+              <PanelLeftClose size={16} />
             </button>
-          ) : null}
+          )}
         </div>
 
         <div
@@ -331,6 +364,7 @@ function PanelContent({
               position: "relative",
               zIndex: mobileMode ? 7 : 2,
               overflow: "visible",
+              minWidth: 0,
             }}
           >
             <CalendarDropdown
@@ -355,12 +389,13 @@ function PanelContent({
 
       <div
         style={{
-          padding: "10px 12px",
+          padding: "8px 10px",
           borderBottom: `1px solid ${C.bdL}`,
           background: C.paper,
           display: "flex",
           flexDirection: "column",
-          gap: 8,
+          gap: 7,
+          flexShrink: 0,
         }}
       >
         <button
@@ -368,19 +403,19 @@ function PanelContent({
           onClick={onGoToToday}
           style={{
             width: "100%",
-            height: 40,
-            borderRadius: 12,
+            height: 36,
+            borderRadius: 11,
             border: "none",
             background: `linear-gradient(135deg, ${C.inkD}, ${C.inkM})`,
             color: C.white,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 700,
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: 8,
-            boxShadow: "0 8px 18px rgba(26,150,136,0.18)",
+            boxShadow: "0 8px 18px rgba(26,150,136,0.14)",
           }}
         >
           Pergi ke Hari Ini
@@ -391,32 +426,31 @@ function PanelContent({
           onClick={canDoQuiz ? onOpenQuiz : undefined}
           style={{
             width: "100%",
-            minHeight: 40,
-            borderRadius: 12,
+            minHeight: 36,
+            borderRadius: 11,
             border: `1px solid ${canDoQuiz ? C.bd : C.bdL}`,
             background: canDoQuiz ? C.inkS : "#F7F8F8",
             color: canDoQuiz ? C.ink : C.sub,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 700,
             cursor: canDoQuiz ? "pointer" : "not-allowed",
             display: "flex",
             alignItems: "center",
             gap: 8,
-            padding: "0 12px",
+            padding: "0 11px",
             opacity: canDoQuiz ? 1 : 0.7,
           }}
         >
-          <HelpCircle size={15} color={canDoQuiz ? C.ink : C.sub} />
+          <HelpCircle size={14} color={canDoQuiz ? C.ink : C.sub} />
           <span>Brave Choice Quiz</span>
           <div style={{ flex: 1 }} />
-
           {user.plan === "free" ? (
             <span
               style={{
-                fontSize: 9,
+                fontSize: 8,
                 fontWeight: 800,
                 color: canDoQuiz ? C.ink : C.redD,
-                padding: "3px 8px",
+                padding: "3px 7px",
                 borderRadius: 999,
                 background: canDoQuiz ? C.inkT : C.redL,
                 border: `1px solid ${canDoQuiz ? C.bd : "#F7B6B6"}`,
@@ -426,32 +460,32 @@ function PanelContent({
               {quizRemaining}/{planCfg.quizPerDay}
             </span>
           ) : (
-            <Crown size={14} color={C.gold} />
+            <Crown size={13} color={C.gold} />
           )}
         </button>
 
         {!canDoQuiz && user.plan === "free" ? (
           <div
             style={{
-              padding: "8px 10px",
+              padding: "7px 9px",
               borderRadius: 10,
               background: C.redL,
               border: `1px solid #F5BBBB`,
               display: "flex",
-              gap: 8,
+              gap: 7,
               alignItems: "flex-start",
             }}
           >
             <AlertTriangle
-              size={14}
+              size={13}
               color={C.red}
               style={{ flexShrink: 0, marginTop: 1 }}
             />
             <p
               style={{
                 margin: 0,
-                fontSize: 10,
-                lineHeight: 1.5,
+                fontSize: 9,
+                lineHeight: 1.45,
                 color: C.redD,
                 fontWeight: 600,
               }}
@@ -467,80 +501,108 @@ function PanelContent({
         style={{
           flex: 1,
           minHeight: 0,
-          overflowY: "auto",
-          padding: 10,
+          overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          gap: 8,
           background: C.paperL,
         }}
       >
-        {entries.length > 0 ? (
-          entries.map((entry) => (
-            <EntryCard
-              key={entry.id}
-              entry={entry}
-              isActive={selectedEntry?.id === entry.id}
-              onClick={() => onSelectEntry(entry)}
-            />
-          ))
-        ) : (
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            background: C.paperL,
+          }}
+        >
           <div
             style={{
-              border: `1px solid ${C.bdL}`,
-              background: C.white,
-              borderRadius: 12,
-              padding: "16px 14px",
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              overflowX: "hidden",
+              padding: "6px 10px 10px",
+              display: "flex",
+              flexDirection: "column",
+              gap: ENTRY_GAP,
+              background: C.paperL,
+              overscrollBehavior: "contain",
+              WebkitOverflowScrolling: "touch",
             }}
           >
-            <p
-              style={{
-                margin: "0 0 6px",
-                fontSize: 12,
-                fontWeight: 800,
-                color: C.inkD,
-              }}
-            >
-              Belum ada entri diary
-            </p>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 11,
-                color: C.sub,
-                lineHeight: 1.6,
-                fontStyle: "italic",
-              }}
-            >
-              Coba pilih tanggal lain atau kembali ke hari ini.
-            </p>
+            {entries.length > 0 ? (
+              entries.map((entry) => (
+                <div key={entry.id} style={{ flexShrink: 0 }}>
+                  <EntryCard
+                    entry={entry}
+                    isActive={selectedEntry?.id === entry.id}
+                    onClick={() => onSelectEntry(entry)}
+                  />
+                </div>
+              ))
+            ) : (
+              <div
+                style={{
+                  border: `1px solid ${C.bdL}`,
+                  background: C.white,
+                  borderRadius: 12,
+                  padding: "14px 12px",
+                }}
+              >
+                <p
+                  style={{
+                    margin: "0 0 6px",
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: C.inkD,
+                  }}
+                >
+                  Belum ada entri diary
+                </p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 10,
+                    color: C.sub,
+                    lineHeight: 1.55,
+                    fontStyle: "italic",
+                  }}
+                >
+                  Coba pilih tanggal lain atau kembali ke hari ini.
+                </p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <div
         style={{
-          padding: "12px 14px",
+          padding: "10px 12px",
           borderTop: `1px solid ${C.bdL}`,
           background: C.paper,
           display: "flex",
           justifyContent: "space-between",
-          gap: 10,
+          gap: 8,
           alignItems: "center",
           flexWrap: "wrap",
+          flexShrink: 0,
+          zIndex: 5,
         }}
       >
         <div
           style={{
             display: "inline-flex",
             alignItems: "center",
-            gap: 6,
+            gap: 5,
             color: C.muted,
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: 700,
           }}
         >
-          <Flame size={14} color={C.orange} />
+          <Flame size={13} color={C.orange} />
           <span>
             Streak{" "}
             <strong style={{ color: C.ink }}>{user.streakDays} hari</strong>
@@ -551,19 +613,19 @@ function PanelContent({
           style={{
             display: "inline-flex",
             alignItems: "center",
-            gap: 6,
+            gap: 5,
             color: C.muted,
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: 700,
           }}
         >
-          <BookMarked size={14} color={C.ink} />
+          <BookMarked size={13} color={C.ink} />
           <span>
-            <strong style={{ color: C.ink }}>{user.totalEntries}</strong> entri
+            <strong style={{ color: C.ink }}>{totalEntries}</strong> entri
           </span>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -583,8 +645,8 @@ function MonthNavButton({
       aria-label={ariaLabel}
       title={ariaLabel}
       style={{
-        width: 32,
-        height: 32,
+        width: 30,
+        height: 30,
         borderRadius: 10,
         border: `1px solid ${C.bdL}`,
         background: C.white,
@@ -596,13 +658,44 @@ function MonthNavButton({
         boxShadow: "0 2px 8px rgba(13,70,70,0.05)",
         position: "relative",
         zIndex: 2,
+        flexShrink: 0,
       }}
     >
       {direction === "prev" ? (
-        <ChevronLeft size={15} color={C.ink} />
+        <ChevronLeft size={14} color={C.ink} />
       ) : (
-        <ChevronRight size={15} color={C.ink} />
+        <ChevronRight size={14} color={C.ink} />
       )}
     </button>
   );
 }
+function railButtonStyle(): React.CSSProperties {
+  return {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    border: `1px solid ${C.bdL}`,
+    background: "rgba(255,255,255,0.96)",
+    color: C.inkD,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 6px 14px rgba(13,70,70,0.06)",
+    cursor: "pointer",
+    flexShrink: 0,
+  };
+}
+
+const collapsedHandleBtn: React.CSSProperties = {
+  width: 36,
+  height: 36,
+  borderRadius: 12,
+  border: `1px solid ${C.bdL}`,
+  background: C.white,
+  color: C.ink,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  boxShadow: "0 6px 18px rgba(13,70,70,0.08)",
+};

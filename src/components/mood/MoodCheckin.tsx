@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -95,13 +95,13 @@ function getLocalDateString(timezone: string) {
 
   return `${year}-${month}-${day}`;
 }
-
 export function MoodCheckin({
   userName: initialUserName = "[Username]",
 }: {
   userName?: string;
 }) {
   const router = useRouter();
+  const hasCheckedToday = useRef(false);
 
   const [userName, setUserName] = useState(initialUserName);
   const [moodScore, setMoodScore] = useState<number | null>(null);
@@ -126,6 +126,9 @@ export function MoodCheckin({
   }, []);
 
   useEffect(() => {
+    if (hasCheckedToday.current) return;
+    hasCheckedToday.current = true;
+
     const ensureNoDuplicateCheckin = async () => {
       try {
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -139,9 +142,7 @@ export function MoodCheckin({
           },
         );
 
-        if (!response.ok) {
-          return;
-        }
+        if (!response.ok) return;
 
         const payload = (await response.json()) as {
           success?: boolean;
@@ -240,9 +241,7 @@ export function MoodCheckin({
 
     onError: (error) => {
       if (error?.status === 409) {
-        toast.error(
-          error.message || "Kamu sudah mengisi mood check-in hari ini.",
-        );
+        router.replace("/home");
       } else {
         toast.error(
           error?.message || "Gagal mengirim mood. Silakan coba lagi.",
