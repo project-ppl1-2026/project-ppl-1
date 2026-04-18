@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useMemo,
   useRef,
   useCallback,
   type RefObject,
@@ -31,13 +32,12 @@ type Props = {
   messages: ChatMessage[];
   inputValue: string;
   isAiTyping: boolean;
+  sendError?: string | null;
   isReadOnly: boolean;
   canWriteDiary: boolean;
   isPremium: boolean;
   diaryPerMonth: number;
   isMobile?: boolean;
-  chatScrollRef: RefObject<HTMLDivElement | null>;
-  textareaRef: RefObject<HTMLTextAreaElement | null>;
   onPrevEntry: () => void;
   onNextEntry: () => void;
   onInputChange: (value: string) => void;
@@ -45,26 +45,38 @@ type Props = {
   onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
 };
 
+type DisplayChatMessage = ChatMessage & {
+  displayKey: string;
+  showAiMeta?: boolean;
+  showTimestamp?: boolean;
+};
+
 export function DiaryRightPage({
   entry,
   messages,
   inputValue,
   isAiTyping,
+  sendError,
   isReadOnly,
   canWriteDiary,
   isPremium,
   diaryPerMonth,
   isMobile = false,
-  chatScrollRef,
-  textareaRef,
   onPrevEntry,
   onNextEntry,
   onInputChange,
   onSend,
   onKeyDown,
 }: Props) {
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const canSend = inputValue.trim().length > 0 && !isAiTyping;
-  const bottomAnchorRef = useRef<HTMLDivElement | null>(null);
+  const displayMessages = useMemo(
+    () => buildDisplayMessages(messages),
+    [messages],
+  );
+  const lastMessageText =
+    displayMessages[displayMessages.length - 1]?.text ?? "";
 
   const resizeTextarea = useCallback(() => {
     const el = textareaRef.current;
@@ -78,15 +90,35 @@ export function DiaryRightPage({
   }, [textareaRef, isMobile]);
 
   useEffect(() => {
+    const chatContainer = chatScrollRef.current;
+
+    if (!chatContainer) {
+      return;
+    }
+
+    let nestedRafId: number | null = null;
     const id = window.requestAnimationFrame(() => {
-      bottomAnchorRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "end",
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      nestedRafId = window.requestAnimationFrame(() => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
       });
     });
 
-    return () => window.cancelAnimationFrame(id);
-  }, [messages, isAiTyping]);
+    const timeoutId = window.setTimeout(() => {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, 120);
+
+    return () => {
+      window.cancelAnimationFrame(id);
+
+      if (nestedRafId !== null) {
+        window.cancelAnimationFrame(nestedRafId);
+      }
+
+      window.clearTimeout(timeoutId);
+    };
+  }, [entry.id, displayMessages.length, lastMessageText, isAiTyping]);
 
   useEffect(() => {
     resizeTextarea();
@@ -306,7 +338,6 @@ export function DiaryRightPage({
           gap: 12,
           background: `linear-gradient(180deg, ${C.paper} 0%, ${C.white} 100%)`,
           WebkitOverflowScrolling: "touch",
-          scrollBehavior: "smooth",
         }}
       >
         {isReadOnly ? (
@@ -338,13 +369,16 @@ export function DiaryRightPage({
           </div>
         ) : null}
 
-        {messages.map((msg, i) => (
-          <ChatBubble key={msg.id ?? i} message={msg} />
+        {displayMessages.map((msg) => (
+          <ChatBubble
+            key={msg.displayKey}
+            message={msg}
+            showAiMeta={msg.showAiMeta}
+            showTimestamp={msg.showTimestamp}
+          />
         ))}
 
         {isAiTyping ? <TypingIndicator /> : null}
-
-        <div ref={bottomAnchorRef} style={{ height: 1, flexShrink: 0 }} />
       </div>
 
       <div
@@ -357,6 +391,24 @@ export function DiaryRightPage({
           position: "relative",
         }}
       >
+        {sendError ? (
+          <div
+            style={{
+              marginBottom: 10,
+              padding: "8px 10px",
+              borderRadius: 10,
+              border: `1px solid ${C.amberB}`,
+              background: C.amberL,
+              color: C.amber,
+              fontSize: 11,
+              lineHeight: 1.45,
+              fontFamily: fonts.sans,
+            }}
+          >
+            {sendError}
+          </div>
+        ) : null}
+
         {isReadOnly ? (
           <LockedInputNotice message="Entri lampau tidak bisa diedit — pilih Hari Ini untuk menulis baru." />
         ) : !canWriteDiary ? (
@@ -375,6 +427,167 @@ export function DiaryRightPage({
       </div>
     </div>
   );
+}
+
+function buildDisplayMessages(messages: ChatMessage[]): DisplayChatMessage[] {
+  return messages.flatMap((message, index) => {
+    const baseId = message.id || `${message.role}-${index}`;
+
+    if (message.role !== "ai") {
+      return [
+        {
+          ...message,
+          displayKey: baseId,
+          showAiMeta: false,
+          showTimestamp: true,
+        },
+      ];
+    }
+
+    const bubbles = splitAiMessageIntoBubbles(message.text);
+
+    if (bubbles.length <= 1) {
+      return [
+        {
+          ...message,
+          text: bubbles[0] ?? message.text,
+          displayKey: baseId,
+          showAiMeta: true,
+          showTimestamp: true,
+        },
+      ];
+    }
+
+    return bubbles.map((bubbleText, bubbleIndex) => ({
+      ...message,
+      text: bubbleText,
+      displayKey: `${baseId}-bubble-${bubbleIndex}`,
+      showAiMeta: bubbleIndex === 0,
+      showTimestamp: bubbleIndex === bubbles.length - 1,
+    }));
+  });
+}
+
+function splitAiMessageIntoBubbles(rawText: string): string[] {
+  const normalized = rawText.replace(/\r\n/g, "\n").trim();
+
+  if (!normalized) {
+    return [];
+  }
+
+  const paragraphBlocks = normalized
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  if (paragraphBlocks.length > 1) {
+    return paragraphBlocks.flatMap((block) => splitLongBlockIntoBubbles(block));
+  }
+
+  const lineBlocks = normalized
+    .split("\n")
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  if (lineBlocks.length > 1) {
+    return lineBlocks.flatMap((block) => splitLongBlockIntoBubbles(block));
+  }
+
+  return splitLongBlockIntoBubbles(normalized);
+}
+
+function splitLongBlockIntoBubbles(block: string): string[] {
+  const MAX_BUBBLE_CHARS = 210;
+  const IDEAL_BUBBLE_CHARS = 150;
+  const MAX_SENTENCES_PER_BUBBLE = 2;
+
+  if (block.length <= MAX_BUBBLE_CHARS) {
+    return [block];
+  }
+
+  const sentences = splitIntoSentences(block);
+
+  if (sentences.length <= 1) {
+    return chunkTextByLength(block, IDEAL_BUBBLE_CHARS);
+  }
+
+  const bundled: string[] = [];
+  let currentBubble = "";
+  let sentenceCount = 0;
+
+  for (const sentence of sentences) {
+    const nextBubble = currentBubble
+      ? `${currentBubble} ${sentence}`
+      : sentence;
+
+    const canAppendByLength = nextBubble.length <= MAX_BUBBLE_CHARS;
+    const canAppendByCount = sentenceCount < MAX_SENTENCES_PER_BUBBLE;
+
+    if (currentBubble && (!canAppendByLength || !canAppendByCount)) {
+      bundled.push(currentBubble);
+      currentBubble = sentence;
+      sentenceCount = 1;
+      continue;
+    }
+
+    currentBubble = nextBubble;
+    sentenceCount += 1;
+
+    if (currentBubble.length >= IDEAL_BUBBLE_CHARS) {
+      bundled.push(currentBubble);
+      currentBubble = "";
+      sentenceCount = 0;
+    }
+  }
+
+  if (currentBubble) {
+    bundled.push(currentBubble);
+  }
+
+  return bundled.flatMap((item) =>
+    item.length <= MAX_BUBBLE_CHARS
+      ? [item]
+      : chunkTextByLength(item, IDEAL_BUBBLE_CHARS),
+  );
+}
+
+function splitIntoSentences(text: string): string[] {
+  const matches = text.match(/[^.!?]+(?:[.!?]+|$)/g);
+
+  if (!matches) {
+    return [text.trim()].filter(Boolean);
+  }
+
+  return matches.map((item) => item.trim()).filter(Boolean);
+}
+
+function chunkTextByLength(text: string, maxChars: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+
+  if (!words.length) {
+    return [];
+  }
+
+  const chunks: string[] = [];
+  let currentChunk = "";
+
+  for (const word of words) {
+    const candidate = currentChunk ? `${currentChunk} ${word}` : word;
+
+    if (currentChunk && candidate.length > maxChars) {
+      chunks.push(currentChunk);
+      currentChunk = word;
+      continue;
+    }
+
+    currentChunk = candidate;
+  }
+
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
 }
 
 function NavArrowButton({

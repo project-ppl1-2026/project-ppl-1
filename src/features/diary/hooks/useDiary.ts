@@ -7,10 +7,11 @@ import type {
   PlanConfig,
   UserProfile,
 } from "../types";
+import { PLAN_CONFIG } from "../constants/planConfig";
 import {
   getDiaryEntries,
   getDiaryMessages,
-  sendChatMessage,
+  sendChatMessageStream,
 } from "../services/diaryServices";
 
 type InitialUserMeta = {
@@ -34,30 +35,24 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
   const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [isAiTyping, setIsAiTyping] = useState(false);
+  const [isMessagesLoading, setIsMessagesLoading] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const [activeMonthKey, setActiveMonthKey] = useState(initialMonthKey);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(today);
 
-  const chatScrollRef = useRef<HTMLDivElement | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-
   const initialEntryIdRef = useRef(entryId);
   const hasResolvedInitialEntryRef = useRef(false);
   const pendingCalendarSelectionRef = useRef<Date | undefined>(undefined);
+  const skipNextMessagesFetchEntryIdRef = useRef<string | null>(null);
 
   const planCfg: PlanConfig = useMemo(() => {
-    if (user?.plan === "premium") {
-      return {
-        diaryPerMonth: Infinity,
-        quizPerDay: Infinity,
-      };
+    if (!user) {
+      return PLAN_CONFIG.free;
     }
 
-    return {
-      diaryPerMonth: 10,
-      quizPerDay: 5,
-    };
-  }, [user?.plan]);
+    return PLAN_CONFIG[user.plan];
+  }, [user]);
 
   const activeMonth = useMemo(() => {
     return formatMonthLabel(activeMonthKey);
@@ -88,28 +83,41 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
       setIsLoading(true);
       setIsMonthLoading(true);
 
-      // reset keras supaya UI lama benar-benar hilang
+      // Reset list dan chat saat pindah bulan supaya state lama tidak bocor.
       setEntries([]);
       setSelectedEntry(null);
       setMessages([]);
 
-      const diaryEntries = await getDiaryEntries(activeMonthKey);
+      try {
+        const diaryEntriesResult = await getDiaryEntries(activeMonthKey);
 
-      if (ignore) return;
+        if (ignore) return;
 
-      setEntries(diaryEntries);
+        setEntries(diaryEntriesResult.entries);
 
-      setUser((prev) =>
-        prev
-          ? {
-              ...prev,
-              totalEntries: diaryEntries.length,
-            }
-          : prev,
-      );
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                totalEntries: diaryEntriesResult.entries.length,
+                diarySessionsUsedThisMonth:
+                  diaryEntriesResult.diarySessionsUsedThisMonth,
+              }
+            : prev,
+        );
+      } catch (error) {
+        console.error("Failed to load diary entries:", error);
 
-      setIsMonthLoading(false);
-      setIsLoading(false);
+        if (ignore) return;
+
+        setEntries([]);
+        setMessages([]);
+      } finally {
+        if (!ignore) {
+          setIsMonthLoading(false);
+          setIsLoading(false);
+        }
+      }
     }
 
     loadEntries();
@@ -122,17 +130,16 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
   useEffect(() => {
     if (isMonthLoading) return;
 
-    // kalau satu bulan ini memang kosong
     if (!entries.length) {
       setSelectedEntry(null);
       setMessages([]);
+      setSendError(null);
       pendingCalendarSelectionRef.current = undefined;
       return;
     }
 
     let nextEntry: DiaryEntry | null = null;
 
-    // route entry hanya sekali saat awal
     if (!hasResolvedInitialEntryRef.current && initialEntryIdRef.current) {
       nextEntry =
         entries.find((entry) => entry.id === initialEntryIdRef.current) ?? null;
@@ -153,7 +160,6 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
           (entry) => normalizeDateKey(entry.date) === targetDateKey,
         ) ?? null;
 
-      // bulan ada diary, tapi hari yang dipilih tidak ada
       if (!nextEntry && pendingCalendarSelectionRef.current) {
         const fallbackEntry = findClosestEntry(entries, targetDate);
 
@@ -194,19 +200,40 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
     });
   }, [entries, selectedDate, today, isMonthLoading]);
 
+  const selectedEntryId = selectedEntry?.id;
   useEffect(() => {
     let ignore = false;
 
     async function loadMessages() {
-      if (!selectedEntry) {
+      if (!selectedEntryId) {
         setMessages([]);
+        setIsMessagesLoading(false);
         return;
       }
 
-      const diaryMessages = await getDiaryMessages(selectedEntry.id);
+      if (skipNextMessagesFetchEntryIdRef.current === selectedEntryId) {
+        skipNextMessagesFetchEntryIdRef.current = null;
+        setIsMessagesLoading(false);
+        return;
+      }
 
-      if (ignore) return;
-      setMessages(diaryMessages);
+      setIsMessagesLoading(true);
+
+      try {
+        const diaryMessages = await getDiaryMessages(selectedEntryId);
+
+        if (ignore) return;
+        setMessages(diaryMessages);
+      } catch (error) {
+        console.error("Failed to load diary messages:", error);
+
+        if (ignore) return;
+        setMessages([]);
+      } finally {
+        if (!ignore) {
+          setIsMessagesLoading(false);
+        }
+      }
     }
 
     loadMessages();
@@ -214,7 +241,19 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
     return () => {
       ignore = true;
     };
-  }, [selectedEntry]);
+  }, [selectedEntryId]);
+
+  useEffect(() => {
+    if (!selectedEntryId || typeof window === "undefined") {
+      return;
+    }
+
+    const nextPath = `/diary/${selectedEntryId}`;
+
+    if (window.location.pathname !== nextPath) {
+      window.history.replaceState(window.history.state, "", nextPath);
+    }
+  }, [selectedEntryId]);
 
   const currentEntryIndex = selectedEntry
     ? entries.findIndex((entry) => entry.id === selectedEntry.id)
@@ -232,9 +271,17 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
   const canWriteDiary = user?.plan === "premium" || diaryRemaining > 0;
 
   async function handleSendMessage() {
-    if (!selectedEntry || !inputValue.trim() || !canWriteDiary) return;
+    if (
+      !selectedEntry ||
+      !inputValue.trim() ||
+      !canWriteDiary ||
+      isMessagesLoading
+    ) {
+      return;
+    }
 
     const userText = inputValue.trim();
+    setSendError(null);
 
     const newUserMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -248,41 +295,127 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
         .replace(":", "."),
     };
 
+    const streamingAiMessageId = `ai-stream-${Date.now()}`;
+    const streamingAiMessageTime = new Date()
+      .toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+      .replace(":", ".");
+
     const nextMessages = [...messages, newUserMessage];
     setMessages(nextMessages);
     setInputValue("");
     setIsAiTyping(true);
 
     try {
-      const aiText = await sendChatMessage(
-        selectedEntry.id,
-        userText,
-        nextMessages,
+      const result = await sendChatMessageStream(selectedEntry.id, userText, {
+        onChunk: (textChunk) => {
+          if (!textChunk) {
+            return;
+          }
+
+          setIsAiTyping(false);
+          setMessages((prev) => {
+            const existingStreamMessageIndex = prev.findIndex(
+              (message) => message.id === streamingAiMessageId,
+            );
+
+            if (existingStreamMessageIndex === -1) {
+              return [
+                ...prev,
+                {
+                  id: streamingAiMessageId,
+                  role: "ai",
+                  text: textChunk,
+                  time: streamingAiMessageTime,
+                },
+              ];
+            }
+
+            return prev.map((message) =>
+              message.id === streamingAiMessageId
+                ? {
+                    ...message,
+                    text: `${message.text}${textChunk}`,
+                  }
+                : message,
+            );
+          });
+        },
+      });
+
+      setMessages((prev) => {
+        const existingStreamMessageIndex = prev.findIndex(
+          (message) => message.id === streamingAiMessageId,
+        );
+
+        if (existingStreamMessageIndex === -1) {
+          return [...prev, result.aiMessage];
+        }
+
+        return prev.map((message) =>
+          message.id === streamingAiMessageId ? result.aiMessage : message,
+        );
+      });
+      setEntries((prev) => upsertEntryByDate(prev, result.entry));
+
+      if (selectedEntry.id !== result.entry.id) {
+        skipNextMessagesFetchEntryIdRef.current = result.entry.id;
+        setSelectedEntry(result.entry);
+      }
+
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              diarySessionsUsedThisMonth: result.diarySessionsUsedThisMonth,
+            }
+          : prev,
       );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Gagal mengirim pesan diary. Silakan coba lagi.";
 
-      const aiMessage: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        role: "ai",
-        text: aiText,
-        time: new Date()
-          .toLocaleTimeString("id-ID", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-          .replace(":", "."),
-      };
+      setMessages((prev) => {
+        const withoutStreamingMessage = prev.filter(
+          (item) => item.id !== streamingAiMessageId,
+        );
 
-      setMessages((prev) => [...prev, aiMessage]);
+        return [
+          ...withoutStreamingMessage,
+          {
+            id: `ai-error-${Date.now()}`,
+            role: "ai",
+            text: `Maaf, balasan AI belum tersedia. ${message}`,
+            time: streamingAiMessageTime,
+          },
+        ];
+      });
+      setInputValue(userText);
+      setSendError(message);
     } finally {
       setIsAiTyping(false);
     }
   }
 
+  function handleInputChange(value: string) {
+    setInputValue(value);
+
+    if (value.trim().length > 0) {
+      setSendError(null);
+    }
+  }
+
   function handleKeyDown() {}
+
   function selectEntry(entry: DiaryEntry) {
     hasResolvedInitialEntryRef.current = true;
     initialEntryIdRef.current = undefined;
     pendingCalendarSelectionRef.current = undefined;
+    setSendError(null);
 
     setSelectedEntry(entry);
     setSelectedDate(parseDateKey(entry.date));
@@ -379,7 +512,6 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
       return;
     }
 
-    // bulan ini ada diary, tapi tanggalnya kosong
     const fallbackEntry = findClosestEntry(entries, date);
 
     if (fallbackEntry) {
@@ -413,14 +545,14 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
     selectedDate,
     inputValue,
     isAiTyping,
+    isMessagesLoading,
+    sendError,
     isReadOnly,
     canWriteDiary,
     currentEntryIndex,
     diaryRemaining,
     planCfg,
-    chatScrollRef,
-    textareaRef,
-    setInputValue,
+    setInputValue: handleInputChange,
     setSelectedEntry: selectEntry,
     handleSendMessage,
     handleKeyDown,
@@ -449,6 +581,21 @@ function findClosestEntry(entries: DiaryEntry[], targetDate: Date) {
   });
 
   return sorted[0] ?? null;
+}
+
+function upsertEntryByDate(entries: DiaryEntry[], incoming: DiaryEntry) {
+  const incomingDateKey = normalizeDateKey(incoming.date);
+
+  const merged = [
+    incoming,
+    ...entries.filter(
+      (entry) =>
+        entry.id !== incoming.id &&
+        normalizeDateKey(entry.date) !== incomingDateKey,
+    ),
+  ];
+
+  return merged.sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 
 function startOfDay(date: Date) {

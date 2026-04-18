@@ -3,106 +3,36 @@
 // ============================================================
 
 import type { DiaryEntry, ChatMessage, BraveChoiceQuiz } from "../types";
+type ApiErrorResponse = {
+  error?: string;
+};
 
-const MOCK_ENTRIES: DiaryEntry[] = [
-  {
-    id: "entry-1",
-    date: "2026-04-13",
-    dateLabel: "Senin, 13 Apr 2026",
-    preview: "Hari ini aku merasa jauh lebih baik dari kemarin...",
-    mood: 4,
-    isToday: true,
-  },
-  {
-    id: "entry-2",
-    date: "2026-04-12",
-    dateLabel: "Minggu, 12 Apr 2026",
-    preview: "Presentasi tadi bikin aku deg-degan banget...",
-    mood: 3,
-  },
-  {
-    id: "entry-3",
-    date: "2026-04-11",
-    dateLabel: "Sabtu, 11 Apr 2026",
-    preview: "Akhirnya bisa ngobrol sama mama soal ini...",
-    mood: 5,
-  },
-  {
-    id: "entry-4",
-    date: "2026-04-10",
-    dateLabel: "Jumat, 10 Apr 2026",
-    preview: "Nggak terlalu produktif, tapi oke-oke aja...",
-    mood: 3,
-  },
-  {
-    id: "entry-5",
-    date: "2026-04-09",
-    dateLabel: "Kamis, 9 Apr 2026",
-    preview: "Dapat nilai bagus di ujian fisika!",
-    mood: 5,
-  },
-  {
-    id: "entry-6",
-    date: "2026-03-28",
-    dateLabel: "Sabtu, 28 Mar 2026",
-    preview: "Weekend yang melelahkan tapi menyenangkan!",
-    mood: 4,
-  },
-  {
-    id: "entry-7",
-    date: "2026-03-27",
-    dateLabel: "Jumat, 27 Mar 2026",
-    preview: "Teman-teman sedikit nyebelin hari ini...",
-    mood: 2,
-  },
-  {
-    id: "entry-8",
-    date: "2026-05-02",
-    dateLabel: "Sabtu, 2 Mei 2026",
-    preview: "Aku merasa lebih tenang minggu ini...",
-    mood: 4,
-  },
-  {
-    id: "entry-9",
-    date: "2026-04-08",
-    dateLabel: "Rabu, 8 Apr 2026",
-    preview: "Dapat nilai bagus di ujian fisika!",
-    mood: 5,
-  },
-];
+type DiaryEntriesApiResponse = {
+  success?: boolean;
+  error?: string;
+  data?: {
+    entries?: DiaryEntry[];
+    diarySessionsUsedThisMonth?: number;
+  };
+};
 
-const MOCK_MESSAGES: ChatMessage[] = [
-  {
-    id: "msg-1",
-    role: "ai",
-    text: "Halo Clarisya! Selamat pagi 🌱 Ceritakan, bagaimana harimu dimulai hari ini?",
-    time: "07.30",
-  },
-  {
-    id: "msg-2",
-    role: "user",
-    text: "Pagi! Aku merasa agak cemas soal presentasi hari ini, tapi juga excited.",
-    time: "07.32",
-  },
-  {
-    id: "msg-3",
-    role: "ai",
-    text: "Cemas dan excited sekaligus — itu tanda kamu peduli dan siap. Apa yang paling bikin kamu deg-degan dari presentasi itu?",
-    time: "07.32",
-  },
-  {
-    id: "msg-4",
-    role: "user",
-    text: "Takut lupa materi di tengah-tengah, atau audience-nya nggak tertarik sama topikku.",
-    time: "07.35",
-  },
-  {
-    id: "msg-5",
-    role: "ai",
-    text: "Ketakutan itu sangat wajar. Coba ingat: satu hal yang sudah kamu persiapkan dengan baik untuk presentasi itu apa? Mulai dari sana, dan kamu akan menemukan kepercayaan dirimu 🌟",
-    time: "07.35",
-  },
-];
+type DiaryMessagesApiResponse = {
+  success?: boolean;
+  error?: string;
+  data?: {
+    messages?: ChatMessage[];
+  };
+};
+
+export type SendDiaryChatStreamResult = {
+  aiMessage: ChatMessage;
+  entry: DiaryEntry;
+  diarySessionsUsedThisMonth: number;
+};
+
+type SendDiaryChatStreamOptions = {
+  onChunk?: (textChunk: string) => void;
+};
 
 const MOCK_QUIZ_POOL: BraveChoiceQuiz[] = [
   {
@@ -128,41 +58,200 @@ const MOCK_QUIZ_POOL: BraveChoiceQuiz[] = [
   },
 ];
 
-export async function getDiaryEntries(month: string): Promise<DiaryEntry[]> {
-  await delay(350);
-  return MOCK_ENTRIES.filter((entry) => entry.date.startsWith(month)).sort(
-    (a, b) => (a.date < b.date ? 1 : -1),
-  );
+export async function getDiaryEntries(month: string): Promise<{
+  entries: DiaryEntry[];
+  diarySessionsUsedThisMonth: number;
+}> {
+  const timezone = getTimezone();
+  const query = new URLSearchParams({
+    month,
+    timezone,
+  }).toString();
+
+  const response = await fetch(`/api/diary?${query}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await extractResponseError(
+        response,
+        "Gagal memuat riwayat diary. Silakan coba lagi.",
+      ),
+    );
+  }
+
+  const payload = (await response.json()) as DiaryEntriesApiResponse;
+
+  if (!payload.success || !payload.data) {
+    throw new Error(payload.error || "Riwayat diary tidak valid.");
+  }
+
+  return {
+    entries: Array.isArray(payload.data.entries) ? payload.data.entries : [],
+    diarySessionsUsedThisMonth:
+      typeof payload.data.diarySessionsUsedThisMonth === "number"
+        ? payload.data.diarySessionsUsedThisMonth
+        : 0,
+  };
 }
 
 export async function getDiaryMessages(
   entryId: string,
 ): Promise<ChatMessage[]> {
-  void entryId;
-  await delay(250);
-  return MOCK_MESSAGES;
+  const timezone = getTimezone();
+  const query = new URLSearchParams({
+    timezone,
+  }).toString();
+
+  const response = await fetch(
+    `/api/diary/${encodeURIComponent(entryId)}/messages?${query}`,
+    {
+      method: "GET",
+      cache: "no-store",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      await extractResponseError(
+        response,
+        "Gagal memuat percakapan diary. Silakan coba lagi.",
+      ),
+    );
+  }
+
+  const payload = (await response.json()) as DiaryMessagesApiResponse;
+
+  if (!payload.success || !payload.data) {
+    throw new Error(payload.error || "Percakapan diary tidak valid.");
+  }
+
+  return Array.isArray(payload.data.messages) ? payload.data.messages : [];
 }
 
-export async function sendChatMessage(
+export async function sendChatMessageStream(
   entryId: string,
   userMessage: string,
-  history: ChatMessage[],
-): Promise<string> {
-  void entryId;
-  void userMessage;
-  void history;
+  options: SendDiaryChatStreamOptions = {},
+): Promise<SendDiaryChatStreamResult> {
+  const timezone = getTimezone();
+  const response = await fetch("/api/diary/chat/stream", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      entryId,
+      messageText: userMessage,
+      timezone,
+    }),
+  });
 
-  await delay(900);
+  if (!response.ok) {
+    throw new Error(
+      await extractResponseError(
+        response,
+        "Gagal mengirim pesan diary. Silakan coba lagi.",
+      ),
+    );
+  }
 
-  const mockReplies = [
-    "Terima kasih sudah mau cerita. Bagaimana perasaanmu sekarang setelah menuliskannya? 🌿",
-    "Itu insight yang bagus banget! Apa satu langkah kecil yang bisa kamu lakukan hari ini?",
-    "Kamu sedang berkembang — terus ceritakan kalau mau, aku di sini mendengarkan 🌱",
-    "Wajar banget kamu merasakan itu. Apa yang membuat kamu tetap semangat hari ini?",
-    "Keren! Kamu sudah mengenali perasaanmu sendiri dengan baik. Itu skill penting banget lho ✨",
-  ];
+  if (!response.body) {
+    throw new Error("Stream diary tidak tersedia.");
+  }
 
-  return mockReplies[Math.floor(Math.random() * mockReplies.length)];
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let doneResult: SendDiaryChatStreamResult | null = null;
+
+  const handleSseBlock = (rawBlock: string) => {
+    const parsed = parseSseBlock(rawBlock);
+
+    if (!parsed) {
+      return;
+    }
+
+    if (parsed.event === "chunk") {
+      const data = asRecord(parsed.data);
+      const textChunk = typeof data?.text === "string" ? data.text : "";
+
+      if (textChunk) {
+        options.onChunk?.(textChunk);
+      }
+
+      return;
+    }
+
+    if (parsed.event === "error") {
+      const data = asRecord(parsed.data);
+      const message =
+        typeof data?.error === "string"
+          ? data.error
+          : "Terjadi kesalahan saat memproses chat diary.";
+
+      throw new Error(message);
+    }
+
+    if (parsed.event === "done") {
+      const data = parsed.data;
+
+      if (isSendDiaryChatStreamResult(data)) {
+        doneResult = data;
+        return;
+      }
+
+      throw new Error("Balasan diary stream tidak valid.");
+    }
+  };
+
+  const processBuffer = () => {
+    let separatorIndex = buffer.indexOf("\n\n");
+
+    while (separatorIndex !== -1) {
+      const rawBlock = buffer.slice(0, separatorIndex).trim();
+      buffer = buffer.slice(separatorIndex + 2);
+
+      if (rawBlock) {
+        handleSseBlock(rawBlock);
+      }
+
+      separatorIndex = buffer.indexOf("\n\n");
+    }
+  };
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      const chunkText = decoder.decode(value, { stream: true });
+      buffer += chunkText.replace(/\r\n/g, "\n");
+      processBuffer();
+    }
+
+    buffer += decoder.decode().replace(/\r\n/g, "\n");
+    processBuffer();
+
+    const leftover = buffer.trim();
+
+    if (leftover) {
+      handleSseBlock(leftover);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (!doneResult) {
+    throw new Error("Balasan AI belum lengkap. Coba kirim ulang pesanmu.");
+  }
+
+  return doneResult;
 }
 
 export async function getBraveChoiceQuiz(): Promise<BraveChoiceQuiz> {
@@ -184,4 +273,132 @@ export async function submitQuizAnswer(
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getTimezone() {
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    if (!timezone) {
+      return "Asia/Jakarta";
+    }
+
+    return timezone;
+  } catch {
+    return "Asia/Jakarta";
+  }
+}
+
+async function extractResponseError(
+  response: Response,
+  fallbackMessage: string,
+) {
+  try {
+    const payload = (await response.json()) as ApiErrorResponse;
+
+    if (typeof payload.error === "string" && payload.error.trim()) {
+      return payload.error;
+    }
+  } catch {
+    // Ignore parsing error and fallback to generic message.
+  }
+
+  return fallbackMessage;
+}
+
+function parseSseBlock(
+  rawBlock: string,
+): { event: string; data: unknown } | null {
+  const lines = rawBlock.split("\n");
+  let event = "message";
+  const dataLines: string[] = [];
+
+  for (const line of lines) {
+    if (!line || line.startsWith(":")) {
+      continue;
+    }
+
+    if (line.startsWith("event:")) {
+      event = line.slice("event:".length).trim() || "message";
+      continue;
+    }
+
+    if (line.startsWith("data:")) {
+      dataLines.push(line.slice("data:".length).trimStart());
+    }
+  }
+
+  if (!dataLines.length) {
+    return null;
+  }
+
+  const rawData = dataLines.join("\n");
+
+  try {
+    return {
+      event,
+      data: JSON.parse(rawData),
+    };
+  } catch {
+    return {
+      event,
+      data: rawData,
+    };
+  }
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function isDiaryEntry(value: unknown): value is DiaryEntry {
+  const record = asRecord(value);
+
+  if (!record) {
+    return false;
+  }
+
+  return (
+    typeof record.id === "string" &&
+    typeof record.date === "string" &&
+    typeof record.dateLabel === "string" &&
+    typeof record.preview === "string" &&
+    typeof record.mood === "number"
+  );
+}
+
+function isChatMessage(value: unknown): value is ChatMessage {
+  const record = asRecord(value);
+
+  if (!record) {
+    return false;
+  }
+
+  const role = record.role;
+
+  return (
+    typeof record.text === "string" &&
+    typeof record.time === "string" &&
+    (role === "ai" || role === "user")
+  );
+}
+
+function isSendDiaryChatStreamResult(
+  value: unknown,
+): value is SendDiaryChatStreamResult {
+  const record = asRecord(value);
+
+  if (!record) {
+    return false;
+  }
+
+  return (
+    isChatMessage(record.aiMessage) &&
+    isDiaryEntry(record.entry) &&
+    typeof record.diarySessionsUsedThisMonth === "number"
+  );
 }
