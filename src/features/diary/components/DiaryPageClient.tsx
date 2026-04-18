@@ -257,6 +257,7 @@ export function DiaryPageClient({
                 messages={diary.messages}
                 inputValue={diary.inputValue}
                 isAiTyping={diary.isAiTyping}
+                sendError={diary.sendError}
                 isReadOnly={diary.isReadOnly}
                 canWriteDiary={diary.canWriteDiary}
                 isPremium={isPremium}
@@ -265,8 +266,6 @@ export function DiaryPageClient({
                     ? 999
                     : diary.planCfg.diaryPerMonth
                 }
-                chatScrollRef={diary.chatScrollRef}
-                textareaRef={diary.textareaRef}
                 onPrevEntry={diary.goToPrevEntry}
                 onNextEntry={diary.goToNextEntry}
                 onInputChange={diary.setInputValue}
@@ -323,6 +322,7 @@ export function DiaryPageClient({
               messages={diary.messages}
               inputValue={diary.inputValue}
               isAiTyping={diary.isAiTyping}
+              sendError={diary.sendError}
               isReadOnly={diary.isReadOnly}
               canWriteDiary={diary.canWriteDiary}
               isPremium={isPremium}
@@ -331,8 +331,6 @@ export function DiaryPageClient({
                   ? 999
                   : diary.planCfg.diaryPerMonth
               }
-              chatScrollRef={diary.chatScrollRef}
-              textareaRef={diary.textareaRef}
               onPrevEntry={diary.goToPrevEntry}
               onNextEntry={diary.goToNextEntry}
               onInputChange={diary.setInputValue}

@@ -8,10 +8,17 @@ import { AiAvatar } from "./AiAvatar";
 
 type Props = {
   message: ChatMessage;
+  showAiMeta?: boolean;
+  showTimestamp?: boolean;
 };
 
-export function ChatBubble({ message }: Props) {
+export function ChatBubble({
+  message,
+  showAiMeta = true,
+  showTimestamp = true,
+}: Props) {
   const isAi = message.role === "ai";
+  const shouldShowAiMeta = isAi && showAiMeta;
 
   return (
     <div
@@ -21,10 +28,16 @@ export function ChatBubble({ message }: Props) {
         gap: 8,
       }}
     >
-      {isAi && <AiAvatar />}
+      {isAi ? (
+        shouldShowAiMeta ? (
+          <AiAvatar />
+        ) : (
+          <div style={{ width: 28, flexShrink: 0 }} />
+        )
+      ) : null}
 
       <div style={{ maxWidth: "72%" }}>
-        {isAi && (
+        {shouldShowAiMeta && (
           <p
             style={{
               fontSize: 9,
@@ -67,16 +80,18 @@ export function ChatBubble({ message }: Props) {
           </div>
         </div>
 
-        <p
-          style={{
-            fontSize: 9,
-            color: C.sub,
-            marginTop: 3,
-            textAlign: isAi ? "left" : "right",
-          }}
-        >
-          {message.time}
-        </p>
+        {showTimestamp ? (
+          <p
+            style={{
+              fontSize: 9,
+              color: C.sub,
+              marginTop: 3,
+              textAlign: isAi ? "left" : "right",
+            }}
+          >
+            {message.time}
+          </p>
+        ) : null}
       </div>
     </div>
   );
