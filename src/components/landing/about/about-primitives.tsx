@@ -14,7 +14,7 @@ export function SectionHeader({
 }) {
   return (
     <div className="mx-auto mb-12 max-w-3xl text-center">
-      <h2 className="text-3xl font-bold tracking-tight text-text-brand-primary sm:text-4xl">
+      <h2 className="text-3xl font-bold tracking-tight text-brand-teal sm:text-4xl">
         {title}
       </h2>
       <p className="mx-auto mt-3 max-w-2xl text-text-brand-secondary">
