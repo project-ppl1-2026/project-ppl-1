@@ -20,14 +20,7 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer
-      className="relative overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(180deg, var(--brand-footer-bg) 0%, var(--brand-footer-mid) 100%)",
-        borderTop: "1px solid rgba(255,255,255,0.1)",
-      }}
-    >
+    <footer className="relative overflow-hidden bg-white border-t border-brand-border">
       <div className="relative mx-auto max-w-7xl px-6 py-14">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-2">
@@ -37,14 +30,14 @@ export function Footer() {
                 alt="TemanTumbuh"
                 width={32}
                 height={32}
-                className="rounded-lg brightness-0 invert"
+                className="rounded-lg"
               />
-              <span className="text-sm font-bold text-(--brand-footer-text)">
+              <span className="text-lg font-bold text-brand-teal">
                 TemanTumbuh
               </span>
             </div>
 
-            <p className="mb-6 max-w-xs text-sm leading-relaxed text-(--brand-footer-subtext)">
+            <p className="mb-6 max-w-xs text-sm leading-relaxed text-text-brand-secondary">
               Platform refleksi diri dan kesadaran sosial untuk usia 10-29
               tahun. Tumbuh bersama, lebih aman.
             </p>
@@ -52,16 +45,16 @@ export function Footer() {
             <div className="flex flex-col gap-3">
               <a
                 href="mailto:temantumbuh.team@gmail.com"
-                className="flex cursor-pointer items-center gap-2 text-sm text-(--brand-footer-subtext) transition-opacity duration-150 hover:opacity-70"
+                className="flex w-fit cursor-pointer items-center gap-2 text-sm font-medium text-text-brand-secondary transition-colors duration-150 hover:text-brand-teal"
               >
-                <Mail size={14} />
+                <Mail size={16} />
                 temantumbuh.team@gmail.com
               </a>
             </div>
           </div>
 
           <div>
-            <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-(--brand-primary-light)">
+            <p className="mb-5 text-xs font-bold uppercase tracking-widest text-brand-teal">
               Tautan
             </p>
             <ul className="flex flex-col gap-3">
@@ -69,7 +62,7 @@ export function Footer() {
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                    className="cursor-pointer text-sm text-(--brand-footer-subtext) transition-opacity duration-150 hover:opacity-70"
+                    className="cursor-pointer text-sm font-medium text-text-brand-secondary transition-colors duration-150 hover:text-brand-teal"
                   >
                     {item.label}
                   </Link>
@@ -79,7 +72,7 @@ export function Footer() {
           </div>
 
           <div>
-            <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-(--brand-primary-light)">
+            <p className="mb-5 text-xs font-bold uppercase tracking-widest text-brand-teal">
               Ikuti Kami
             </p>
 
@@ -89,8 +82,7 @@ export function Footer() {
                   key={item.label}
                   href={item.href}
                   aria-label={item.label}
-                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl text-(--brand-primary-light) transition-all duration-150 hover:-translate-y-0.5 hover:opacity-80"
-                  style={{ background: "var(--brand-footer-card)" }}
+                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-page-bg1 text-brand-teal transition-all duration-150 hover:-translate-y-0.5 hover:bg-brand-teal-ghost hover:text-brand-teal-dark"
                 >
                   {item.icon}
                 </a>
@@ -99,21 +91,15 @@ export function Footer() {
 
             <Link
               href="/register"
-              className="inline-flex w-full cursor-pointer items-center justify-center rounded-xl bg-(--brand-primary) px-4 py-2.5 text-sm font-semibold text-white transition-opacity duration-150 hover:opacity-90"
+              className="inline-flex w-full cursor-pointer items-center justify-center rounded-xl bg-brand-teal px-4 py-3 text-sm font-bold text-white transition-all duration-150 hover:bg-brand-teal-mid hover:shadow-lg hover:shadow-brand-teal/20"
             >
               Mulai Diary
             </Link>
           </div>
         </div>
 
-        <div
-          className="mt-12 border-t pt-6 text-center text-xs"
-          style={{
-            borderColor: "rgba(255,255,255,0.1)",
-            color: "rgba(255,255,255,0.42)",
-          }}
-        >
-          TemanTumbuh © 2025. All rights reserved. · Proyek Perangkat Lunak I ·
+        <div className="mt-12 border-t border-brand-border pt-6 text-center text-xs font-medium text-text-brand-muted">
+          TemanTumbuh © 2026. All rights reserved. · Proyek Perangkat Lunak I ·
           Kelompok Cegukan · Universitas Padjadjaran
         </div>
       </div>

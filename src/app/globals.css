@@ -11,6 +11,38 @@
   --font-sans: var(--font-plus-jakarta);
   --font-mono: var(--font-geist-mono);
 
+  --color-brand-teal: #1a9688;
+  --color-brand-teal-mid: #28b0a4;
+  --color-brand-teal-light: #4ecfc3;
+  --color-brand-teal-pale: #a8e0da;
+  --color-brand-teal-ghost: #ddf5f2;
+  --color-brand-teal-dark: #0f6b60;
+
+  --color-page-bg0: #fafbff;
+  --color-page-bg1: #eef4fb;
+  --color-page-bg2: #e4eefa;
+  --color-page-bg5: #e8f7f3;
+  --color-page-bg6: #d8f1eb;
+  --color-page-how-bg: #e0f5f0;
+
+  --color-accent-coral: #fde8dc;
+  --color-accent-gold: #fdf0cc;
+  --color-accent-gold-border: #f0d898;
+  --color-accent-gold-soft: #fdf6e3;
+  --color-accent-gold-soft-2: #fff8e7;
+  --color-accent-gold-text: #b7791f;
+  --color-accent-gold-text-deep: #9a6a18;
+  --color-accent-gold-cta: #c58a1f;
+  --color-accent-gold-cta-hover: #a77218;
+  --color-accent-gold-ghost: rgba(224, 160, 48, 0.12);
+  --color-accent-gold-ghost-strong: rgba(224, 160, 48, 0.18);
+
+  --color-brand-border: #c8dced;
+
+  --color-text-brand-primary: #1a2840;
+  --color-text-brand-secondary: #3a5068;
+  --color-text-brand-muted: #7090a8;
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -50,26 +82,6 @@
 }
 
 :root {
-  --color-brand-teal: #1a9688;
-  --color-brand-teal-mid: #28b0a4;
-  --color-brand-teal-light: #4ecfc3;
-  --color-brand-teal-pale: #a8e0da;
-  --color-brand-teal-ghost: #ddf5f2;
-  --color-brand-teal-dark: #0f6b60;
-
-  --color-page-bg0: #fafbff;
-  --color-page-bg1: #eef4fb;
-  --color-page-how-bg: #e0f5f0;
-
-  --color-accent-coral: #fde8dc;
-  --color-accent-gold: #fdf0cc;
-
-  --color-brand-border: #c8dced;
-
-  --color-text-brand-primary: #1a2840;
-  --color-text-brand-secondary: #3a5068;
-  --color-text-brand-muted: #7090a8;
-
   --gradient-brand-btn: linear-gradient(
     135deg,
     #0f6b60 0%,

@@ -24,9 +24,8 @@ export function AuthShell({
   children,
   footer,
   showLogo = true,
-  showTopBar = true,
-  maxWidth = 420,
   compact = true,
+  maxWidth = 420,
 }: AuthShellProps) {
   const shouldReduce = useReducedMotion();
 
@@ -39,7 +38,7 @@ export function AuthShell({
         transition={springBouncy}
         className="relative w-full overflow-hidden rounded-[24px]"
         style={{
-          maxWidth,
+          maxWidth: maxWidth,
           background: "rgba(255,255,255,0.94)",
           border: "1px solid rgba(190, 227, 221, 0.9)",
           boxShadow:
@@ -48,15 +47,6 @@ export function AuthShell({
           WebkitBackdropFilter: "blur(10px)",
         }}
       >
-        {showTopBar ? (
-          <div
-            style={{
-              height: 4,
-              background: "var(--gradient-brand-bar)",
-            }}
-          />
-        ) : null}
-
         <div
           className={
             compact
