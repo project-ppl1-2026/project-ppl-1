@@ -30,7 +30,6 @@ export function AboutMissionSection() {
               icon={missionIcons[mission.icon]}
               title={mission.title}
               desc={mission.desc}
-              tag={mission.tag}
             />
           ))}
         </div>

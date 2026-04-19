@@ -30,24 +30,26 @@ export function HomeCtaSection() {
         ]}
       />
 
-      <div className="relative mx-auto max-w-2xl px-6 text-center">
-        <ScrollReveal>
-          <h2 className="mb-4 text-2xl font-bold text-white md:text-4xl">
-            Siap Mulai Perjalananmu?
-          </h2>
+      <div className="relative mx-auto w-full max-w-7xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <ScrollReveal>
+            <h2 className="mb-4 text-2xl font-bold text-white md:text-4xl">
+              Siap Mulai Perjalananmu?
+            </h2>
 
-          <p className="mb-8 text-sm leading-relaxed text-white/90 md:text-base">
-            Bergabunglah dengan pengguna TemanTumbuh dan mulai refleksi
-            harianmu.
-          </p>
+            <p className="mb-8 text-sm leading-relaxed text-white/90 md:text-base">
+              Bergabunglah dengan pengguna TemanTumbuh dan mulai refleksi
+              harianmu.
+            </p>
 
-          <Link
-            href="/register"
-            className="inline-flex items-center rounded-xl bg-white px-8 py-3.5 text-sm font-semibold text-brand-teal transition-all hover:bg-page-bg1 active:scale-[0.97]"
-          >
-            Mulai Diary Sekarang
-          </Link>
-        </ScrollReveal>
+            <Link
+              href="/register"
+              className="inline-flex items-center rounded-xl bg-white px-8 py-3.5 text-sm font-semibold text-brand-teal transition-all hover:bg-page-bg1 active:scale-[0.97]"
+            >
+              Mulai Diary Sekarang
+            </Link>
+          </ScrollReveal>
+        </div>
       </div>
     </section>
   );

@@ -179,7 +179,7 @@ export function HomeHeroSection() {
         />
       </div>
 
-      <div className="relative mx-auto grid w-full max-w-6xl items-center gap-16 px-6 py-20 md:grid-cols-2 md:py-28 lg:px-8">
+      <div className="relative mx-auto grid w-full max-w-7xl items-center gap-16 px-6 py-20 md:grid-cols-2 md:py-28">
         <div>
           <ScrollReveal delay={0.2}>
             <h1 className="mb-5 text-4xl font-bold leading-[1.1] text-text-brand-primary md:text-5xl lg:text-6xl">

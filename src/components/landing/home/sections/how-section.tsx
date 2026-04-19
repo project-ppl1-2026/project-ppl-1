@@ -27,7 +27,7 @@ const themeClasses: Record<
     text: "text-brand-teal",
     indexBubble: "bg-brand-teal-ghost",
     cta: "bg-brand-teal text-white hover:bg-brand-teal-dark",
-    card: "bg-[linear-gradient(140deg,var(--color-brand-teal-ghost)_0%,var(--color-page-how-bg)_100%)]",
+    card: "bg-white/90",
   },
   gold: {
     tag: "border border-[var(--color-accent-gold-border)] bg-[var(--color-accent-gold-ghost)] text-[var(--color-accent-gold-text)]",
@@ -111,7 +111,7 @@ export function HomeHowSection() {
         ]}
       />
 
-      <div className="relative mx-auto max-w-6xl px-6 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-6">
         <ScrollReveal>
           <SectionIntro
             badge="Cara Kerja"

@@ -20,19 +20,16 @@ export const missions = [
     icon: "lightbulb",
     title: "Mendorong Refleksi Diri",
     desc: "Membantu remaja mengenali dan memahami emosinya sendiri melalui Daily Mood Check-In harian serta Safe Diary yang terjaga privasinya.",
-    tag: "Refleksi Diri",
   },
   {
     icon: "book",
     title: "Edukasi Sosial",
     desc: "Menyediakan edukasi interaktif melalui Brave Choice Trivia Quiz untuk melatih kemampuan berpikir kritis dalam menghadapi situasi sosial berisiko.",
-    tag: "Edukasi Sosial",
   },
   {
     icon: "shield",
     title: "Jembatan Terpercaya",
     desc: "Menjembatani komunikasi antara anak dan orang tua dengan prinsip privasi ketat melalui laporan mingguan yang bersifat umum.",
-    tag: "Jembatan Keluarga",
   },
 ] as const;
 
