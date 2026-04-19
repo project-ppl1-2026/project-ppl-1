@@ -10,8 +10,9 @@ import { aboutImages } from "./about-data";
 export function AboutHeroSection() {
   return (
     <section className="relative overflow-hidden bg-[linear-gradient(180deg,var(--color-page-bg0)_0%,var(--color-page-bg1)_100%)] py-24">
-      <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-16 px-6 lg:flex-row lg:items-center">
-        <div className="max-w-2xl flex-1 space-y-8">
+      <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
+        {/* Left — Text */}
+        <div className="space-y-8">
           <ScrollReveal>
             <h1 className="text-4xl leading-tight font-extrabold text-text-brand-primary md:text-5xl">
               Mewujudkan <span className="text-brand-teal">Ruang Digital</span>{" "}
@@ -70,17 +71,19 @@ export function AboutHeroSection() {
           </ScrollReveal>
         </div>
 
-        <ScrollReveal className="w-full max-w-xl flex-1" delay={0.12}>
-          <div className="relative h-96 overflow-hidden rounded-3xl border border-brand-border shadow-[0_10px_32px_rgba(26,40,64,0.12)]">
+        {/* Right — Image */}
+        <ScrollReveal delay={0.12}>
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-brand-border shadow-[0_10px_32px_rgba(26,40,64,0.12)]">
             <Image
               src={aboutImages.hero}
               alt="University students supportive environment"
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
+              className="object-cover object-center"
+              priority
               unoptimized
             />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,52,50,0.05)_5%,rgba(17,52,50,0.62)_100%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_50%,rgba(17,52,50,0.65)_100%)]" />
             <div className="absolute bottom-5 left-5 right-5">
               <p className="text-sm font-semibold text-white">
                 Kelompok Cegukan · Teknik Informatika
