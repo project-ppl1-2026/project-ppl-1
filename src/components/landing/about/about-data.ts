@@ -9,12 +9,6 @@ export const aboutImages = {
   dev2: "https://images.unsplash.com/photo-1709202967828-e1a7823ccdf6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx5b3VuZyUyMHdvbWFuJTIwc3R1ZGVudCUyMHNtaWxpbmclMjBjb25maWRlbnQlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NzQ5NTA1MzN8MA&ixlib=rb-4.1.0&q=80&w=400",
 } as const;
 
-export const heroStats = [
-  { value: "10-29", label: "Rentang Usia Pengguna" },
-  { value: "3", label: "Fitur Inti Platform" },
-  { value: "SDG 16", label: "Komitmen Global" },
-] as const;
-
 export const missions = [
   {
     icon: "lightbulb",
@@ -62,7 +56,7 @@ export const teamMembers = [
     name: "Mira Suryani, S.Pd, M.Kom.",
     role: "Dosen Pembimbing",
     subtitle: "Program Studi Informatika · Universitas Padjadjaran",
-    imgSrc: aboutImages.mira,
+    imgSrc: "/img/team/mira.png",
     isAdvisor: true,
     isPlaceholder: false,
   },
@@ -70,41 +64,41 @@ export const teamMembers = [
     name: "Adelia Felisha",
     role: "Project Manager",
     subtitle: "Kelompok Cegukan · Universitas Padjadjaran",
-    imgSrc: "",
+    imgSrc: "/img/team/adelia.png",
     isAdvisor: false,
-    isPlaceholder: true,
+    isPlaceholder: false,
   },
   {
     name: "Clarisya",
     role: "Frontend Developer",
     subtitle: "Kelompok Cegukan · Universitas Padjadjaran",
-    imgSrc: aboutImages.clarisya,
+    imgSrc: "/img/team/clarisya.png",
     isAdvisor: false,
-    isPlaceholder: true,
+    isPlaceholder: false,
   },
   {
     name: "Yazid Dahren Fauzan",
     role: "Frontend Developer",
     subtitle: "Kelompok Cegukan · Universitas Padjadjaran",
-    imgSrc: aboutImages.dev2,
+    imgSrc: "/img/team/yazid.png",
     isAdvisor: false,
-    isPlaceholder: true,
+    isPlaceholder: false,
   },
   {
     name: "Lukas Austin",
     role: "Backend Developer",
     subtitle: "Kelompok Cegukan · Universitas Padjadjaran",
-    imgSrc: aboutImages.dev,
+    imgSrc: "/img/team/lukas.png",
     isAdvisor: false,
-    isPlaceholder: true,
+    isPlaceholder: false,
   },
 
   {
     name: "Dzulfadlul",
     role: "Backend Developer",
     subtitle: "Kelompok Cegukan · Universitas Padjadjaran",
-    imgSrc: "",
+    imgSrc: "/img/team/dzul.png",
     isAdvisor: false,
-    isPlaceholder: true,
+    isPlaceholder: false,
   },
 ] as const;
