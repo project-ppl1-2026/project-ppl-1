@@ -10,7 +10,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 import {
@@ -126,7 +126,7 @@ function StepHeading({
   return (
     <div className="mb-4 text-center">
       <h2
-        className="mb-1 text-lg font-bold"
+        className="mb-2 text-xl font-bold"
         style={{ color: "var(--color-text-brand-primary)" }}
       >
         {title}
@@ -183,7 +183,7 @@ function Step1Form({
         variant="outline"
         onClick={onGoogle}
         disabled={isGoogleLoading}
-        className="mb-3.5 h-10.5 w-full gap-3 rounded-xl border-[1.5px] bg-white font-semibold"
+        className="mb-4 h-11 w-full gap-4 rounded-lg border-[1.5px] bg-white font-semibold"
         style={{
           borderColor: "var(--color-brand-border)",
           color: "var(--color-text-brand-primary)",
@@ -197,13 +197,13 @@ function Step1Form({
         {isGoogleLoading ? "Menghubungkan..." : "Daftar dengan Google"}
       </Button>
 
-      <div className="mb-3.5 flex items-center gap-3">
+      <div className="mb-4 flex items-center gap-4">
         <div
           className="h-px flex-1"
           style={{ background: "var(--color-brand-border)" }}
         />
         <span
-          className="text-[11px]"
+          className="text-sm"
           style={{ color: "var(--color-text-brand-muted)" }}
         >
           atau dengan email
@@ -218,7 +218,7 @@ function Step1Form({
         onSubmit={handleSubmit(async (data) => {
           await onNext(data);
         })}
-        className="space-y-3"
+        className="space-y-4"
         noValidate
       >
         <AuthField id="reg-email" label="Email" error={errors.email?.message}>
@@ -228,7 +228,7 @@ function Step1Form({
             placeholder="email@contoh.com"
             autoComplete="email"
             autoFocus
-            className="h-10.5 rounded-xl"
+            className="h-11 rounded-lg"
             {...register("email")}
           />
         </AuthField>
@@ -243,7 +243,7 @@ function Step1Form({
             id="reg-password"
             placeholder="Buat password"
             autoComplete="new-password"
-            className="h-10.5 rounded-xl"
+            className="h-11 rounded-lg"
             hasError={!!errors.password}
             {...register("password")}
           />
@@ -258,7 +258,7 @@ function Step1Form({
             id="reg-confirm"
             placeholder="Ulangi password"
             autoComplete="new-password"
-            className="h-10.5 rounded-xl"
+            className="h-11 rounded-lg"
             hasError={!!errors.confirm}
             {...register("confirm")}
           />
@@ -267,7 +267,7 @@ function Step1Form({
         <Button
           type="submit"
           disabled={isSubmitting || isEmailLoading}
-          className="mt-1 h-10.5 w-full rounded-xl font-semibold text-white"
+          className="mt-1 h-11 w-full rounded-lg font-semibold text-white"
           style={{
             background: "var(--gradient-brand-btn)",
             boxShadow: "0 4px 18px rgba(26,150,136,0.18)",
@@ -285,14 +285,13 @@ function Step1Form({
                 : isCompleteProfileFlow
                   ? "Lanjut"
                   : "Daftar & Verifikasi"}
-              <ArrowRight className="ml-2 h-4 w-4" />
             </>
           )}
         </Button>
       </form>
 
       {verificationEmail && !isCompleteProfileFlow ? (
-        <div className="mt-3.5">
+        <div className="mt-4">
           <AuthInfoCard>
             Link verifikasi sudah dikirim ke{" "}
             <strong>{verificationEmail}</strong>. Cek inbox/spam, verifikasi
@@ -348,7 +347,7 @@ function Step2Form({
         description="Kami sesuaikan pengalaman untukmu"
       />
 
-      <form onSubmit={handleSubmit(onNext)} className="space-y-3" noValidate>
+      <form onSubmit={handleSubmit(onNext)} className="space-y-4" noValidate>
         <AuthField
           id="reg-name"
           label="Nama Lengkap"
@@ -360,7 +359,7 @@ function Step2Form({
             placeholder="Nama kamu"
             autoComplete="name"
             autoFocus
-            className="h-10.5 rounded-xl"
+            className="h-11 rounded-lg"
             {...register("name")}
           />
         </AuthField>
@@ -377,7 +376,7 @@ function Step2Form({
               <Select value={field.value ?? ""} onValueChange={field.onChange}>
                 <SelectTrigger
                   id="reg-birthYear"
-                  className="h-10.5 w-full rounded-xl"
+                  className="h-11 w-full rounded-lg"
                 >
                   <SelectValue placeholder="Pilih tahun lahir" />
                 </SelectTrigger>
@@ -405,7 +404,7 @@ function Step2Form({
               <Select value={field.value ?? ""} onValueChange={field.onChange}>
                 <SelectTrigger
                   id="reg-gender"
-                  className="h-10.5 w-full rounded-xl"
+                  className="h-11 w-full rounded-lg"
                 >
                   <SelectValue placeholder="Pilih jenis kelamin" />
                 </SelectTrigger>
@@ -426,19 +425,18 @@ function Step2Form({
           tidak akan dibagikan kepada pihak ketiga.
         </AuthInfoCard> */}
 
-        <div className="mt-1 flex gap-3">
+        <div className="mt-1 flex gap-4">
           {canGoBack ? (
             <Button
               type="button"
               variant="outline"
               onClick={onBack}
-              className="h-10.5 flex-1 rounded-xl border-[1.5px] font-semibold"
+              className="h-11 flex-1 rounded-lg border-[1.5px] font-semibold"
               style={{
                 borderColor: "var(--color-brand-border)",
                 color: "var(--color-text-brand-secondary)",
               }}
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
               Kembali
             </Button>
           ) : null}
@@ -446,7 +444,7 @@ function Step2Form({
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="h-10.5 flex-1 rounded-xl font-semibold text-white"
+            className="h-11 flex-1 rounded-lg font-semibold text-white"
             style={{
               background: "var(--gradient-brand-btn)",
               boxShadow: "0 4px 18px rgba(26,150,136,0.18)",
@@ -458,10 +456,7 @@ function Step2Form({
                 Memproses...
               </>
             ) : (
-              <>
-                Lanjut
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </>
+              <>Lanjut</>
             )}
           </Button>
         </div>
@@ -499,10 +494,7 @@ function Step3Form({
       variants={slideInVariants}
       transition={springSmooth}
     >
-      <StepHeading
-        title="Laporan Mingguan"
-        description="Opsional — bisa dilewati kapan saja"
-      />
+      <StepHeading title="Laporan Mingguan" description="" />
 
       <div className="mb-4">
         <AuthInfoCard icon="parent">
@@ -511,7 +503,7 @@ function Step3Form({
       </div>
       <form
         onSubmit={handleSubmit(onFinalSubmit)}
-        className="space-y-3"
+        className="space-y-4"
         noValidate
       >
         <AuthField
@@ -525,30 +517,29 @@ function Step3Form({
             type="email"
             placeholder="email-orangtua@contoh.com"
             autoComplete="off"
-            className="h-10.5 rounded-xl"
+            className="h-11 rounded-lg"
             {...register("parentEmail")}
           />
         </AuthField>
 
-        <div className="mt-1 flex gap-3">
+        <div className="mt-1 flex gap-4">
           <Button
             type="button"
             variant="outline"
             onClick={onBack}
-            className="h-10.5 flex-1 rounded-xl border-[1.5px] font-semibold"
+            className="h-11 flex-1 rounded-lg border-[1.5px] font-semibold"
             style={{
               borderColor: "var(--color-brand-border)",
               color: "var(--color-text-brand-secondary)",
             }}
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
             Kembali
           </Button>
 
           <Button
             type="submit"
             disabled={isLoading}
-            className="h-10.5 flex-1 rounded-xl font-semibold text-white"
+            className="h-11 flex-1 rounded-lg font-semibold text-white"
             style={{
               background: "var(--gradient-brand-btn)",
               boxShadow: "0 4px 18px rgba(26,150,136,0.18)",
@@ -560,16 +551,13 @@ function Step3Form({
                 Mendaftar...
               </>
             ) : (
-              <>
-                Selesai &amp; Daftar
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </>
+              <>Selesai</>
             )}
           </Button>
         </div>
 
         <p
-          className="text-center text-[11px]"
+          className="text-center text-xs"
           style={{ color: "var(--color-text-brand-muted)" }}
         >
           Email orang tua bisa ditambahkan nanti melalui pengaturan akun.
@@ -599,20 +587,20 @@ function SuccessScreen({ name }: { name: string }) {
         className="mb-4"
       >
         <CheckCircle2
-          className="h-12 w-12"
+          className="h-11 w-12"
           style={{ color: "var(--color-brand-teal)" }}
         />
       </motion.div>
 
       <h2
-        className="mb-2 text-lg font-bold"
+        className="mb-2 text-xl font-bold"
         style={{ color: "var(--color-text-brand-primary)" }}
       >
         Selamat Datang, {name || "Teman"}!
       </h2>
 
       <p
-        className="mb-5 max-w-xs text-sm leading-relaxed"
+        className="mb-4 max-w-xs text-sm leading-relaxed"
         style={{ color: "var(--color-text-brand-muted)" }}
       >
         Akunmu berhasil dibuat. Kamu siap memulai perjalanan tumbuh bersama
@@ -621,16 +609,13 @@ function SuccessScreen({ name }: { name: string }) {
 
       <Button
         asChild
-        className="h-10.5 w-full rounded-xl font-semibold text-white"
+        className="h-11 w-full rounded-lg font-semibold text-white"
         style={{
           background: "var(--gradient-brand-btn)",
           boxShadow: "0 4px 18px rgba(26,150,136,0.18)",
         }}
       >
-        <Link href="/">
-          Lanjut ke Beranda
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Link>
+        <Link href="/">Lanjut ke Beranda</Link>
       </Button>
     </motion.div>
   );
@@ -801,8 +786,8 @@ function RegisterPageContent() {
     <BrandPageBackground fillViewport>
       <AuthShell
         showLogo={!done}
-        maxWidth={430}
-        compact
+        maxWidth={440}
+        compact={false}
         footer={
           !done && !isCompleteProfileFlow ? (
             <>
