@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { CheckCircle2, Star, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/landing/about/about-primitives";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { useEffect } from "react";
 
 import {
   Accordion,
@@ -73,6 +73,10 @@ function PRow({
 }
 
 export function PricingContent() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
+
   const price = 59000;
 
   return (

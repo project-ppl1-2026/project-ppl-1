@@ -1,11 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
+import { useEffect } from "react";
 
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Button } from "@/components/ui/button";
 
 export function FeaturesHero() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
+
   return (
     <section className="relative overflow-hidden bg-[linear-gradient(180deg,var(--color-page-bg0)_0%,var(--color-page-bg1)_100%)] py-24">
       <div className="absolute inset-0 pointer-events-none overflow-hidden">

@@ -655,11 +655,11 @@ export function FeaturesPrivacy() {
             </div>
 
             <h3 className="mt-6 text-xl font-bold text-text-brand-primary">
-              Perkembangan Anda Minggu Ini
+              Perkembangan Anak Anda Minggu Ini
             </h3>
 
             <p className="mt-4 text-sm leading-relaxed text-text-brand-secondary">
-              Minggu ini Anda menunjukkan konsistensi yang baik dalam sesi
+              Minggu ini anak anda menunjukkan konsistensi yang baik dalam sesi
               refleksi harian. Partisipasi pada latihan keputusan emosional juga
               meningkat dan menunjukkan pola berpikir yang lebih matang.
             </p>
