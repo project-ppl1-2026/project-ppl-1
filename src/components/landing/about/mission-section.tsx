@@ -35,7 +35,7 @@ export function AboutMissionSection() {
           ))}
         </div>
 
-        <Card className="mt-16 overflow-hidden border-none bg-[linear-gradient(135deg,var(--about-dark-teal)_0%,#0D5A5A_50%,var(--about-accent)_100%)] text-white shadow-[0_16px_56px_rgba(27,107,107,0.28)]">
+        <Card className="mt-16 overflow-hidden border-none bg-[linear-gradient(135deg,var(--color-brand-teal-dark)_0%,#0D5A5A_50%,var(--color-brand-teal)_100%)] text-white shadow-[0_16px_56px_rgba(27,107,107,0.28)]">
           <div className="flex flex-col lg:flex-row">
             <CardContent className="z-10 flex-1 space-y-6 p-10 lg:p-14">
               <Badge className="rounded-full bg-white/20 px-4 py-1.5 text-white hover:bg-white/20">
@@ -75,7 +75,7 @@ export function AboutMissionSection() {
                 className="object-cover opacity-70"
                 unoptimized
               />
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--about-dark-teal)_0%,transparent_40%)]" />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--color-brand-teal-dark)_0%,transparent_40%)]" />
             </div>
           </div>
         </Card>

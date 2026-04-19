@@ -18,20 +18,20 @@ export const heroStats = [
 export const missions = [
   {
     icon: "lightbulb",
-    title: "Empowering Reflection",
-    desc: "Membantu remaja mengenali dan memahami emosinya sendiri melalui Daily Mood Check-In harian dan Safe Diary yang terjaga privasinya.",
+    title: "Mendorong Refleksi Diri",
+    desc: "Membantu remaja mengenali dan memahami emosinya sendiri melalui Daily Mood Check-In harian serta Safe Diary yang terjaga privasinya.",
     tag: "Refleksi Diri",
   },
   {
     icon: "book",
-    title: "Social Education",
-    desc: "Edukasi interaktif melalui Brave Choice Trivia Quiz untuk melatih kemampuan berpikir kritis dalam menghadapi situasi sosial berisiko.",
+    title: "Edukasi Sosial",
+    desc: "Menyediakan edukasi interaktif melalui Brave Choice Trivia Quiz untuk melatih kemampuan berpikir kritis dalam menghadapi situasi sosial berisiko.",
     tag: "Edukasi Sosial",
   },
   {
     icon: "shield",
-    title: "Trusted Bridge",
-    desc: "Menjembatani komunikasi antara anak dan orang tua dengan prinsip privasi ketat melalui laporan mingguan yang bersifat generik.",
+    title: "Jembatan Terpercaya",
+    desc: "Menjembatani komunikasi antara anak dan orang tua dengan prinsip privasi ketat melalui laporan mingguan yang bersifat umum.",
     tag: "Jembatan Keluarga",
   },
 ] as const;

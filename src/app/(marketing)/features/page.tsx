@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { FeaturesHero } from "@/components/pages/features/features-hero";
+import { FeaturesHero } from "@/components/landing/features/features-hero";
 import {
   FeaturesOverview,
   FeaturesDiary,
@@ -7,7 +7,7 @@ import {
   FeaturesQuote,
   FeaturesPrivacy,
   FeaturesCTA,
-} from "@/components/pages/features/features-sections";
+} from "@/components/landing/features/features-sections";
 
 export const metadata: Metadata = {
   title: "Fitur TemanTumbuh",

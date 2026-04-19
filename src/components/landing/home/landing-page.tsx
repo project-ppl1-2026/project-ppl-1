@@ -1,6 +1,6 @@
 // ============================================================
-// src/components/pages/LandingPage.tsx
-// Pindahkan SEMUA isi landing page lama ke sini
+// src/components/landing/home/landing-page.tsx
+// Komponen utama landing home page (route "/")
 // ============================================================
 
 "use client";
@@ -20,7 +20,6 @@ import {
   FeatureCard,
   PurposeCard,
   TestiCard,
-  Icons,
   heroBubbles,
   featuresBubbles,
   howBubbles,
@@ -360,7 +359,7 @@ export default function LandingPage() {
                     boxShadow: `0 4px 20px rgba(26,150,136,0.32)`,
                   }}
                 >
-                  Mulai Sekarang <Icons.Arrow />
+                  Mulai Sekarang
                 </Link>
 
                 <Link
@@ -734,7 +733,7 @@ export default function LandingPage() {
                 boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
               }}
             >
-              Mulai Diary Sekarang <Icons.Arrow />
+              Mulai Diary Sekarang
             </Link>
           </div>
         </Reveal>

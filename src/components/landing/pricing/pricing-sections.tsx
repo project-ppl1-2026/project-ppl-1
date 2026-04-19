@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Shield,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
 const TABLE_ROWS = [
@@ -91,12 +92,12 @@ function PRow({
 }) {
   return (
     <div
-      className={`flex items-start gap-4 py-2 border-b ${on ? "border-teal-100/50" : "border-transparent"}`}
+      className={`flex items-start gap-4 py-2 border-b ${on ? "border-brand-border/50" : "border-transparent"}`}
     >
       <div className="shrink-0 mt-0.5">
         {on ? (
           <CheckCircle2
-            className={`w-[18px] h-[18px] transition-colors ${premium ? "text-teal-800" : "text-emerald-500"}`}
+            className={`w-[18px] h-[18px] transition-colors ${premium ? "text-brand-teal-dark" : "text-brand-teal"}`}
           />
         ) : (
           <XIcon className="w-[18px] h-[18px] text-teal-200" />
@@ -106,9 +107,9 @@ function PRow({
         className={`text-sm transition-colors ${
           on
             ? highlight
-              ? "text-teal-950 font-semibold"
-              : "text-teal-800"
-            : "text-teal-400 line-through decoration-teal-200"
+              ? "text-text-brand-primary font-semibold"
+              : "text-brand-teal-dark"
+            : "text-[#89a0a6] line-through decoration-teal-200"
         }`}
       >
         {text}
@@ -122,33 +123,54 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 
   return (
     <div
-      className={`rounded-2xl bg-white border-2 overflow-hidden mb-3 transition-colors ${open ? "border-teal-200 shadow-sm" : "border-teal-50"}`}
+      className={`rounded-2xl bg-white border-2 overflow-hidden mb-3 transition-colors ${open ? "border-brand-teal-pale shadow-sm" : "border-brand-border"}`}
     >
       <button
         type="button"
         onClick={() => setOpen(!open)}
         className="w-full px-6 py-4 bg-transparent border-none cursor-pointer flex justify-between items-center text-left"
       >
-        <span className="font-bold text-[15px] text-teal-950">{q}</span>
+        <span className="font-bold text-[15px] text-text-brand-primary">
+          {q}
+        </span>
         <div
           className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors border ${
             open
-              ? "bg-teal-50 border-teal-200"
-              : "bg-teal-50/50 border-teal-100"
+              ? "bg-page-bg1 border-brand-teal-pale"
+              : "bg-page-bg0 border-brand-border"
           }`}
         >
-          <ChevronDown
-            className={`w-4 h-4 transition-transform ${open ? "rotate-180 text-teal-800" : "text-teal-400"}`}
-          />
+          <motion.div
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+          >
+            <ChevronDown
+              className={`w-4 h-4 transition-colors ${open ? "text-brand-teal-dark" : "text-[#89a0a6]"}`}
+            />
+          </motion.div>
         </div>
       </button>
-      {open && (
-        <div className="px-6 pb-5">
-          <p className="text-[14px] text-teal-700/80 leading-relaxed font-serif">
-            {a}
-          </p>
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="content"
+            initial="collapsed"
+            animate="open"
+            exit="collapsed"
+            variants={{
+              open: { opacity: 1, height: "auto" },
+              collapsed: { opacity: 0, height: 0 },
+            }}
+            transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+          >
+            <div className="px-6 pb-5">
+              <p className="text-[14px] text-text-brand-secondary leading-relaxed font-sans">
+                {a}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -162,25 +184,25 @@ export function PricingContent() {
   return (
     <div className="relative z-10 w-full max-w-5xl mx-auto px-4 py-16 lg:py-24 flex flex-col items-center">
       {/* ── MODAL CARD (HEADER + CARDS) ── */}
-      <div className="w-full bg-white rounded-[2rem] shadow-2xl border border-teal-100 overflow-hidden mb-12">
+      <div className="w-full bg-white rounded-[2rem] shadow-xl border border-brand-border overflow-hidden mb-12">
         {/* HEADER */}
         <div className="pt-12 pb-8 px-6 text-center relative bg-white">
-          <h1 className="font-black text-3xl md:text-5xl text-teal-950 tracking-tight mb-4">
+          <h1 className="font-black text-3xl md:text-5xl text-text-brand-primary tracking-tight mb-4">
             Pilih Paket Pertumbuhanmu
           </h1>
-          <p className="text-base text-teal-600/80 font-serif max-w-xl mx-auto leading-relaxed mb-8">
+          <p className="text-base text-brand-teal/80 font-sans max-w-xl mx-auto leading-relaxed mb-8">
             Mulai gratis, upgrade kapan saja. Semua paket mencakup keamanan data
             dan privasi penuh.
           </p>
 
           {/* BILLING TOGGLE */}
-          <div className="inline-flex items-center p-1 rounded-xl bg-teal-50 border border-teal-100">
+          <div className="inline-flex items-center p-1 rounded-xl bg-page-bg1 border border-brand-border">
             <button
               onClick={() => setAnnual(false)}
               className={`h-10 px-6 rounded-lg font-bold text-sm transition-all flex items-center ${
                 !annual
-                  ? "bg-white text-teal-900 shadow-sm border border-teal-200/50"
-                  : "text-teal-600 hover:text-teal-800"
+                  ? "bg-white text-text-brand-primary shadow-sm border border-brand-teal-pale/50"
+                  : "text-brand-teal hover:text-brand-teal-dark"
               }`}
             >
               Bulanan
@@ -189,13 +211,13 @@ export function PricingContent() {
               onClick={() => setAnnual(true)}
               className={`h-10 px-6 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${
                 annual
-                  ? "bg-white text-teal-900 shadow-sm border border-teal-200/50"
-                  : "text-teal-600 hover:text-teal-800"
+                  ? "bg-white text-text-brand-primary shadow-sm border border-brand-teal-pale/50"
+                  : "text-brand-teal hover:text-brand-teal-dark"
               }`}
             >
               Tahunan
               {annual && (
-                <span className="text-[10px] font-black text-emerald-700 px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-200">
+                <span className="text-[10px] font-black text-brand-teal-dark px-2 py-0.5 rounded-full bg-brand-teal-ghost border border-brand-teal-pale">
                   Hemat 17%
                 </span>
               )}
@@ -204,32 +226,34 @@ export function PricingContent() {
         </div>
 
         {/* TWO PLAN CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 border-t border-teal-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 border-t border-brand-border">
           {/* BASIC */}
-          <div className="p-8 lg:p-10 flex flex-col border-b md:border-b-0 md:border-r border-teal-100 bg-white">
+          <div className="p-8 lg:p-10 flex flex-col border-b md:border-b-0 md:border-r border-brand-border bg-white">
             <div className="mb-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-100 mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-page-bg1 border border-brand-border mb-4">
                 <div className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-                <span className="text-[10px] font-bold text-teal-600 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-brand-teal uppercase tracking-wider">
                   Starter
                 </span>
               </div>
-              <h2 className="font-black text-3xl text-teal-950 mb-2">Basic</h2>
-              <p className="text-sm text-teal-600/80 font-serif mb-6">
+              <h2 className="font-black text-3xl text-text-brand-primary mb-2">
+                Basic
+              </h2>
+              <p className="text-sm text-brand-teal/80 font-sans mb-6">
                 Mulai perjalananmu tanpa biaya apapun.
               </p>
               <div className="flex items-baseline gap-2">
-                <span className="font-black text-5xl text-teal-950 tracking-tight">
+                <span className="font-black text-5xl text-text-brand-primary tracking-tight">
                   Rp 0
                 </span>
-                <span className="text-base font-medium text-teal-500">
+                <span className="text-base font-medium text-brand-teal-mid">
                   / Selamanya
                 </span>
               </div>
             </div>
 
             <div className="flex-1 mb-8">
-              <p className="text-[10px] font-black tracking-widest uppercase text-teal-400 mb-4">
+              <p className="text-[10px] font-black tracking-widest uppercase text-[#89a0a6] mb-4">
                 YANG KAMU DAPATKAN
               </p>
               <PRow text="15 Sesi Diary per Bulan" on />
@@ -245,19 +269,19 @@ export function PricingContent() {
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full h-14 rounded-xl border-2 border-teal-800 text-teal-800 hover:bg-teal-50 font-bold text-base"
+                className="w-full h-14 rounded-xl border-2 border-teal-800 text-brand-teal-dark hover:bg-page-bg1 font-bold text-base"
                 asChild
               >
                 <Link href="/register">Gunakan Gratis</Link>
               </Button>
-              <p className="text-xs text-center text-teal-500 mt-3 font-medium">
+              <p className="text-xs text-center text-brand-teal-mid mt-3 font-medium">
                 Tidak perlu kartu kredit
               </p>
             </div>
           </div>
 
           {/* SINGLE PREMIUM */}
-          <div className="p-8 lg:p-10 flex flex-col bg-teal-50 relative overflow-hidden group">
+          <div className="p-8 lg:p-10 flex flex-col bg-page-bg1 relative overflow-hidden group">
             {/* Glowing border effect */}
             <div className="absolute inset-0 border border-teal-300 pointer-events-none" />
             <div className="absolute -top-32 -right-16 w-64 h-64 rounded-full bg-teal-700/5 blur-3xl pointer-events-none" />
@@ -269,20 +293,22 @@ export function PricingContent() {
                   PALING DIREKOMENDASIKAN
                 </span>
               </div>
-              <h2 className="font-black text-3xl text-teal-950 mb-2">Single</h2>
-              <p className="text-sm text-teal-600/80 font-serif mb-6">
+              <h2 className="font-black text-3xl text-text-brand-primary mb-2">
+                Single
+              </h2>
+              <p className="text-sm text-brand-teal/80 font-sans mb-6">
                 Semua fitur premium, untuk satu pengguna.
               </p>
               <div className="flex items-baseline gap-2">
-                <span className="font-black text-5xl text-teal-950 tracking-tight">
+                <span className="font-black text-5xl text-text-brand-primary tracking-tight">
                   Rp {price.toLocaleString("id-ID")}
                 </span>
-                <span className="text-base font-medium text-teal-500">
+                <span className="text-base font-medium text-brand-teal-mid">
                   / {annual ? "bln (tahunan)" : "Bulan"}
                 </span>
               </div>
               {annual && (
-                <p className="text-sm font-bold text-emerald-600 mt-2">
+                <p className="text-sm font-bold text-brand-teal-dark mt-2">
                   Hemat Rp {((monthly - annPrice) * 12).toLocaleString("id-ID")}{" "}
                   per tahun
                 </p>
@@ -290,7 +316,7 @@ export function PricingContent() {
             </div>
 
             <div className="flex-1 relative z-10 mb-8">
-              <p className="text-[10px] font-black tracking-widest uppercase text-teal-800 mb-4">
+              <p className="text-[10px] font-black tracking-widest uppercase text-brand-teal-dark mb-4">
                 SEMUA DI BASIC, PLUS:
               </p>
               <PRow text="Unlimited Sesi Diary" on premium highlight />
@@ -316,7 +342,7 @@ export function PricingContent() {
             <div className="relative z-10 mt-auto">
               <Button
                 size="lg"
-                className="w-full h-14 rounded-xl bg-teal-800 hover:bg-teal-900 text-white shadow-xl shadow-teal-900/20 font-bold text-base gap-2 transition-all"
+                className="w-full h-14 rounded-xl bg-brand-teal hover:bg-brand-teal-dark text-white shadow-xl shadow-brand-teal/20 font-bold text-base gap-2 transition-all"
                 asChild
               >
                 <Link href="/register?plan=single">
@@ -324,13 +350,13 @@ export function PricingContent() {
                   Coba Gratis 7 Hari <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
-              <p className="text-xs text-center text-teal-600 mt-3 font-medium">
+              <p className="text-xs text-center text-brand-teal mt-3 font-medium">
                 Tidak perlu kartu kredit · Batalkan kapan saja
               </p>
 
               {/* PAYMENT BADGES */}
-              <div className="mt-8 pt-6 border-t border-teal-200/50 flex flex-col items-center gap-4">
-                <p className="text-[11px] font-bold text-teal-600/70 flex items-center gap-1.5">
+              <div className="mt-8 pt-6 border-t border-brand-teal-pale/50 flex flex-col items-center gap-4">
+                <p className="text-[11px] font-bold text-brand-teal/70 flex items-center gap-1.5">
                   <Shield className="w-3.5 h-3.5" /> Powered by Midtrans —
                   Pembayaran Aman
                 </p>
@@ -348,24 +374,24 @@ export function PricingContent() {
 
       {/* ── FULL COMPARISON TABLE ── */}
       <div className="w-full mb-12">
-        <h2 className="font-black text-2xl md:text-3xl text-teal-950 text-center mb-2">
+        <h2 className="font-black text-2xl md:text-3xl text-text-brand-primary text-center mb-2">
           Perbandingan Lengkap
         </h2>
-        <p className="text-sm text-teal-600/80 font-serif text-center mb-8">
+        <p className="text-sm text-brand-teal/80 font-sans text-center mb-8">
           Setiap baris dirancang agar transparan dan mudah dipahami.
         </p>
 
-        <div className="rounded-2xl border-2 border-teal-100 bg-white overflow-hidden shadow-xl shadow-teal-900/5">
+        <div className="rounded-2xl border-2 border-brand-border bg-white overflow-hidden shadow-xl shadow-brand-teal/5">
           {/* HEADER */}
-          <div className="grid grid-cols-[1fr_80px_80px] md:grid-cols-[1fr_200px_200px] p-4 md:p-6 bg-teal-50 border-b-2 border-teal-100 items-center">
-            <p className="text-xs font-bold text-teal-600 tracking-wider">
+          <div className="grid grid-cols-[1fr_80px_80px] md:grid-cols-[1fr_200px_200px] p-4 md:p-6 bg-page-bg1 border-b-2 border-brand-border items-center">
+            <p className="text-xs font-bold text-brand-teal tracking-wider">
               FITUR
             </p>
             <p className="text-xs font-bold text-teal-700 tracking-wider text-center">
               BASIC
             </p>
             <div className="flex items-center justify-center gap-2">
-              <p className="text-xs font-black text-teal-950 tracking-wider">
+              <p className="text-xs font-black text-text-brand-primary tracking-wider">
                 SINGLE
               </p>
               <Crown className="w-4 h-4 text-amber-500" />
@@ -377,10 +403,10 @@ export function PricingContent() {
             {TABLE_ROWS.map((row, i) => (
               <div
                 key={i}
-                className={`grid grid-cols-[1fr_80px_80px] md:grid-cols-[1fr_200px_200px] p-4 md:p-5 items-center transition-colors ${i % 2 === 0 ? "bg-white" : "bg-teal-50/30"}`}
+                className={`grid grid-cols-[1fr_80px_80px] md:grid-cols-[1fr_200px_200px] p-4 md:p-5 items-center transition-colors ${i % 2 === 0 ? "bg-white" : "bg-page-bg0"}`}
               >
                 <p
-                  className={`text-sm ${row.highlight ? "font-bold text-teal-950" : "font-medium text-teal-800"}`}
+                  className={`text-sm ${row.highlight ? "font-bold text-text-brand-primary" : "font-medium text-brand-teal-dark"}`}
                 >
                   {row.label}
                 </p>
@@ -389,12 +415,12 @@ export function PricingContent() {
                 <div className="flex justify-center">
                   {typeof row.basic === "boolean" ? (
                     row.basic ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <CheckCircle2 className="w-5 h-5 text-brand-teal" />
                     ) : (
                       <XIcon className="w-5 h-5 text-teal-200" />
                     )
                   ) : (
-                    <span className="text-xs font-bold text-teal-600/80 text-center">
+                    <span className="text-xs font-bold text-brand-teal/80 text-center">
                       {row.basic}
                     </span>
                   )}
@@ -404,12 +430,12 @@ export function PricingContent() {
                 <div className="flex justify-center">
                   {typeof row.single === "boolean" ? (
                     row.single ? (
-                      <CheckCircle2 className="w-5 h-5 text-teal-800" />
+                      <CheckCircle2 className="w-5 h-5 text-brand-teal-dark" />
                     ) : (
                       <XIcon className="w-5 h-5 text-teal-200" />
                     )
                   ) : (
-                    <span className="text-xs font-black text-teal-900 text-center">
+                    <span className="text-xs font-black text-text-brand-primary text-center">
                       {row.single}
                     </span>
                   )}
@@ -419,14 +445,14 @@ export function PricingContent() {
           </div>
 
           {/* FOOTER CTA inside table */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_200px_200px] gap-4 p-6 bg-white border-t-2 border-teal-100 items-center justify-items-center md:justify-items-stretch">
-            <p className="text-xs font-serif italic text-teal-600/70 text-center md:text-left w-full">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_200px_200px] gap-4 p-6 bg-white border-t-2 border-brand-border items-center justify-items-center md:justify-items-stretch">
+            <p className="text-xs font-sans italic text-brand-teal/70 text-center md:text-left w-full">
               Harga dan fitur dapat berubah sewaktu-waktu.
             </p>
             <div className="flex justify-center w-full">
               <Button
                 variant="outline"
-                className="w-full max-w-[160px] border-2 border-teal-800 text-teal-800 font-bold h-10 px-6 rounded-xl hover:bg-teal-50"
+                className="w-full max-w-[160px] border-2 border-teal-800 text-brand-teal-dark font-bold h-10 px-6 rounded-xl hover:bg-page-bg1"
                 asChild
               >
                 <Link href="/register">Mulai Gratis</Link>
@@ -434,7 +460,7 @@ export function PricingContent() {
             </div>
             <div className="flex justify-center w-full">
               <Button
-                className="w-full max-w-[160px] bg-teal-800 text-white font-bold h-10 px-6 rounded-xl hover:bg-teal-900 shadow-md shadow-teal-900/20"
+                className="w-full max-w-[160px] bg-brand-teal text-white font-bold h-10 px-6 rounded-xl hover:bg-brand-teal-dark shadow-md shadow-brand-teal/20"
                 asChild
               >
                 <Link href="/register?plan=single">Coba 7 Hari</Link>
@@ -445,19 +471,19 @@ export function PricingContent() {
       </div>
 
       {/* ── VISUAL CTA STRIP ── */}
-      <div className="w-full rounded-3xl p-8 md:p-10 bg-teal-800 flex flex-col md:flex-row items-center justify-between gap-6 mb-16 shadow-2xl relative overflow-hidden">
+      <div className="w-full rounded-3xl p-8 md:p-10 bg-brand-teal flex flex-col md:flex-row items-center justify-between gap-6 mb-16 shadow-xl relative overflow-hidden">
         <div className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-white/5 pointer-events-none" />
         <div className="text-center md:text-left relative z-10 w-full">
           <p className="font-black text-xl md:text-2xl text-white mb-2">
             Masih bimbang? Coba 7 hari dahulu.
           </p>
-          <p className="text-sm text-white/80 font-serif">
+          <p className="text-sm text-white/80 font-sans">
             Tidak perlu kartu kredit. Batalkan kapan saja, tanpa syarat.
           </p>
         </div>
         <Button
           size="lg"
-          className="w-full md:w-auto bg-white text-teal-900 hover:bg-teal-50 font-black h-14 px-8 rounded-xl shadow-lg relative z-10 shrink-0"
+          className="w-full md:w-auto bg-white text-text-brand-primary hover:bg-page-bg1 font-black h-14 px-8 rounded-xl shadow-lg relative z-10 shrink-0"
           asChild
         >
           <Link href="/register?plan=single">Mulai Uji Coba Gratis</Link>
@@ -467,10 +493,10 @@ export function PricingContent() {
       {/* ── FAQ ── */}
       <div className="w-full max-w-3xl">
         <div className="text-center mb-10">
-          <h2 className="font-black text-2xl md:text-3xl text-teal-950 mb-3">
+          <h2 className="font-black text-2xl md:text-3xl text-text-brand-primary mb-3">
             Pertanyaan Umum
           </h2>
-          <p className="text-sm text-teal-600/80">
+          <p className="text-sm text-brand-teal/80">
             Masih ada pertanyaan? Hubungi kami di support@temantumbuh.id
           </p>
         </div>
@@ -487,7 +513,7 @@ export function PricingContent() {
 
 export function PricingBackground() {
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-teal-50/50">
+    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-page-bg0">
       {/* Blurred Blobs mapped to brand colors */}
       <div className="absolute w-[600px] h-[600px] rounded-full bg-teal-600/10 blur-3xl -top-32 -left-32" />
       <div className="absolute w-[500px] h-[500px] rounded-full bg-emerald-500/5 blur-3xl -bottom-32 -right-32" />

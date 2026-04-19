@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import {
   PricingContent,
   PricingBackground,
-} from "@/components/pricing/pricing-sections";
+} from "@/components/landing/pricing/pricing-sections";
 
 export const metadata: Metadata = {
   title: "Paket Berlangganan | TemanTumbuh",
