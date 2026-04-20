@@ -8,6 +8,9 @@
 //   — jika ada <Navbar /> atau <Footer /> di sana, hapus.
 //   — biarkan (main)/layout.tsx hanya berisi children saja.
 
+import Navbar from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+
 export default function AuthLayout({
   children,
 }: {
@@ -15,11 +18,14 @@ export default function AuthLayout({
 }) {
   return (
     // font-family di sini agar sama persis dengan landing page
+
     <div
       className="min-h-screen flex flex-col"
       style={{ fontFamily: "var(--font-plus-jakarta )" }}
     >
+      <Navbar />
       <main className="flex-1">{children}</main>
+      <Footer />
     </div>
   );
 }

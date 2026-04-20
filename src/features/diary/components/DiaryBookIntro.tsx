@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Props = {
   show: boolean;
@@ -36,10 +36,25 @@ export function DiaryBookIntro({ show, onFinish }: Props) {
   const rafRef = useRef<number | null>(null);
   const startRef = useRef<number | null>(null);
   const captionChangedRef = useRef(false);
+  const skippedRef = useRef(false);
+
+  const stopAnimation = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, []);
+
+  const handleSkip = useCallback(() => {
+    skippedRef.current = true;
+    stopAnimation();
+    setShouldExit(true);
+  }, [stopAnimation]);
 
   useEffect(() => {
     if (!show) return;
 
+    skippedRef.current = false;
     setShouldExit(false);
     startRef.current = null;
     captionChangedRef.current = false;
@@ -52,6 +67,8 @@ export function DiaryBookIntro({ show, onFinish }: Props) {
     setCaptionSub("siapkan ruang tenang untuk hari ini");
 
     const animate = (ts: number) => {
+      if (skippedRef.current) return;
+
       if (startRef.current === null) startRef.current = ts;
       const elapsed = ts - startRef.current;
 
@@ -85,6 +102,7 @@ export function DiaryBookIntro({ show, onFinish }: Props) {
       }
 
       if (elapsed >= EXIT_AT) {
+        stopAnimation();
         setShouldExit(true);
         return;
       }
@@ -95,9 +113,9 @@ export function DiaryBookIntro({ show, onFinish }: Props) {
     rafRef.current = requestAnimationFrame(animate);
 
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      stopAnimation();
     };
-  }, [show]);
+  }, [show, stopAnimation]);
 
   return (
     <AnimatePresence onExitComplete={onFinish}>
@@ -121,6 +139,40 @@ export function DiaryBookIntro({ show, onFinish }: Props) {
             padding: "clamp(16px, 3vw, 32px)",
           }}
         >
+          <button
+            type="button"
+            onClick={handleSkip}
+            aria-label="Lewati intro"
+            style={{
+              position: "absolute",
+              top: "clamp(16px, 3vw, 28px)",
+              right: "clamp(16px, 3vw, 28px)",
+              zIndex: 10001,
+              height: 38,
+              padding: "0 14px",
+              borderRadius: 999,
+              border: "1px solid rgba(190,240,230,0.18)",
+              background: "rgba(255,255,255,0.08)",
+              backdropFilter: "blur(10px)",
+              color: "rgba(230,255,248,0.92)",
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: 0.2,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.14)";
+              e.currentTarget.style.borderColor = "rgba(190,240,230,0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+              e.currentTarget.style.borderColor = "rgba(190,240,230,0.18)";
+            }}
+          >
+            Skip
+          </button>
+
           <div
             style={{
               position: "absolute",
@@ -159,7 +211,6 @@ export function DiaryBookIntro({ show, onFinish }: Props) {
               minHeight: 230,
             }}
           >
-            {/* CLOSED BOOK */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: closedOpacity, scale: 1, y: 0 }}
@@ -238,7 +289,6 @@ export function DiaryBookIntro({ show, onFinish }: Props) {
               />
             </motion.div>
 
-            {/* OPEN BOOK */}
             <div
               style={{
                 position: "absolute",
@@ -486,7 +536,7 @@ function ClosedCoverContent() {
           marginBottom: 10,
         }}
       >
-        Safe Diary
+        TemanCerita
       </p>
       <h1
         style={{
@@ -562,7 +612,7 @@ function MinimalFlapContent() {
             color: "rgba(160,235,220,0.58)",
           }}
         >
-          Safe Diary
+          TemanCerita
         </p>
         <div
           style={{

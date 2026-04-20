@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ChevronLeft,
   ChevronRight,
   HelpCircle,
   Crown,
   Flame,
-  BookMarked,
   AlertTriangle,
   PanelLeftClose,
   PanelLeftOpen,
@@ -39,10 +39,82 @@ type Props = {
   onSelectDate: (date: Date | undefined) => void;
 };
 
-export const MOBILE_STRIP_WIDTH = 36;
+type MoodScore = 1 | 2 | 3 | 4 | 5;
+
+type MoodLog = {
+  id: string;
+  moodScore: MoodScore;
+  note?: string | null;
+  createdAt: string;
+};
+
+type DiaryEntryWithMood = DiaryEntry & {
+  mood?: MoodScore;
+};
+
+export const MOBILE_STRIP_WIDTH = 46;
 const MOBILE_PANEL_WIDTH = 330;
 
 const ENTRY_GAP = 8;
+
+function getTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Jakarta";
+  } catch {
+    return "Asia/Jakarta";
+  }
+}
+
+function getLocalDateString(date: Date, timeZone: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
+  } catch {
+    return date.toISOString().split("T")[0];
+  }
+}
+
+function clampMoodScore(value: number): MoodScore {
+  if (value <= 1) return 1;
+  if (value >= 5) return 5;
+
+  const rounded = Math.round(value);
+
+  if (rounded === 1) return 1;
+  if (rounded === 2) return 2;
+  if (rounded === 3) return 3;
+  if (rounded === 4) return 4;
+  return 5;
+}
+
+function resolveEntryDate(entry: DiaryEntry): Date | null {
+  const candidates: unknown[] = [
+    (entry as { fullDate?: unknown }).fullDate,
+    (entry as { date?: unknown }).date,
+    (entry as { createdAt?: unknown }).createdAt,
+    (entry as { isoDate?: unknown }).isoDate,
+    (entry as { rawDate?: unknown }).rawDate,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate instanceof Date && !Number.isNaN(candidate.getTime())) {
+      return candidate;
+    }
+
+    if (typeof candidate === "string" || typeof candidate === "number") {
+      const parsed = new Date(candidate);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+  }
+
+  return null;
+}
 
 export function DiaryLeftPage({
   mode,
@@ -105,7 +177,6 @@ export function DiaryLeftPage({
               flexShrink: 0,
             }}
           >
-            {/* BACK BUTTON */}
             <button
               type="button"
               onClick={() => (window.location.href = "/home")}
@@ -116,7 +187,6 @@ export function DiaryLeftPage({
               <ChevronLeft size={18} />
             </button>
 
-            {/* OPEN HISTORY */}
             <button
               type="button"
               onClick={onOpen}
@@ -261,7 +331,58 @@ function PanelContent({
   onClose,
   mobileMode = false,
 }: PanelContentProps) {
-  const totalEntries = entries.length;
+  const timezone = React.useMemo(() => getTimezone(), []);
+
+  const { data: moodLogs = [] } = useQuery<MoodLog[]>({
+    queryKey: ["mood-logs"],
+    queryFn: async () => {
+      const res = await fetch("/api/mood", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch mood logs");
+
+      const json = (await res.json()) as {
+        success: boolean;
+        data: MoodLog[];
+      };
+
+      return json.data ?? [];
+    },
+    staleTime: 30_000,
+  });
+
+  const entriesWithMood = React.useMemo<DiaryEntryWithMood[]>(() => {
+    return entries.map((entry) => {
+      const entryDate = resolveEntryDate(entry);
+      if (!entryDate) {
+        return entry as DiaryEntryWithMood;
+      }
+
+      const entryLocalDate = getLocalDateString(entryDate, timezone);
+
+      const matchedMood = moodLogs.find((log) => {
+        const logLocalDate = getLocalDateString(
+          new Date(log.createdAt),
+          timezone,
+        );
+        return logLocalDate === entryLocalDate;
+      });
+
+      if (!matchedMood) {
+        return entry as DiaryEntryWithMood;
+      }
+
+      return {
+        ...entry,
+        mood: clampMoodScore(matchedMood.moodScore),
+      };
+    });
+  }, [entries, moodLogs, timezone]);
+
+  const selectedEntryWithMood = React.useMemo<DiaryEntryWithMood | null>(() => {
+    if (!selectedEntry) return null;
+    return (
+      entriesWithMood.find((entry) => entry.id === selectedEntry.id) ?? null
+    );
+  }, [entriesWithMood, selectedEntry]);
 
   const iconBtn: React.CSSProperties = {
     width: 32,
@@ -320,16 +441,6 @@ function PanelContent({
               }}
             >
               Riwayat Diary
-            </p>
-            <p
-              style={{
-                margin: "2px 0 0",
-                fontSize: 9,
-                color: C.sub,
-                fontWeight: 600,
-              }}
-            >
-              Total {totalEntries} entri
             </p>
           </div>
 
@@ -532,12 +643,12 @@ function PanelContent({
               WebkitOverflowScrolling: "touch",
             }}
           >
-            {entries.length > 0 ? (
-              entries.map((entry) => (
+            {entriesWithMood.length > 0 ? (
+              entriesWithMood.map((entry) => (
                 <div key={entry.id} style={{ flexShrink: 0 }}>
                   <EntryCard
                     entry={entry}
-                    isActive={selectedEntry?.id === entry.id}
+                    isActive={selectedEntryWithMood?.id === entry.id}
                     onClick={() => onSelectEntry(entry)}
                   />
                 </div>
@@ -598,30 +709,14 @@ function PanelContent({
             alignItems: "center",
             gap: 5,
             color: C.muted,
-            fontSize: 10,
+            fontSize: 12,
             fontWeight: 700,
           }}
         >
-          <Flame size={13} color={C.orange} />
+          <Flame size={20} color={C.orange} />
           <span>
             Streak{" "}
             <strong style={{ color: C.ink }}>{user.streakDays} hari</strong>
-          </span>
-        </div>
-
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 5,
-            color: C.muted,
-            fontSize: 10,
-            fontWeight: 700,
-          }}
-        >
-          <BookMarked size={13} color={C.ink} />
-          <span>
-            <strong style={{ color: C.ink }}>{totalEntries}</strong> entri
           </span>
         </div>
       </div>
@@ -669,6 +764,7 @@ function MonthNavButton({
     </button>
   );
 }
+
 function railButtonStyle(): React.CSSProperties {
   return {
     width: 34,
