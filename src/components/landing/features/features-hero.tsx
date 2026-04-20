@@ -35,7 +35,7 @@ export function FeaturesHero() {
           <ScrollReveal delay={0.08}>
             <p className="mx-auto max-w-lg text-base leading-relaxed text-text-brand-secondary md:text-lg lg:mx-0">
               Dari diary harian yang didampingi AI, pilihan emosional yang
-              melatih keberanian, hingga pemantauan mood visual — semua dalam
+              melatih keberanian, hingga pemantauan mood visual - semua dalam
               satu platform yang aman dan terpercaya.
             </p>
           </ScrollReveal>
@@ -77,7 +77,7 @@ export function FeaturesHero() {
             <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3 rounded-xl border border-white/70 bg-white/95 p-4 shadow-lg backdrop-blur-md">
               <div className="h-2.5 w-2.5 rounded-full bg-brand-teal-light shadow-[0_0_0_4px_#D1FAE5]" />
               <p className="flex-1 text-xs font-bold text-text-brand-primary">
-                AI Teman sedang mendengar Anda...
+                Buddy sedang mendengar Anda...
               </p>
               <div className="flex h-4 items-end gap-1">
                 <div className="h-1 w-1 animate-pulse rounded-full bg-brand-teal" />

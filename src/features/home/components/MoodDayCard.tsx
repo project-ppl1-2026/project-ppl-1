@@ -85,9 +85,17 @@ export function MoodDayCard({ d }: { d: MoodDay }) {
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative h-full">
+    <div
+      ref={rootRef}
+      className="group relative z-0 h-full overflow-visible"
+      style={{ isolation: "isolate" }}
+      onPointerEnter={() => {
+        if (hasNote) setOpen(true);
+      }}
+      onPointerLeave={() => setOpen(false)}
+    >
       <div
-        className="flex h-full min-h-[128px] flex-col items-center rounded-[0.95rem] px-2 py-2.5 text-center md:min-h-[138px]"
+        className="relative z-0 flex h-full min-h-[128px] flex-col items-center rounded-[0.95rem] px-2 py-2.5 text-center transition-all duration-300 ease-out will-change-transform md:min-h-[138px]"
         style={{
           background: d.today
             ? "rgba(214, 161, 27, 0.09)"
@@ -106,16 +114,12 @@ export function MoodDayCard({ d }: { d: MoodDay }) {
 
         <div className="my-2 flex h-8 items-center justify-center">
           {hasMood ? (
-            <div
-              className="relative flex items-center justify-center"
-              onPointerEnter={() => hasNote && setOpen(true)}
-              onPointerLeave={() => setOpen(false)}
-            >
+            <div className="relative flex items-center justify-center">
               <button
                 ref={triggerRef}
                 type="button"
                 onClick={() => hasNote && setOpen((prev) => !prev)}
-                className="flex h-10 w-10 items-center justify-center rounded-full outline-none"
+                className="flex h-10 w-10 items-center justify-center rounded-full outline-none transition-transform duration-200 group-hover:scale-105"
                 style={{
                   background: "transparent",
                   boxShadow: "none",
@@ -128,7 +132,7 @@ export function MoodDayCard({ d }: { d: MoodDay }) {
             </div>
           ) : (
             <div
-              className="flex h-7 w-7 items-center justify-center rounded-full"
+              className="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
               style={{
                 border: "1px dashed #d9e6e4",
                 color: "var(--tt-dashboard-text-3)",

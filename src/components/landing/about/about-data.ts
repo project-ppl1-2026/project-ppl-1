@@ -13,7 +13,7 @@ export const missions = [
   {
     icon: "lightbulb",
     title: "Mendorong Refleksi Diri",
-    desc: "Membantu remaja mengenali dan memahami emosinya sendiri melalui Daily Mood Check-In harian serta Safe Diary yang terjaga privasinya.",
+    desc: "Membantu remaja mengenali dan memahami emosinya sendiri melalui Daily Mood Check-In harian serta TemanCerita yang terjaga privasinya.",
   },
   {
     icon: "book",
@@ -30,8 +30,8 @@ export const missions = [
 export const sdgPoints = [
   {
     icon: "book",
-    title: "Safe Diary & Deteksi Kekerasan Emosional",
-    desc: "Fitur Safe Diary mendeteksi pola bahasa yang mengindikasikan tekanan emosional, lalu memberi notifikasi halus ke pengguna dan ringkasan aman ke orang tua.",
+    title: "TemanCerita & Deteksi Kekerasan Emosional",
+    desc: "Fitur TemanCerita mendeteksi pola bahasa yang mengindikasikan tekanan emosional, lalu memberi notifikasi halus ke pengguna dan ringkasan aman ke orang tua.",
   },
   {
     icon: "target",

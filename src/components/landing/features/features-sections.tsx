@@ -24,19 +24,19 @@ export function FeaturesDiary() {
           <ScrollReveal>
             <div className="w-full">
               <p className="mb-5 text-xs font-extrabold tracking-widest text-brand-teal uppercase">
-                01 · Safe Diary
+                01 · TemanCerita
               </p>
               <h2 className="mb-6 text-3xl font-bold tracking-tight text-text-brand-primary lg:text-4xl">
                 Diary yang Benar-Benar Mengerti Perasaan Anda
               </h2>
               <p className="mb-8 text-base leading-relaxed text-text-brand-secondary md:text-lg">
-                Tidak seperti diary biasa, Safe Diary menggunakan AI percakapan
+                Tidak seperti diary biasa, TemanCerita menggunakan AI percakapan
                 yang mampu memvalidasi, memahami, dan memberikan perspektif baru
                 tanpa menghakimi. Setiap entri terenkripsi end-to-end.
               </p>
               <ul className="mb-8 space-y-4 text-sm font-medium text-brand-teal-dark">
                 {[
-                  "Respons empatik real-time dari AI Teman",
+                  "Respons empatik real-time dari Buddy, AI teman curhat Anda",
                   "Mode refleksi terpandu dengan pertanyaan Socratic",
                   "Semua isi diary hanya bisa dibaca Anda sendiri",
                   "Tidak ada data yang dibagikan ke pihak ketiga",
@@ -52,7 +52,7 @@ export function FeaturesDiary() {
                   size="lg"
                   className="h-12 rounded-xl bg-[linear-gradient(135deg,var(--color-brand-teal-mid)_0%,var(--color-brand-teal)_100%)] px-8 font-bold text-white hover:opacity-90"
                 >
-                  Coba Safe Diary <ArrowRight className="h-4 w-4" />
+                  Coba TemanCerita <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             </div>
@@ -590,7 +590,7 @@ export function FeaturesQuote() {
           tapi tentang berani jujur dengan diri Anda sendiri.&quot;
         </h2>
         <p className="text-sm tracking-widest text-teal-200/80">
-          — TemanTumbuh
+          - TemanTumbuh
         </p>
       </div>
     </section>
@@ -695,7 +695,7 @@ export function FeaturesCTA() {
             </h2>
 
             <p className="mx-auto max-w-2xl text-base leading-relaxed text-white/85">
-              Bergabunglah secara gratis dan akses Safe Diary, Mood Check-In,
+              Bergabunglah secara gratis dan akses TemanCerita, Mood Check-In,
               Brave Choice, serta Insight Dashboard dalam satu platform.
             </p>
 

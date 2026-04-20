@@ -46,7 +46,7 @@ export function ChatBubble({
               margin: "0 0 3px",
             }}
           >
-            AI Teman
+            Buddy
           </p>
         )}
 

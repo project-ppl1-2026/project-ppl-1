@@ -3,6 +3,8 @@
 //  Halaman kanan diary — responsive desktop & mobile
 // ============================================================
 
+"use client";
+
 import {
   Lock,
   ChevronLeft,
@@ -19,13 +21,13 @@ import {
   type KeyboardEvent,
   type ChangeEvent,
 } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { colors as C, fonts } from "../constants/tokens";
 import type { DiaryEntry, ChatMessage } from "../types";
 import { MoodFace } from "./MoodFace";
 import { ChatBubble } from "./ChatBubble";
 import { TypingIndicator } from "./TypingIndicator";
-import { PillBadge } from "./PillBadge";
 
 type Props = {
   entry: DiaryEntry;
@@ -50,6 +52,124 @@ type DisplayChatMessage = ChatMessage & {
   showAiMeta?: boolean;
   showTimestamp?: boolean;
 };
+
+type MoodScore = 1 | 2 | 3 | 4 | 5;
+
+type MoodLog = {
+  id: string;
+  moodScore: MoodScore;
+  note?: string | null;
+  createdAt: string;
+};
+
+type DiaryEntryWithMoodFallback = DiaryEntry & {
+  mood?: number | string | null;
+  moodScore?: number | string | null;
+  latestMoodScore?: number | string | null;
+  selectedMood?: number | string | null;
+  score?: number | string | null;
+  moodLog?: {
+    moodScore?: number | string | null;
+    score?: number | string | null;
+  } | null;
+  fullDate?: string | Date | null;
+  createdAt?: string | Date | null;
+  isoDate?: string | null;
+  rawDate?: string | null;
+};
+
+function getTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Jakarta";
+  } catch {
+    return "Asia/Jakarta";
+  }
+}
+
+function getLocalDateString(date: Date, timeZone: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
+  } catch {
+    return date.toISOString().split("T")[0];
+  }
+}
+
+function clampMoodScore(value: number): MoodScore {
+  if (value <= 1) return 1;
+  if (value >= 5) return 5;
+
+  const rounded = Math.round(value);
+
+  if (rounded === 1) return 1;
+  if (rounded === 2) return 2;
+  if (rounded === 3) return 3;
+  if (rounded === 4) return 4;
+  return 5;
+}
+
+function normalizeMood(value: unknown): MoodScore | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return clampMoodScore(value);
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return clampMoodScore(parsed);
+    }
+  }
+
+  return null;
+}
+
+function resolveEntryDate(entry: DiaryEntryWithMoodFallback): Date | null {
+  const candidates: unknown[] = [
+    entry.fullDate,
+    entry.date,
+    entry.createdAt,
+    entry.isoDate,
+    entry.rawDate,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate instanceof Date && !Number.isNaN(candidate.getTime())) {
+      return candidate;
+    }
+
+    if (typeof candidate === "string" || typeof candidate === "number") {
+      const parsed = new Date(candidate);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+  }
+
+  return null;
+}
+
+function resolveMoodFromEntry(entry: DiaryEntryWithMoodFallback): MoodScore {
+  const candidates = [
+    entry.mood,
+    entry.moodScore,
+    entry.latestMoodScore,
+    entry.selectedMood,
+    entry.score,
+    entry.moodLog?.moodScore,
+    entry.moodLog?.score,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeMood(candidate);
+    if (normalized !== null) return normalized;
+  }
+
+  return 3;
+}
 
 export function DiaryRightPage({
   entry,
@@ -78,12 +198,53 @@ export function DiaryRightPage({
   const lastMessageText =
     displayMessages[displayMessages.length - 1]?.text ?? "";
 
+  const timezone = useMemo(() => getTimezone(), []);
+
+  const { data: moodLogs = [] } = useQuery<MoodLog[]>({
+    queryKey: ["mood-logs"],
+    queryFn: async () => {
+      const res = await fetch("/api/mood", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch mood logs");
+
+      const json = (await res.json()) as {
+        success: boolean;
+        data: MoodLog[];
+      };
+
+      return json.data ?? [];
+    },
+    staleTime: 30_000,
+  });
+
+  const displayMood = useMemo<MoodScore>(() => {
+    const safeEntry = entry as DiaryEntryWithMoodFallback;
+    const entryDate = resolveEntryDate(safeEntry);
+
+    if (entryDate) {
+      const entryLocalDate = getLocalDateString(entryDate, timezone);
+
+      const matchedMood = moodLogs.find((log) => {
+        const logLocalDate = getLocalDateString(
+          new Date(log.createdAt),
+          timezone,
+        );
+        return logLocalDate === entryLocalDate;
+      });
+
+      if (matchedMood) {
+        return clampMoodScore(matchedMood.moodScore);
+      }
+    }
+
+    return resolveMoodFromEntry(safeEntry);
+  }, [entry, moodLogs, timezone]);
+
   const resizeTextarea = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
 
-    const maxHeight = isMobile ? 96 : 120;
-    el.style.height = "auto";
+    const maxHeight = isMobile ? 104 : 128;
+    el.style.height = "0px";
     const nextHeight = Math.min(el.scrollHeight, maxHeight);
     el.style.height = `${nextHeight}px`;
     el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
@@ -146,8 +307,8 @@ export function DiaryRightPage({
     onInputChange(e.target.value);
 
     const el = e.target;
-    const maxHeight = isMobile ? 96 : 120;
-    el.style.height = "auto";
+    const maxHeight = isMobile ? 104 : 128;
+    el.style.height = "0px";
     const nextHeight = Math.min(el.scrollHeight, maxHeight);
     el.style.height = `${nextHeight}px`;
     el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
@@ -221,30 +382,6 @@ export function DiaryRightPage({
             >
               {entry.dateLabel}
             </p>
-
-            {entry.isToday ? (
-              <PillBadge bg={C.okL} color={C.okD} border={`${C.ok}30`}>
-                <span
-                  style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: "50%",
-                    background: C.ok,
-                    display: "inline-block",
-                  }}
-                />
-                <span style={{ fontSize: 9, fontWeight: 700, color: C.okD }}>
-                  Hari Ini · Aktif
-                </span>
-              </PillBadge>
-            ) : (
-              <PillBadge bg={C.bg} color={C.sub} border={C.bdL}>
-                <Lock size={9} color={C.sub} />
-                <span style={{ fontSize: 9, fontWeight: 600, color: C.sub }}>
-                  Hanya Baca
-                </span>
-              </PillBadge>
-            )}
           </div>
 
           <p
@@ -255,7 +392,7 @@ export function DiaryRightPage({
               margin: 0,
             }}
           >
-            Safe Diary · AI Companion
+            TemanCerita · AI Companion
           </p>
         </div>
 
@@ -267,7 +404,7 @@ export function DiaryRightPage({
             flexShrink: 0,
           }}
         >
-          <MoodFace score={entry.mood} size={28} />
+          <MoodFace score={displayMood} size={28} />
           <div style={{ height: 28, width: 1, background: C.bdL }} />
           <NavArrowButton onClick={onPrevEntry} direction="left" />
           <NavArrowButton onClick={onNextEntry} direction="right" />
@@ -364,7 +501,7 @@ export function DiaryRightPage({
                 textAlign: "center",
               }}
             >
-              Diary ini sudah selesai — entri lampau hanya bisa dibaca.
+              Diary ini sudah selesai - entri lampau hanya bisa dibaca.
             </p>
           </div>
         ) : null}
@@ -384,7 +521,7 @@ export function DiaryRightPage({
       <div
         style={{
           flexShrink: 0,
-          padding: isMobile ? "12px 14px 10px" : "10px 18px",
+          padding: isMobile ? "12px 14px 10px" : "12px 18px 12px",
           borderTop: `1px solid ${C.spine}`,
           background: C.paperL,
           zIndex: 2,
@@ -410,7 +547,7 @@ export function DiaryRightPage({
         ) : null}
 
         {isReadOnly ? (
-          <LockedInputNotice message="Entri lampau tidak bisa diedit — pilih Hari Ini untuk menulis baru." />
+          <LockedInputNotice message="Entri lampau tidak bisa diedit - pilih Hari Ini untuk menulis baru." />
         ) : !canWriteDiary ? (
           <LockedInputNotice message="Batas sesi bulan ini tercapai. Upgrade ke Premium untuk lanjut menulis." />
         ) : (
@@ -520,51 +657,44 @@ function splitLongBlockIntoBubbles(block: string): string[] {
       ? `${currentBubble} ${sentence}`
       : sentence;
 
-    const canAppendByLength = nextBubble.length <= MAX_BUBBLE_CHARS;
-    const canAppendByCount = sentenceCount < MAX_SENTENCES_PER_BUBBLE;
+    const shouldWrap =
+      nextBubble.length > MAX_BUBBLE_CHARS ||
+      sentenceCount >= MAX_SENTENCES_PER_BUBBLE;
 
-    if (currentBubble && (!canAppendByLength || !canAppendByCount)) {
-      bundled.push(currentBubble);
+    if (shouldWrap && currentBubble) {
+      bundled.push(currentBubble.trim());
       currentBubble = sentence;
       sentenceCount = 1;
-      continue;
-    }
-
-    currentBubble = nextBubble;
-    sentenceCount += 1;
-
-    if (currentBubble.length >= IDEAL_BUBBLE_CHARS) {
-      bundled.push(currentBubble);
-      currentBubble = "";
-      sentenceCount = 0;
+    } else {
+      currentBubble = nextBubble;
+      sentenceCount += 1;
     }
   }
 
-  if (currentBubble) {
-    bundled.push(currentBubble);
+  if (currentBubble.trim()) {
+    bundled.push(currentBubble.trim());
   }
 
   return bundled.flatMap((item) =>
-    item.length <= MAX_BUBBLE_CHARS
-      ? [item]
-      : chunkTextByLength(item, IDEAL_BUBBLE_CHARS),
+    item.length > MAX_BUBBLE_CHARS
+      ? chunkTextByLength(item, IDEAL_BUBBLE_CHARS)
+      : [item],
   );
 }
 
 function splitIntoSentences(text: string): string[] {
-  const matches = text.match(/[^.!?]+(?:[.!?]+|$)/g);
-
-  if (!matches) {
-    return [text.trim()].filter(Boolean);
-  }
-
-  return matches.map((item) => item.trim()).filter(Boolean);
+  return (
+    text
+      .match(/[^.!?]+[.!?]+|[^.!?]+$/g)
+      ?.map((sentence) => sentence.trim())
+      .filter(Boolean) ?? [text]
+  );
 }
 
-function chunkTextByLength(text: string, maxChars: number): string[] {
+function chunkTextByLength(text: string, maxLength: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
 
-  if (!words.length) {
+  if (words.length === 0) {
     return [];
   }
 
@@ -572,19 +702,18 @@ function chunkTextByLength(text: string, maxChars: number): string[] {
   let currentChunk = "";
 
   for (const word of words) {
-    const candidate = currentChunk ? `${currentChunk} ${word}` : word;
+    const nextChunk = currentChunk ? `${currentChunk} ${word}` : word;
 
-    if (currentChunk && candidate.length > maxChars) {
-      chunks.push(currentChunk);
+    if (nextChunk.length > maxLength && currentChunk) {
+      chunks.push(currentChunk.trim());
       currentChunk = word;
-      continue;
+    } else {
+      currentChunk = nextChunk;
     }
-
-    currentChunk = candidate;
   }
 
-  if (currentChunk) {
-    chunks.push(currentChunk);
+  if (currentChunk.trim()) {
+    chunks.push(currentChunk.trim());
   }
 
   return chunks;
@@ -599,23 +728,30 @@ function NavArrowButton({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
+      aria-label={
+        direction === "left" ? "Entry sebelumnya" : "Entry berikutnya"
+      }
       style={{
-        width: 30,
-        height: 30,
-        borderRadius: 8,
+        width: 32,
+        height: 32,
+        borderRadius: 10,
         border: `1px solid ${C.bdL}`,
         background: C.white,
-        cursor: "pointer",
-        display: "flex",
+        display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
+        cursor: "pointer",
+        color: C.ink,
+        boxShadow: "0 2px 8px rgba(13,70,70,0.05)",
+        transition: "all 0.16s ease",
       }}
     >
       {direction === "left" ? (
-        <ChevronLeft size={13} color={C.ink} />
+        <ChevronLeft size={15} />
       ) : (
-        <ChevronRight size={13} color={C.ink} />
+        <ChevronRight size={15} />
       )}
     </button>
   );
@@ -625,24 +761,24 @@ function LockedInputNotice({ message }: { message: string }) {
   return (
     <div
       style={{
-        padding: "10px 16px",
-        borderRadius: 12,
-        background: C.bg,
+        minHeight: 48,
+        borderRadius: 14,
         border: `1px solid ${C.bdL}`,
+        background: C.bg,
+        padding: "12px 14px",
         display: "flex",
         alignItems: "center",
-        justifyContent: "center",
         gap: 8,
       }}
     >
-      <Lock size={13} color={C.sub} />
+      <Lock size={14} color={C.sub} />
       <p
         style={{
-          fontSize: 12,
-          color: C.sub,
-          fontStyle: "italic",
           margin: 0,
-          textAlign: "center",
+          fontSize: 11,
+          lineHeight: 1.45,
+          color: C.sub,
+          fontFamily: fonts.sans,
         }}
       >
         {message}
@@ -668,31 +804,28 @@ function ChatInputRow({
   onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
   isMobile: boolean;
 }) {
-  const placeholder = isMobile
-    ? "Ceritakan harimu..."
-    : "Ceritakan harimu... (Enter untuk kirim)";
+  const buttonSize = isMobile ? 40 : 42;
+  const minInputHeight = isMobile ? 40 : 42;
 
   return (
     <div
       style={{
+        borderRadius: 18,
+        border: `1px solid ${C.bd}`,
+        background: C.white,
+        padding: isMobile ? "7px 7px 7px 12px" : "8px 8px 8px 14px",
         display: "flex",
-        alignItems: "flex-end",
-        gap: isMobile ? 8 : 10,
+        alignItems: "center",
+        gap: 10,
+        boxShadow: "0 8px 22px rgba(13,70,70,0.06)",
       }}
     >
       <div
         style={{
           flex: 1,
-          minHeight: isMobile ? 40 : 42,
-          maxHeight: isMobile ? 108 : 132,
-          borderRadius: 14,
-          border: `1.5px solid ${C.bd}`,
-          background: C.white,
+          minHeight: minInputHeight,
           display: "flex",
-          alignItems: "flex-end",
-          padding: isMobile ? "0 12px" : "0 14px",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-          minWidth: 0,
+          alignItems: "center",
         }}
       >
         <textarea
@@ -700,50 +833,49 @@ function ChatInputRow({
           value={value}
           onChange={onChange}
           onKeyDown={onKeyDown}
-          placeholder={placeholder}
           rows={1}
+          placeholder="Tulis ceritamu di sini..."
           style={{
-            width: "100%",
+            flex: 1,
             border: "none",
             outline: "none",
             resize: "none",
             background: "transparent",
+            color: C.inkD,
+            fontSize: isMobile ? 13 : 14,
+            lineHeight: isMobile ? "20px" : "22px",
             fontFamily: fonts.sans,
-            fontStyle: "italic",
-            fontSize: isMobile ? 12 : 12.5,
-            color: C.text,
-            lineHeight: isMobile ? 1.45 : 1.6,
-            padding: isMobile ? "9px 0" : "10px 0",
-            minHeight: isMobile ? 22 : 24,
-            maxHeight: isMobile ? 96 : 120,
-            minWidth: 0,
-            overflowY: "hidden",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
+            minHeight: isMobile ? 20 : 22,
+            maxHeight: isMobile ? 104 : 128,
+            padding: 0,
+            margin: 0,
+            display: "block",
           }}
         />
       </div>
 
       <button
+        type="button"
         onClick={onSend}
         disabled={!canSend}
+        aria-label="Kirim pesan"
         style={{
-          width: isMobile ? 40 : 42,
-          height: isMobile ? 40 : 42,
-          borderRadius: 12,
+          width: buttonSize,
+          height: buttonSize,
+          borderRadius: 13,
           border: "none",
-          flexShrink: 0,
-          background: canSend
-            ? `linear-gradient(135deg, ${C.inkD}, ${C.inkM})`
-            : C.bdL,
-          cursor: canSend ? "pointer" : "not-allowed",
-          display: "flex",
+          background: canSend ? C.inkD : C.bg,
+          color: canSend ? C.white : C.sub,
+          display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          transition: "all 0.18s",
+          cursor: canSend ? "pointer" : "not-allowed",
+          flexShrink: 0,
+          transition: "all 0.16s ease",
+          boxShadow: canSend ? "0 6px 16px rgba(13,70,70,0.16)" : "none",
         }}
       >
-        <SendHorizonal size={isMobile ? 15 : 16} color={C.white} />
+        <SendHorizonal size={16} />
       </button>
     </div>
   );
