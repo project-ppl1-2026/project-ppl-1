@@ -1,6 +1,6 @@
 // ============================================================
 // src/app/layout.tsx
-// Root layout
+// Root layout — global only, tanpa navbar/footer khusus
 // ============================================================
 
 import type { Metadata } from "next";
@@ -12,7 +12,7 @@ import QueryProvider from "@/components/providers/query-providers";
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 

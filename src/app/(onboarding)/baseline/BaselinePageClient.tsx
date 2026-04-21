@@ -3,13 +3,12 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import QueryProvider from "@/components/providers/query-providers";
 import { BrandPageBackground } from "@/components/layout/brand-page-background";
 import { Button } from "@/components/ui/button";
-import { PageLoader } from "@/components/ui/page-loader";
+import { PageLoader } from "@/components/ui/manual/page-loader";
 import { BaselineOptionButton } from "@/components/baseline/baseline-option-button";
 import { BaselineProgress } from "@/components/baseline/baseline-progress";
 
@@ -247,8 +246,8 @@ function BaselinePageContent() {
 
   return (
     <BrandPageBackground>
-      <div className="mx-auto flex min-h-[calc(100vh-128px)] max-w-6xl items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid w-full max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-6xl items-center justify-center px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div className="hidden lg:block">
             <div className="max-w-xl">
               <h1 className="text-4xl font-bold leading-tight text-slate-900">
@@ -262,7 +261,7 @@ function BaselinePageContent() {
             </div>
           </div>
 
-          <div className="w-full max-w-[560px] justify-self-center">
+          <div className="w-full max-w-[420px] justify-self-center lg:max-w-[560px]">
             <div className="rounded-[30px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
               <div className="rounded-t-[30px] border-b border-slate-100 px-6 pb-5 pt-6 sm:px-7">
                 <BaselineProgress
@@ -319,10 +318,9 @@ function BaselinePageContent() {
                   disabled={
                     currentIndex === 0 || saveBaselineMutation.isPending
                   }
-                  className="inline-flex items-center gap-1 text-slate-400 transition hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="text-slate-400 transition disabled:opacity-50"
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                  Kembali
+                  ← Kembali
                 </button>
               </div>
             </div>

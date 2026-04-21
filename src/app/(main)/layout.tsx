@@ -5,8 +5,20 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getBaselineByUserId } from "@/lib/baseline/service";
 
-import Navbar from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
+import { AppSidebarShell } from "@/components/layout/app-sidebar-shell";
+
+function getLocalDateString(date: Date, timeZone: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
+  } catch {
+    return date.toISOString().split("T")[0];
+  }
+}
 
 export default async function MainLayout({
   children,
@@ -25,7 +37,13 @@ export default async function MainLayout({
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { profileFilled: true },
+    select: {
+      name: true,
+      email: true,
+      image: true,
+      profileFilled: true,
+      isPremium: true,
+    },
   });
 
   if (!user?.profileFilled) {
@@ -38,14 +56,36 @@ export default async function MainLayout({
     redirect("/baseline");
   }
 
+  // cek apakah hari ini user sudah isi mood atau belum
+  const timezone = "Asia/Jakarta";
+  const todayLocal = getLocalDateString(new Date(), timezone);
+
+  const lastMoodLog = await prisma.moodLog.findFirst({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      createdAt: true,
+    },
+  });
+
+  const hasFilledMoodToday =
+    lastMoodLog &&
+    getLocalDateString(lastMoodLog.createdAt, timezone) === todayLocal;
+
+  if (!hasFilledMoodToday) {
+    redirect("/mood");
+  }
+
   return (
-    <div
-      className="flex min-h-screen flex-col"
-      style={{ fontFamily: "var(--font-plus-jakarta)" }}
+    <AppSidebarShell
+      user={{
+        name: user.name ?? "Teman",
+        email: user.email ?? "",
+        image: user.image ?? null,
+        isPremium: Boolean(user.isPremium),
+      }}
     >
-      <Navbar />
-      <main className="flex flex-1 flex-col">{children}</main>
-      <Footer />
-    </div>
+      {children}
+    </AppSidebarShell>
   );
 }

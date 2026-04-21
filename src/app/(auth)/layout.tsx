@@ -8,8 +8,8 @@
 //   — jika ada <Navbar /> atau <Footer /> di sana, hapus.
 //   — biarkan (main)/layout.tsx hanya berisi children saja.
 
-import { Footer } from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 
 export default function AuthLayout({
   children,

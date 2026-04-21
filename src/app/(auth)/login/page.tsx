@@ -3,13 +3,14 @@
 import QueryProvider from "@/components/providers/query-providers";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertCircle, ArrowRight, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 import { loginSchema, type LoginInput } from "@/lib/validations";
@@ -23,32 +24,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PageLoader, PageLoaderFallback } from "@/components/ui/page-loader";
-import { GoogleIcon } from "@/components/ui/google-icon";
+import {
+  PageLoader,
+  PageLoaderFallback,
+} from "@/components/ui/manual/page-loader";
+import { GoogleIcon } from "@/components/ui/manual/google-icon";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { AuthField } from "@/components/auth/auth-field";
 import { BrandPageBackground } from "@/components/layout/brand-page-background";
 
-type SessionUser = {
-  profileFilled?: boolean | null;
-};
-
 type SessionStatus = {
   isAuthenticated: boolean;
-  isComplete: boolean;
+  nextRoute: string;
 };
 
-const SESSION_QUERY_KEY = ["login", "session"] as const;
+const SESSION_QUERY_KEY = ["login", "post-login-status"] as const;
 
 async function fetchSessionStatus(): Promise<SessionStatus> {
-  const { data } = await authClient.getSession();
-  const user = data?.user as SessionUser | undefined;
+  const response = await fetch("/api/auth/post-login-status", {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
 
-  return {
-    isAuthenticated: Boolean(user),
-    isComplete: Boolean(user?.profileFilled),
-  };
+  if (!response.ok) {
+    throw new Error("Gagal memeriksa status sesi.");
+  }
+
+  return response.json();
 }
 
 function resolveLoginErrorMessage(error: {
@@ -93,6 +97,7 @@ function resolveLoginErrorMessage(error: {
 }
 
 function LoginPageContent() {
+  const router = useRouter();
   const shouldReduce = useReducedMotion();
 
   const [serverError, setServerError] = useState("");
@@ -107,16 +112,25 @@ function LoginPageContent() {
     defaultValues: { email: "", password: "" },
   });
 
-  const { data: sessionData, isLoading: isSessionLoading } = useQuery({
+  const {
+    data: sessionData,
+    isLoading: isSessionLoading,
+    isError: isSessionError,
+  } = useQuery({
     queryKey: SESSION_QUERY_KEY,
     queryFn: fetchSessionStatus,
     retry: 1,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
-    if (isSessionLoading || !sessionData?.isAuthenticated) return;
-  }, [isSessionLoading, sessionData]);
+    if (isSessionLoading || isSessionError || !sessionData?.isAuthenticated) {
+      return;
+    }
+
+    router.replace(sessionData.nextRoute);
+  }, [isSessionLoading, isSessionError, sessionData, router]);
 
   const loginMutation = useMutation<
     unknown,
@@ -127,7 +141,7 @@ function LoginPageContent() {
       const response = await authClient.signIn.email({
         email: data.email,
         password: data.password,
-        callbackURL: "/baseline",
+        callbackURL: "/login",
       });
 
       if (response.error) {
@@ -139,6 +153,8 @@ function LoginPageContent() {
     onSuccess: () => {
       toast.success("Login berhasil.");
       reset();
+      // auth library biasanya akan redirect otomatis ke callbackURL (/login),
+      // lalu layout/login page akan meneruskan ke route berikutnya.
     },
     onError: (error) => {
       setServerError(resolveLoginErrorMessage(error));
@@ -149,7 +165,7 @@ function LoginPageContent() {
     mutationFn: async () => {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/baseline",
+        callbackURL: "/login",
       });
     },
     onError: (error) => {
@@ -173,7 +189,7 @@ function LoginPageContent() {
 
   return (
     <BrandPageBackground fillViewport>
-      <AuthShell maxWidth={400} compact>
+      <AuthShell maxWidth={440} compact={false}>
         <motion.div
           initial={shouldReduce ? false : "hidden"}
           animate="visible"
@@ -185,10 +201,10 @@ function LoginPageContent() {
             animate="visible"
             variants={logoDropVariants}
             transition={{ ...springSmooth, delay: 0.05 }}
-            className="mb-5 text-center"
+            className="mb-4 text-center"
           >
             <h1
-              className="mb-1 text-lg font-bold"
+              className="mb-2 text-xl font-bold"
               style={{ color: "var(--color-text-brand-primary)" }}
             >
               Selamat Datang Kembali
@@ -209,10 +225,10 @@ function LoginPageContent() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.2 }}
-                className="mb-3.5"
+                className="mb-4"
               >
                 <Alert
-                  className="rounded-xl border"
+                  className="rounded-lg border"
                   style={{
                     background: "#FEF2F2",
                     borderColor: "#FECACA",
@@ -235,7 +251,7 @@ function LoginPageContent() {
               googleMutation.mutate();
             }}
             disabled={googleMutation.isPending}
-            className="mb-3.5 h-10.5 w-full gap-3 rounded-xl border-[1.5px] bg-white font-semibold"
+            className="mb-4 h-11 w-full gap-4 rounded-lg border-[1.5px] bg-white font-semibold"
             style={{
               borderColor: "var(--color-brand-border)",
               color: "var(--color-text-brand-primary)",
@@ -251,13 +267,13 @@ function LoginPageContent() {
               : "Masuk dengan Google"}
           </Button>
 
-          <div className="mb-3.5 flex items-center gap-3">
+          <div className="mb-4 flex items-center gap-4">
             <div
               className="h-px flex-1"
               style={{ background: "var(--color-brand-border)" }}
             />
             <span
-              className="text-[11px]"
+              className="text-sm"
               style={{ color: "var(--color-text-brand-muted)" }}
             >
               atau masuk dengan email
@@ -270,7 +286,7 @@ function LoginPageContent() {
 
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="space-y-3"
+            className="space-y-4"
             noValidate
           >
             <AuthField
@@ -284,7 +300,7 @@ function LoginPageContent() {
                 placeholder="email@contoh.com"
                 autoComplete="email"
                 autoFocus
-                className="h-10.5 rounded-xl"
+                className="h-11 rounded-lg"
                 {...register("email")}
               />
             </AuthField>
@@ -298,7 +314,7 @@ function LoginPageContent() {
                 id="login-password"
                 placeholder="Masukkan password"
                 autoComplete="current-password"
-                className="h-10.5 rounded-xl"
+                className="h-11 rounded-lg"
                 hasError={!!errors.password}
                 {...register("password")}
               />
@@ -307,7 +323,7 @@ function LoginPageContent() {
             <div className="pt-0.5">
               <Link
                 href="/forgot-password"
-                className="text-[11px] font-medium transition-opacity hover:opacity-70"
+                className="text-sm font-medium transition-opacity hover:opacity-70"
                 style={{ color: "var(--color-brand-teal)" }}
               >
                 Lupa password?
@@ -317,7 +333,7 @@ function LoginPageContent() {
             <Button
               type="submit"
               disabled={isSubmitting || loginMutation.isPending}
-              className="mt-1 h-10.5 w-full rounded-xl font-semibold text-white"
+              className="mt-1 h-11 w-full rounded-lg font-semibold text-white"
               style={{
                 background: "var(--gradient-brand-btn)",
                 boxShadow: "0 4px 18px rgba(26,150,136,0.18)",
@@ -329,10 +345,7 @@ function LoginPageContent() {
                   Masuk...
                 </>
               ) : (
-                <>
-                  Masuk
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
+                <>Masuk</>
               )}
             </Button>
           </form>
