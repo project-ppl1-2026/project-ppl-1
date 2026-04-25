@@ -12,13 +12,13 @@ type StreakDay = {
 export function HomeDashboardHeroCard({
   currentStreak,
   longestStreak,
-  totalMoodLogs,
+  totalDiaries,
   streakWeek,
   getMoodColor,
 }: {
   currentStreak: number;
   longestStreak: number;
-  totalMoodLogs: number;
+  totalDiaries: number;
   streakWeek: StreakDay[];
   getMoodColor: (score: number) => string;
 }) {
@@ -72,7 +72,7 @@ export function HomeDashboardHeroCard({
           whileHover={{ y: -2, backgroundColor: "rgba(255,255,255,0.14)" }}
           className="rounded-lg bg-white/10 px-2.5 py-2 text-center transition-colors duration-200"
         >
-          <p className="text-[15px] font-black text-white">{totalMoodLogs}</p>
+          <p className="text-[15px] font-black text-white">{totalDiaries}</p>
           <p className="text-[10px] text-white/90">Total Diary</p>
         </motion.div>
       </div>

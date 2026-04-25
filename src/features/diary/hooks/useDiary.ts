@@ -224,6 +224,12 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
 
         if (ignore) return;
         setMessages(diaryMessages);
+
+        if (diaryMessages.length === 0 && selectedEntryId !== "today") {
+          setIsAiTyping(true);
+        } else {
+          setIsAiTyping(false);
+        }
       } catch (error) {
         console.error("Failed to load diary messages:", error);
 
@@ -242,6 +248,36 @@ export function useDiary(entryId?: string, initialUserMeta?: InitialUserMeta) {
       ignore = true;
     };
   }, [selectedEntryId]);
+
+  useEffect(() => {
+    let ignore = false;
+    let interval: NodeJS.Timeout;
+
+    if (
+      isAiTyping &&
+      selectedEntryId &&
+      selectedEntryId !== "today" &&
+      messages.length === 0
+    ) {
+      interval = setInterval(async () => {
+        try {
+          const diaryMessages = await getDiaryMessages(selectedEntryId);
+          if (ignore) return;
+          if (diaryMessages.length > 0) {
+            setMessages(diaryMessages);
+            setIsAiTyping(false);
+          }
+        } catch (err) {
+          console.error("Polling diary messages failed:", err);
+        }
+      }, 3000);
+    }
+
+    return () => {
+      ignore = true;
+      if (interval) clearInterval(interval);
+    };
+  }, [isAiTyping, selectedEntryId, messages.length]);
 
   useEffect(() => {
     if (!selectedEntryId || typeof window === "undefined") {
