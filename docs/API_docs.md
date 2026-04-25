@@ -9,6 +9,8 @@ This document provides a comprehensive overview of the available API endpoints f
 4. Mood API
 5. Parent Consent API
 6. Profile API
+7. Payment API
+8. Subscription API
 
 ---
 
@@ -742,5 +744,218 @@ These endpoints handle parental consent flows and account linking.
 ```json
 {
   "error": "Terjadi kesalahan saat mengambil status keamanan akun."
+}
+```
+
+---
+
+## 7. Payment API
+
+These endpoints handle Midtrans Snap payment creation, cancellation, and webhook updates.
+
+### 7.1 Create Premium Payment
+- **Endpoint**: `POST /api/payment/create`
+- **Description**: Creates a Midtrans Snap transaction for a premium subscription.
+- **Authentication**: Required
+- **Important Flow Rule**: If the user already has a pending payment, this endpoint does not create a second payment. The client must continue or cancel the pending payment first.
+
+**Request Body:**
+```json
+{
+  "durationMonths": 3
+}
+```
+
+Allowed durations: `1`, `3`, `6`, `12`.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "token": "midtrans-snap-token",
+  "redirectUrl": "https://app.sandbox.midtrans.com/snap/v2/...",
+  "orderId": "TT-userid-1770000000000"
+}
+```
+
+**Response (409 Conflict - Pending Payment Exists):**
+```json
+{
+  "error": "Masih ada pembayaran yang sedang diproses. Lanjutkan atau batalkan pembayaran tersebut terlebih dahulu.",
+  "code": "PENDING_PAYMENT_EXISTS",
+  "pendingPayment": {
+    "id": "payment-id",
+    "orderId": "TT-userid-1770000000000",
+    "token": "midtrans-snap-token",
+    "durationMonths": 3,
+    "grossAmount": "177000",
+    "status": "pending",
+    "createdAt": "2026-04-25T10:00:00.000Z"
+  }
+}
+```
+
+**Response (400 Bad Request):**
+```json
+{
+  "error": "Durasi tidak valid. Pilih 1, 3, 6, atau 12 bulan."
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "Terjadi kesalahan saat membuat transaksi pembayaran."
+}
+```
+
+### 7.2 Cancel Pending Payment
+- **Endpoint**: `POST /api/payment/cancel`
+- **Description**: Cancels the logged-in user's latest pending payment in Midtrans and marks the local payment as `cancel`.
+- **Authentication**: Required
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "cancelledPayment": {
+    "id": "payment-id",
+    "orderId": "TT-userid-1770000000000"
+  }
+}
+```
+
+**Response (404 Not Found):**
+```json
+{
+  "error": "Tidak ada pembayaran tertunda."
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "Terjadi kesalahan saat membatalkan pembayaran."
+}
+```
+
+### 7.3 Midtrans Payment Notification
+- **Endpoint**: `POST /api/payment/notification`
+- **Description**: Receives Midtrans webhook notifications, verifies the signature, updates payment status, activates premium on `settlement`/accepted `capture`, and resyncs `user.isPremium` when payments expire/cancel/deny.
+- **Authentication**: Midtrans signature (`signature_key`)
+
+**Request Body (Midtrans example):**
+```json
+{
+  "order_id": "TT-userid-1770000000000",
+  "status_code": "200",
+  "gross_amount": "177000.00",
+  "signature_key": "sha512-signature",
+  "transaction_status": "settlement",
+  "fraud_status": "accept",
+  "payment_type": "bank_transfer",
+  "va_numbers": [
+    {
+      "bank": "bca",
+      "va_number": "1234567890"
+    }
+  ]
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true
+}
+```
+
+**Response (403 Forbidden):**
+```json
+{
+  "error": "Invalid signature"
+}
+```
+
+**Response (404 Not Found):**
+```json
+{
+  "error": "Payment not found"
+}
+```
+
+---
+
+## 8. Subscription API
+
+### 8.1 Get Subscription Status
+- **Endpoint**: `GET /api/subscription/status`
+- **Description**: Returns the logged-in user's premium status, active subscription window, active subscription count, pending payment, and renewal availability. This endpoint also deactivates expired subscriptions and updates `user.isPremium` based on current subscription data.
+- **Authentication**: Required
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "isPremium": true,
+  "subscription": {
+    "id": "subscription-id",
+    "startedAt": "2026-04-25T10:00:00.000Z",
+    "expiresAt": "2026-07-25T10:00:00.000Z",
+    "isActive": true
+  },
+  "activeSubscriptionCount": 1,
+  "premiumUntil": "2026-07-25T10:00:00.000Z",
+  "pendingPayment": null,
+  "canRenew": true
+}
+```
+
+**Response (200 OK - Pending Payment):**
+```json
+{
+  "success": true,
+  "isPremium": false,
+  "subscription": null,
+  "activeSubscriptionCount": 0,
+  "premiumUntil": null,
+  "pendingPayment": {
+    "id": "payment-id",
+    "orderId": "TT-userid-1770000000000",
+    "grossAmount": "59000",
+    "status": "pending",
+    "snapToken": "midtrans-snap-token",
+    "durationMonths": 1,
+    "createdAt": "2026-04-25T10:00:00.000Z"
+  },
+  "canRenew": false
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "Terjadi kesalahan saat mengambil status langganan."
 }
 ```
