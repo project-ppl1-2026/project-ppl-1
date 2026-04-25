@@ -42,7 +42,7 @@ model User {
   accounts      Account[]
   parent        Parent?
   payments      Payment[]
-  subscription  Subscription?
+  subscriptions Subscription[]
   baseline      Baseline?
   moodLogs      MoodLog[]
   diaries       Diary[]
@@ -130,26 +130,30 @@ model Verification {
 }
 
 model Payment {
-  id           String        @id @default(cuid())
-  userId       String
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  grossAmount  Decimal
-  status       String
-  paymentType  String
-  vaNumber     String?
-  paidAt       DateTime?
-  expiredAt    DateTime?
-  createdAt    DateTime      @default(now())
+  id             String        @id @default(cuid())
+  orderId        String        @unique
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grossAmount    Decimal
+  status         String        @default("pending")
+  paymentType    String?
+  snapToken      String?
+  durationMonths Int           @default(1)
+  vaNumber       String?
+  paidAt         DateTime?
+  expiredAt      DateTime?
+  createdAt      DateTime      @default(now())
 
   subscriptions Subscription[]
 
   @@index([userId])
+  @@index([orderId])
   @@map("payment")
 }
 
 model Subscription {
   id        String   @id @default(cuid())
-  userId    String   @unique
+  userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   paymentId String
   payment   Payment  @relation(fields: [paymentId], references: [id])
@@ -159,6 +163,7 @@ model Subscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
   @@index([paymentId])
   @@map("subscription")
 }
