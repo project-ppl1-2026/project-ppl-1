@@ -34,3 +34,9 @@ jobs:
 
       - name: Prettier check
         run: pnpm format:check
+
+      - name: Run Tests
+        run: pnpm test
+
+      - name: Build Project
+        run: pnpm build
