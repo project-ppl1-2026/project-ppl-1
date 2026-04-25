@@ -11,6 +11,7 @@ import type {
   DiaryMessageDto,
   DiaryMoodScore,
 } from "@/lib/diary/types";
+import { encrypt, decrypt } from "@/lib/encryption";
 import prisma from "@/lib/prisma";
 
 type ListDiaryEntriesInput = {
@@ -56,6 +57,15 @@ export class DiaryServiceError extends Error {
     this.status = status;
     this.code = code;
   }
+}
+
+export async function getTotalDiaryCount(userId: string) {
+  return prisma.diary.count({
+    where: {
+      userId,
+      isActive: true,
+    },
+  });
 }
 
 export async function listDiaryEntriesByMonth({
@@ -105,7 +115,16 @@ export async function listDiaryEntriesByMonth({
     }),
   ]);
 
-  const entries = diaries
+  // Decrypt contents
+  const decryptedDiaries = diaries.map((diary) => ({
+    ...diary,
+    messages: diary.messages.map((msg) => ({
+      ...msg,
+      content: decrypt(msg.content),
+    })),
+  }));
+
+  const entries = decryptedDiaries
     .map((diary) => toDiaryEntryDto(diary.id, diary.date, diary.messages, tz))
     .map((entry) => ({
       ...entry,
@@ -149,7 +168,12 @@ export async function listDiaryMessagesByEntryId({
     },
   });
 
-  return messages.map((message) => toDiaryMessageDto(message, tz));
+  const decryptedMessages = messages.map((msg) => ({
+    ...msg,
+    content: decrypt(msg.content),
+  }));
+
+  return decryptedMessages.map((message) => toDiaryMessageDto(message, tz));
 }
 
 export type PreparedDiaryChatSession = {
@@ -236,7 +260,7 @@ export async function prepareDiaryChatSession({
     }
   }
 
-  const promptHistory = diary
+  const rawPromptHistory = diary
     ? await prisma.diaryMessage.findMany({
         where: { diaryId: diary.id },
         orderBy: { createdAt: "asc" },
@@ -248,6 +272,11 @@ export async function prepareDiaryChatSession({
         },
       })
     : [];
+
+  const promptHistory = rawPromptHistory.map((m) => ({
+    ...m,
+    content: decrypt(m.content),
+  }));
 
   const promptHistoryWithIncomingMessage: DiaryMessageRecord[] = [
     ...promptHistory,
@@ -322,7 +351,7 @@ export async function persistDiaryChatSession({
         data: {
           diaryId: finalDiary.id,
           senderType: Sender.USER,
-          content: session.trimmedText,
+          content: encrypt(session.trimmedText),
         },
         select: {
           id: true,
@@ -336,7 +365,7 @@ export async function persistDiaryChatSession({
         data: {
           diaryId: finalDiary.id,
           senderType: Sender.AI,
-          content: normalizedAssistantText,
+          content: encrypt(normalizedAssistantText),
         },
         select: {
           id: true,
@@ -348,8 +377,14 @@ export async function persistDiaryChatSession({
 
       return {
         finalDiary,
-        userMessage,
-        aiMessage,
+        userMessage: {
+          ...userMessage,
+          content: session.trimmedText,
+        },
+        aiMessage: {
+          ...aiMessage,
+          content: normalizedAssistantText,
+        },
       };
     },
     {
@@ -389,6 +424,112 @@ export async function persistDiaryChatSession({
     },
     diarySessionsUsedThisMonth,
   };
+}
+
+export async function initiateDiaryFromMood({
+  userId,
+  moodScore,
+  notes,
+  timezone,
+}: {
+  userId: string;
+  moodScore: number;
+  notes: string;
+  timezone?: string;
+}) {
+  const tz = normalizeTimezone(timezone);
+  const todayKey = getDateKeyInTimeZone(new Date(), tz);
+  const todayDate = parseDateKeyToUTCDate(todayKey);
+
+  // Periksa apakah diary untuk hari ini sudah ada
+  const existingDiary = await prisma.diary.findFirst({
+    where: {
+      userId,
+      date: todayDate,
+      isActive: true,
+    },
+    include: {
+      messages: {
+        take: 1,
+      },
+    },
+  });
+
+  // Jika sudah ada dan sudah punya pesan, jangan timpa
+  if (existingDiary && existingDiary.messages.length > 0) {
+    return;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+
+  const diaryId =
+    existingDiary?.id ??
+    (
+      await prisma.diary.create({
+        data: {
+          userId,
+          date: todayDate,
+          isActive: true,
+        },
+        select: { id: true },
+      })
+    ).id;
+
+  // Buat pesan pengantar berdasarkan mood & notes menggunakan identitas AI utama
+  const moodDesc = getMoodDescription(moodScore);
+  const aiPrompt = `(Sistem: User baru saja melakukan check-in hari ini. Ia merasa ${moodDesc}.${
+    notes ? ` Catatan yang ia tulis: "${notes}".` : ""
+  } Berikan sapaan pertama yang ramah, berempati dengan perasaannya sekarang, dan pancing ia untuk mulai bercerita di diary. Berbicaralah sesuai dengan persona sistemmu tanpa menyebutkan secara eksplisit bahwa instruksi ini berasal dari sistem.)`;
+
+  const todayLabel = formatDateLabel(todayDate, tz);
+  const promptMessages = buildDiaryPromptMessages({
+    userName: user?.name || "Teman",
+    todayLabel,
+    conversation: [
+      {
+        role: "user",
+        content: aiPrompt,
+      },
+    ],
+  });
+
+  try {
+    const assistantText = await generateDiaryAssistantReply({
+      messages: promptMessages,
+    });
+
+    if (assistantText.trim()) {
+      await prisma.diaryMessage.create({
+        data: {
+          diaryId: diaryId,
+          senderType: Sender.AI,
+          content: encrypt(assistantText.trim()),
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Gagal menginisiasi diary dari mood:", error);
+  }
+}
+
+function getMoodDescription(score: number): string {
+  switch (score) {
+    case 5:
+      return "sangat senang";
+    case 4:
+      return "senang";
+    case 3:
+      return "biasa saja";
+    case 2:
+      return "sedih";
+    case 1:
+      return "sangat sedih";
+    default:
+      return "biasa saja";
+  }
 }
 
 export function toDiaryServiceErrorForAiFailure(error: unknown) {
