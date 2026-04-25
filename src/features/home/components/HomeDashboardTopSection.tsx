@@ -15,7 +15,7 @@ type StreakDay = {
 export function HomeDashboardTopSection({
   currentStreak,
   longestStreak,
-  totalMoodLogs,
+  totalDiaries,
   streakWeek,
   getMoodColor,
   braveChoice,
@@ -29,7 +29,7 @@ export function HomeDashboardTopSection({
 }: {
   currentStreak: number;
   longestStreak: number;
-  totalMoodLogs: number;
+  totalDiaries: number;
   streakWeek: StreakDay[];
   getMoodColor: (score: number) => string;
   braveChoice: {
@@ -51,7 +51,7 @@ export function HomeDashboardTopSection({
       <HomeDashboardHeroCard
         currentStreak={currentStreak}
         longestStreak={longestStreak}
-        totalMoodLogs={totalMoodLogs}
+        totalDiaries={totalDiaries}
         streakWeek={streakWeek}
         getMoodColor={getMoodColor}
       />

@@ -98,6 +98,17 @@ export function HomeDashboardContent() {
     refetchOnReconnect: true,
   });
 
+  const { data: totalDiaries = 0, isLoading: countLoading } = useQuery({
+    queryKey: ["total-diaries"],
+    queryFn: async () => {
+      const res = await fetch("/api/diary/count", { cache: "no-store" });
+      if (!res.ok) return 0;
+      const json = await res.json();
+      return json.data?.count ?? 0;
+    },
+    enabled: !!sessionUser?.id,
+  });
+
   const { data: baseline = null, isLoading: baselineLoading } =
     useQuery<BaselineResponse>({
       queryKey: ["baseline"],
@@ -145,7 +156,6 @@ export function HomeDashboardContent() {
   );
 
   const longestStreak = computeLongestStreak(moodLogs, timezone);
-  const totalMoodLogs = moodLogs.length;
   const currentStreak = sessionUser?.currentStreak ?? 0;
   const isPremium = sessionUser?.isPremium ?? false;
   const parentEmail = sessionUser?.parentEmail ?? null;
@@ -157,7 +167,8 @@ export function HomeDashboardContent() {
     total: 25,
   };
 
-  const isLoading = sessionLoading || moodLoading || baselineLoading;
+  const isLoading =
+    sessionLoading || moodLoading || baselineLoading || countLoading;
 
   const handleInsightClick = () => {
     if (!isPremium) {
@@ -279,7 +290,7 @@ export function HomeDashboardContent() {
         <HomeDashboardTopSection
           currentStreak={currentStreak}
           longestStreak={longestStreak}
-          totalMoodLogs={totalMoodLogs}
+          totalDiaries={totalDiaries}
           streakWeek={streakWeek}
           getMoodColor={getMoodColor}
           braveChoice={braveChoice}
