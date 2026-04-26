@@ -6,9 +6,8 @@ import {
   IconButton,
   InsightActionButton,
   PillButton,
-  PremiumBadge,
 } from "./insight-primitives";
-import { formatDateID, getRelativeLabel } from "./insight-utils";
+import { formatDateID, getRelativeLabel } from "../lib/insight-utils";
 
 export function InsightPageHeader({
   effectiveDate,
@@ -17,6 +16,7 @@ export function InsightPageHeader({
   dateInputRef,
   isToday,
   hasInsight,
+  isGenerating,
   onGenerateTodayInsight,
   onPrevDate,
   onNextDate,
@@ -28,6 +28,7 @@ export function InsightPageHeader({
   dateInputRef: React.RefObject<HTMLInputElement | null>;
   isToday: boolean;
   hasInsight: boolean;
+  isGenerating: boolean;
   onGenerateTodayInsight: () => void;
   onPrevDate: () => void;
   onNextDate: () => void;
@@ -35,33 +36,33 @@ export function InsightPageHeader({
 }) {
   return (
     <div className="mb-6 flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <PremiumBadge />
-        <InsightActionButton
-          isToday={isToday}
-          hasInsight={hasInsight}
-          onClick={onGenerateTodayInsight}
-        />
-      </div>
-
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="min-w-0">
-          <h1
-            className="text-[40px] font-bold leading-[1.1] tracking-[-0.02em] md:text-[48px]"
-            style={{ color: "var(--tt-dashboard-text)" }}
-          >
-            Insight Harian
-          </h1>
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex items-center gap-4">
+            <h1
+              className="text-[40px] font-bold leading-[1.1] tracking-[-0.02em] md:text-[48px]"
+              style={{ color: "var(--tt-dashboard-text)" }}
+            >
+              Insight Harian
+            </h1>
+          </div>
           <p
-            className="mt-2 text-base leading-7"
+            className="text-base leading-7"
             style={{ color: "var(--tt-dashboard-text-2)" }}
           >
             Ringkasan mood, pola, dan saran yang lebih mudah dipahami.
           </p>
         </div>
 
-        <div className="max-w-full overflow-x-auto pb-1">
+        <div className="max-w-full overflow-x-auto pb-1 mt-2 xl:mt-0">
           <div className="flex min-w-max items-center gap-3">
+            <InsightActionButton
+              isToday={isToday}
+              hasInsight={hasInsight}
+              isGenerating={isGenerating}
+              onClick={onGenerateTodayInsight}
+            />
+
             <IconButton
               onClick={onPrevDate}
               disabled={currentIndex <= 0}

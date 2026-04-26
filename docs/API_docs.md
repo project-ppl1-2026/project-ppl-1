@@ -11,6 +11,7 @@ This document provides a comprehensive overview of the available API endpoints f
 6. Profile API
 7. Payment API
 8. Subscription API
+9. Insight API
 
 ---
 
@@ -957,5 +958,108 @@ Allowed durations: `1`, `3`, `6`, `12`.
 ```json
 {
   "error": "Terjadi kesalahan saat mengambil status langganan."
+}
+```
+
+---
+
+## 9. Insight API
+
+These endpoints handle premium daily insight summaries. Insight generation uses the user's timezone date key, mood check-ins, notes, and decrypted TemanCerita messages. Generated summaries must stay privacy-safe and avoid exposing diary details.
+
+### 9.1 Get Insight Map
+- **Endpoint**: `GET /api/insight`
+- **Description**: Returns saved daily insights mapped by `YYYY-MM-DD`.
+- **Authentication**: Required
+- **Premium**: Required
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "2026-04-26": {
+      "mood": 3.6,
+      "reflection": "Hari ini terasa cukup stabil, meski ada beberapa bagian yang butuh jeda.",
+      "pattern": "Ada pola menahan emosi lalu mencoba merapikannya lewat cerita.",
+      "affirmation": "Kamu boleh berjalan pelan sambil tetap menjaga dirimu.",
+      "actions": [
+        {
+          "priority": "Medium",
+          "label": "Ambil jeda singkat",
+          "desc": "Luangkan beberapa menit untuk menenangkan napas sebelum lanjut beraktivitas."
+        }
+      ]
+    }
+  }
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Response (403 Forbidden):**
+```json
+{
+  "error": "Membutuhkan premium account",
+  "code": "PREMIUM_REQUIRED"
+}
+```
+
+### 9.2 Generate Daily Insight
+- **Endpoint**: `POST /api/insight/generate`
+- **Description**: Generates one daily insight for the requested local date. The date is interpreted with the submitted timezone.
+- **Authentication**: Required
+- **Premium**: Required
+
+**Request Body:**
+```json
+{
+  "date": "2026-04-26",
+  "timezone": "Asia/Jakarta"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "insight-id",
+    "userId": "user-id",
+    "date": "2026-04-26T00:00:00.000Z",
+    "averageScore": "3.6",
+    "analysisText": "Hari ini terasa cukup stabil.",
+    "cognitivePattern": "Ada pola menahan emosi lalu mencoba merapikannya.",
+    "affirmation": "Kamu boleh berjalan pelan sambil tetap menjaga dirimu.",
+    "recommendations": []
+  }
+}
+```
+
+**Response (400 Bad Request):**
+```json
+{
+  "error": "Harus ada minimal percakapan di dalam TemanCerita untuk generate insight tanggal ini.",
+  "code": "NO_DIARY_MESSAGES"
+}
+```
+
+**Response (403 Forbidden):**
+```json
+{
+  "error": "Membutuhkan premium account",
+  "code": "PREMIUM_REQUIRED"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "Terjadi kesalahan saat menghasilkan insight."
 }
 ```

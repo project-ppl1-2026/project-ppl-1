@@ -6,11 +6,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
+  Loader2,
   Star,
 } from "lucide-react";
-import { cn } from "./insight-utils";
-import { PRIORITY_STYLE } from "./insight-data";
-import type { ActionPriority } from "./insight-types";
+import { PRIORITY_STYLE } from "../lib/insight-data";
+import type { ActionPriority } from "../lib/insight-types";
+import { cn } from "../lib/insight-utils";
 
 export function SurfaceCard({
   children,
@@ -41,7 +42,7 @@ export function TopCard({
   className?: string;
 }) {
   return (
-    <SurfaceCard className={cn("flex flex-col xl:min-h-[700px]", className)}>
+    <SurfaceCard className={cn("flex flex-col", className)}>
       {children}
     </SurfaceCard>
   );
@@ -100,29 +101,48 @@ export function PremiumBadge() {
 export function InsightActionButton({
   isToday,
   hasInsight,
+  isGenerating,
   onClick,
 }: {
   isToday: boolean;
   hasInsight: boolean;
+  isGenerating: boolean;
   onClick: () => void;
 }) {
   if (!isToday) return null;
+
+  const disabled = hasInsight || isGenerating;
 
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={hasInsight}
-      className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60"
+      disabled={disabled}
+      className={cn(
+        "inline-flex h-10 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-all duration-200",
+        disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer",
+      )}
       style={{
-        background: hasInsight ? "#E8F2F0" : "var(--gradient-brand-btn)",
-        color: hasInsight ? "var(--tt-dashboard-text-2)" : "#FFFFFF",
-        boxShadow: hasInsight ? "none" : "0 8px 18px rgba(26,150,136,0.16)",
+        background:
+          hasInsight || isGenerating ? "#E8F2F0" : "var(--gradient-brand-btn)",
+        color:
+          hasInsight || isGenerating ? "var(--tt-dashboard-text-2)" : "#FFFFFF",
+        boxShadow:
+          hasInsight || isGenerating
+            ? "none"
+            : "0 8px 18px rgba(26,150,136,0.16)",
       }}
     >
-      {hasInsight
-        ? "Insight hari ini sudah tersedia"
-        : "Lihat Insight Hari Ini"}
+      {isGenerating ? (
+        <>
+          <Loader2 size={15} className="animate-spin" />
+          Membuat AI Insight...
+        </>
+      ) : hasInsight ? (
+        "Insight Tersedia"
+      ) : (
+        "Generate Insight"
+      )}
     </button>
   );
 }
@@ -140,7 +160,7 @@ export function PillButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition-all duration-200"
+      className="cursor-pointer inline-flex h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition-all duration-200"
       style={{
         background: active ? "var(--tt-dashboard-active-bg)" : "#FFFFFF",
         color: active
@@ -172,7 +192,10 @@ export function IconButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+      className={cn(
+        "inline-flex h-10 w-10 items-center justify-center rounded-2xl border transition-all duration-200",
+        disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer",
+      )}
       style={{
         background: "#FFFFFF",
         borderColor: "rgba(25,39,44,0.08)",
@@ -195,7 +218,7 @@ export function DateButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-10 items-center gap-2 rounded-2xl border px-4 text-sm font-medium"
+      className="cursor-pointer inline-flex h-10 items-center gap-2 rounded-2xl border px-4 text-sm font-medium"
       style={{
         background: "#FFFFFF",
         color: "var(--tt-dashboard-text-2)",
@@ -358,7 +381,7 @@ export function NotebookReflection({ text }: { text: string }) {
 
   return (
     <div
-      className="min-h-[280px] overflow-hidden rounded-3xl border"
+      className="min-h-[220px] overflow-hidden rounded-3xl border"
       style={{
         borderColor: "rgba(25,39,44,0.08)",
         backgroundColor: "#FCFEFD",

@@ -3,26 +3,30 @@
 import {
   EmptyReflectionState,
   InsightPlaceholderCard,
-  NotebookReflection,
   TopCard,
   TopCardHeader,
 } from "./insight-primitives";
-import { formatDateID, getMoodStatus, getRelativeLabel } from "./insight-utils";
-import type { DayInsight } from "./insight-types";
+import type { DayInsight } from "../lib/insight-types";
+import {
+  formatDateID,
+  getEmotionalStatus,
+  getRelativeLabel,
+} from "../lib/insight-utils";
 
 export function InsightReflectionSection({
   effectiveDate,
   availableDates,
+  isToday,
   selectedInsight,
 }: {
   effectiveDate: string;
   availableDates: string[];
+  isToday: boolean;
   selectedInsight?: Omit<DayInsight, "date">;
 }) {
   const hasInsight = Boolean(selectedInsight);
-  const isToday = effectiveDate === availableDates[availableDates.length - 1];
   const moodStatus = selectedInsight
-    ? getMoodStatus(selectedInsight.mood)
+    ? getEmotionalStatus(selectedInsight.mood)
     : null;
 
   return (
@@ -65,55 +69,73 @@ export function InsightReflectionSection({
       <div className="flex flex-col gap-4 px-6 py-6 xl:flex-1">
         {hasInsight && selectedInsight ? (
           <>
-            <NotebookReflection text={selectedInsight.reflection} />
-
             <div
-              className="rounded-3xl border px-5 py-5"
-              style={{
-                background: "#F8FCFB",
-                borderColor: "rgba(25,39,44,0.08)",
-              }}
-            >
-              <p
-                className="text-xs font-bold uppercase tracking-[0.12em]"
-                style={{ color: "var(--tt-dashboard-text-2)" }}
-              >
-                Pola yang terlihat
-              </p>
-              <p
-                className="mt-3 text-sm leading-7"
-                style={{ color: "var(--tt-dashboard-text)" }}
-              >
-                {selectedInsight.pattern}
-              </p>
-            </div>
-
-            <div
-              className="rounded-3xl border px-5 py-5"
+              className="rounded-3xl border px-6 py-6"
               style={{
                 background: "#FFFFFF",
                 borderColor: "rgba(25,39,44,0.08)",
+                flex: "1 1 auto",
               }}
             >
               <p
-                className="text-xs font-bold uppercase tracking-[0.12em]"
-                style={{ color: "var(--tt-dashboard-text-2)" }}
+                className="text-base leading-8"
+                style={{ color: "var(--tt-dashboard-text)" }}
               >
-                Pengingat hari ini
+                {selectedInsight.reflection}
               </p>
-              <p
-                className="mt-3 text-base italic leading-8"
-                style={{ color: "var(--tt-dashboard-brand-deep)" }}
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div
+                className="rounded-3xl border px-5 py-5"
+                style={{
+                  background: "#F8FCFB",
+                  borderColor: "rgba(25,39,44,0.08)",
+                }}
               >
-                {selectedInsight.affirmation}
-              </p>
+                <p
+                  className="text-xs font-bold uppercase tracking-[0.12em]"
+                  style={{ color: "var(--tt-dashboard-text-2)" }}
+                >
+                  Pola yang terlihat
+                </p>
+                <p
+                  className="mt-3 text-sm leading-7"
+                  style={{ color: "var(--tt-dashboard-text)" }}
+                >
+                  {selectedInsight.pattern}
+                </p>
+              </div>
+
+              <div
+                className="rounded-3xl border px-5 py-5"
+                style={{
+                  background: "#FFFFFF",
+                  borderColor: "rgba(25,39,44,0.08)",
+                }}
+              >
+                <p
+                  className="text-xs font-bold uppercase tracking-[0.12em]"
+                  style={{ color: "var(--tt-dashboard-text-2)" }}
+                >
+                  Pengingat hari ini
+                </p>
+                <p
+                  className="mt-3 text-base italic leading-8"
+                  style={{ color: "var(--tt-dashboard-brand-deep)" }}
+                >
+                  {selectedInsight.affirmation}
+                </p>
+              </div>
             </div>
           </>
         ) : (
           <>
             <EmptyReflectionState isToday={isToday} />
-            <InsightPlaceholderCard title="Pola yang terlihat" />
-            <InsightPlaceholderCard title="Pengingat hari ini" />
+            <div className="grid gap-4 lg:grid-cols-2">
+              <InsightPlaceholderCard title="Pola yang terlihat" />
+              <InsightPlaceholderCard title="Pengingat hari ini" />
+            </div>
           </>
         )}
       </div>

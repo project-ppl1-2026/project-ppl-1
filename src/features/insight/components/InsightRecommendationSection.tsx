@@ -1,12 +1,12 @@
 "use client";
 
-import { PRIORITY_STYLE } from "./insight-data";
+import { PRIORITY_STYLE } from "../lib/insight-data";
+import type { DayInsight } from "../lib/insight-types";
 import {
   InsightPlaceholderCard,
   PriorityBadge,
   SurfaceCard,
 } from "./insight-primitives";
-import type { DayInsight } from "./insight-types";
 
 export function InsightRecommendationSection({
   selectedInsight,
