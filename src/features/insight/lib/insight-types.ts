@@ -19,6 +19,6 @@ export type InsightMap = Record<string, Omit<DayInsight, "date">>;
 
 export type TrendPoint = {
   day: number;
-  mood: number;
+  mood: number | null;
   iso: string;
 };
