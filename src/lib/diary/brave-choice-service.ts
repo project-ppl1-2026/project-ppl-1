@@ -261,56 +261,13 @@ export async function submitBraveChoiceAnswerForUser({
   }
 
   const isCorrectSelection = normalizedChosenOption === normalizedCorrectOption;
-  const existingLog = await prisma.quizLog.findFirst({
-    where: {
+
+  await prisma.quizLog.create({
+    data: {
       userId,
       questionId: question.id,
-    },
-    select: {
-      id: true,
-      isCorrect: true,
-    },
-  });
-
-  const finalCorrectState = existingLog
-    ? existingLog.isCorrect || isCorrectSelection
-    : isCorrectSelection;
-
-  let persistedLogId = "";
-
-  if (existingLog) {
-    await prisma.quizLog.update({
-      where: { id: existingLog.id },
-      data: {
-        chosenOption: normalizedChosenOption,
-        isCorrect: finalCorrectState,
-        // Dipakai sebagai "last answered at" agar hitung kuota harian tetap konsisten.
-        createdAt: new Date(),
-      },
-    });
-    persistedLogId = existingLog.id;
-  } else {
-    const createdLog = await prisma.quizLog.create({
-      data: {
-        userId,
-        questionId: question.id,
-        chosenOption: normalizedChosenOption,
-        isCorrect: finalCorrectState,
-      },
-      select: {
-        id: true,
-      },
-    });
-    persistedLogId = createdLog.id;
-  }
-
-  await prisma.quizLog.deleteMany({
-    where: {
-      userId,
-      questionId: question.id,
-      id: {
-        not: persistedLogId,
-      },
+      chosenOption: normalizedChosenOption,
+      isCorrect: isCorrectSelection,
     },
   });
 
@@ -541,4 +498,46 @@ function getDateKeyInTimeZone(date: Date, timezone: string) {
   } catch {
     return date.toISOString().split("T")[0];
   }
+}
+
+export type BraveChoiceStats = {
+  correct: number;
+  total: number;
+  pct: number;
+};
+
+export async function getBraveChoiceStatsForUser(
+  userId: string,
+): Promise<BraveChoiceStats> {
+  // Join with QuizQuestion to determine actual correctness via chosenOption vs correctOption.
+  // This makes stats immune to reset (which sets isCorrect to false).
+  const allLogs = await prisma.quizLog.findMany({
+    where: { userId },
+    select: {
+      chosenOption: true,
+      createdAt: true,
+      question: {
+        select: {
+          correctOption: true,
+        },
+      },
+    },
+  });
+
+  const enrichedLogs = allLogs.map((log) => ({
+    isActuallyCorrect:
+      log.chosenOption.toUpperCase() ===
+      log.question.correctOption.toUpperCase(),
+    createdAt: log.createdAt,
+  }));
+
+  const total = enrichedLogs.length;
+  const correct = enrichedLogs.filter((log) => log.isActuallyCorrect).length;
+  const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+  return {
+    correct,
+    total,
+    pct,
+  };
 }

@@ -34,7 +34,6 @@ export function HomeDashboardTopSection({
   getMoodColor: (score: number) => string;
   braveChoice: {
     pct: number;
-    weekDelta: number;
     correct: number;
     total: number;
   };
@@ -61,7 +60,6 @@ export function HomeDashboardTopSection({
           correct={braveChoice.correct}
           total={braveChoice.total}
           pct={braveChoice.pct}
-          weekDelta={braveChoice.weekDelta}
         />
 
         <HomeDashboardParentReportCard

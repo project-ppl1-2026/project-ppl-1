@@ -101,7 +101,7 @@ export function useBraveChoice(user: UserProfile | null) {
     } finally {
       setIsLoading(false);
     }
-  }, [canDoQuiz]);
+  }, [canDoQuiz, isQuotaReached, isQuestionPoolExhausted]);
 
   const loadNextQuiz = useCallback(async () => {
     setIsLoading(true);
