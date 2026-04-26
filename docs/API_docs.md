@@ -623,6 +623,41 @@ data: {"success": true}
 }
 ```
 
+}
+```
+
+### 3.10 Get BraveChoice Stats
+- **Endpoint**: `GET /api/diary/brave-choice/stats`
+- **Description**: Returns the user's BraveChoice statistics, including total questions answered, total correct, and accuracy percentage. This is used for the dashboard card.
+- **Authentication**: Required
+- **Query Parameters**: None
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "correct": 22,
+    "total": 25,
+    "pct": 88
+  }
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "Internal Server Error"
+}
+```
+
 ---
 
 ## 4. Mood API
