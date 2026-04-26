@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -258,7 +258,7 @@ function MobileSidebar({
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={isLocked ? "/subscription" : item.href}
                 onClick={onClose}
                 className="flex h-12 w-12 items-center justify-center rounded-xl transition-all"
                 style={{
@@ -334,6 +334,48 @@ export function AppSidebarShell({ user, children }: Props) {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isPremium, setIsPremium] = useState(Boolean(user.isPremium));
+
+  const shellUser = useMemo(
+    () => ({
+      ...user,
+      isPremium,
+    }),
+    [isPremium, user],
+  );
+
+  const refreshPremiumStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/subscription/status", {
+        cache: "no-store",
+      });
+
+      if (!res.ok) return;
+
+      const data = (await res.json()) as { isPremium?: boolean };
+      setIsPremium(Boolean(data.isPremium));
+    } catch (error) {
+      console.error("Premium status refresh failed:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    setIsPremium(Boolean(user.isPremium));
+  }, [user.isPremium]);
+
+  useEffect(() => {
+    void refreshPremiumStatus();
+  }, [pathname, refreshPremiumStatus]);
+
+  useEffect(() => {
+    if (!pathname.startsWith("/subscription")) return;
+
+    const intervalId = window.setInterval(() => {
+      void refreshPremiumStatus();
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [pathname, refreshPremiumStatus]);
 
   const activeLabel = useMemo(() => {
     const active = navItems.find(
@@ -365,7 +407,7 @@ export function AppSidebarShell({ user, children }: Props) {
       <MobileSidebar
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        user={user}
+        user={shellUser}
         pathname={pathname}
         onLogout={handleLogout}
         isLoggingOut={isLoggingOut}
@@ -414,8 +456,7 @@ export function AppSidebarShell({ user, children }: Props) {
                       pathname === item.href ||
                       (item.href !== "/home" && pathname.startsWith(item.href));
 
-                    const isLocked =
-                      item.href === "/insight" && !user.isPremium;
+                    const isLocked = item.href === "/insight" && !isPremium;
 
                     return (
                       <SidebarNavItem
@@ -436,7 +477,7 @@ export function AppSidebarShell({ user, children }: Props) {
                 style={{ borderColor: "var(--tt-dashboard-shell-border)" }}
               >
                 <SidebarProfileCard
-                  user={user}
+                  user={shellUser}
                   onLogout={handleLogout}
                   isLoggingOut={isLoggingOut}
                 />
@@ -475,7 +516,7 @@ export function AppSidebarShell({ user, children }: Props) {
                       className="mt-1 truncate text-base font-extrabold leading-tight"
                       style={{ color: "var(--tt-dashboard-text)" }}
                     >
-                      Hai, {user.name}
+                      Hai, {shellUser.name}
                     </h2>
                     <p
                       className="mt-0.5 text-[11px] leading-none"
@@ -493,7 +534,7 @@ export function AppSidebarShell({ user, children }: Props) {
                     aria-label="Profile"
                     title="Profile"
                   >
-                    <UserAvatar user={user} size={44} />
+                    <UserAvatar user={shellUser} size={44} />
                   </Link>
 
                   <button

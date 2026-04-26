@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import SnapPayButton from "@/components/payment/SnapPayButton";
@@ -58,6 +58,17 @@ export default function SubscriptionClient({
   const [selectedDuration, setSelectedDuration] = useState(1);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status !== "success") return;
+
+    const timeoutId = window.setTimeout(() => {
+      router.replace("/subscription");
+      router.refresh();
+    }, 2500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [router, status]);
 
   const checkoutDuration = pendingPayment?.durationMonths ?? selectedDuration;
   const totalPrice = pendingPayment
