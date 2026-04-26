@@ -56,7 +56,7 @@ export function DiaryPageClient({
   }
 
   const isPremium = diary.user.plan === "premium";
-  const canLoadNext = isPremium || quiz.quizRemaining > 1;
+  const canLoadNext = isPremium || quiz.quizRemaining > 0;
 
   return (
     <div
@@ -209,6 +209,7 @@ export function DiaryPageClient({
                     quiz.quizRemaining === Infinity ? 999 : quiz.quizRemaining
                   }
                   canDoQuiz={quiz.canDoQuiz}
+                  isQuestionPoolExhausted={quiz.isQuestionPoolExhausted}
                   onSelectEntry={diary.setSelectedEntry}
                   onGoToToday={diary.goToToday}
                   onOpenQuiz={quiz.loadQuiz}
@@ -358,6 +359,7 @@ export function DiaryPageClient({
             quiz.quizRemaining === Infinity ? 999 : quiz.quizRemaining
           }
           canDoQuiz={quiz.canDoQuiz}
+          isQuestionPoolExhausted={quiz.isQuestionPoolExhausted}
           onSelectEntry={(entry) => {
             diary.setSelectedEntry(entry);
             setMobileHistoryOpen(false);
@@ -384,6 +386,9 @@ export function DiaryPageClient({
         onClose={quiz.closeModal}
         quiz={quiz.currentQuiz}
         isLoading={quiz.isLoading}
+        isResetting={quiz.isResetting}
+        isQuestionPoolExhausted={quiz.isQuestionPoolExhausted}
+        isQuotaReached={quiz.isQuotaReached}
         quizRemaining={
           quiz.quizRemaining === Infinity ? 999 : quiz.quizRemaining
         }
@@ -393,6 +398,8 @@ export function DiaryPageClient({
         plan={diary.user.plan}
         canLoadNext={canLoadNext}
         onNextQuiz={quiz.loadNextQuiz}
+        onResetQuestions={quiz.handleResetQuestions}
+        onUpgrade={() => router.push("/subscription")}
         onAnswerSubmit={quiz.handleAnswerSubmit}
       />
     </div>

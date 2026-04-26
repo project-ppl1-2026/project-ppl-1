@@ -1,24 +1,28 @@
 // ============================================================
 //  src/features/diary/hooks/useBraveChoice.ts
-//  Custom hook — state management untuk Brave Choice Quiz
+//  Custom hook untuk state Brave Choice Quiz
 // ============================================================
 
 "use client";
 
-import { useState, useCallback } from "react";
-import type { BraveChoiceQuiz, UserProfile } from "../types";
+import { useCallback, useEffect, useState } from "react";
+
 import { PLAN_CONFIG } from "../constants/planConfig";
 import {
   getBraveChoiceQuiz,
+  getBraveChoiceStatus,
+  resetBraveChoiceProgress,
   submitQuizAnswer,
 } from "../services/diaryServices";
+import type { BraveChoiceQuiz, UserProfile } from "../types";
 
 export function useBraveChoice(user: UserProfile | null) {
   const [showModal, setShowModal] = useState(false);
   const [currentQuiz, setCurrentQuiz] = useState<BraveChoiceQuiz | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  // TODO: saat backend siap, quizUsedToday seharusnya dari server (user.quizUsedToday)
-  // Saat ini kita track di local state per sesi
+  const [isResetting, setIsResetting] = useState(false);
+  const [isQuestionPoolExhausted, setIsQuestionPoolExhausted] = useState(false);
+  const [isQuotaReached, setIsQuotaReached] = useState(false);
   const [quizUsedToday, setQuizUsedToday] = useState(user?.quizUsedToday ?? 0);
 
   const planCfg = user ? PLAN_CONFIG[user.plan] : PLAN_CONFIG.free;
@@ -26,46 +30,136 @@ export function useBraveChoice(user: UserProfile | null) {
     planCfg.quizPerDay === Infinity
       ? Infinity
       : Math.max(0, planCfg.quizPerDay - quizUsedToday);
-  const canDoQuiz = user?.plan === "premium" || quizRemaining > 0;
+  const canDoQuiz =
+    user?.plan === "premium" || (!isQuotaReached && quizRemaining > 0);
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    let ignore = false;
+
+    const syncQuizStatus = async () => {
+      try {
+        const status = await getBraveChoiceStatus();
+
+        if (ignore) {
+          return;
+        }
+
+        setQuizUsedToday(status.quizUsedToday);
+        setIsQuotaReached(status.isQuotaReached);
+        setIsQuestionPoolExhausted(
+          !status.isQuotaReached && !status.hasAvailableQuestion,
+        );
+      } catch {
+        if (!ignore) {
+          setIsQuotaReached(false);
+        }
+      }
+    };
+
+    void syncQuizStatus();
+
+    return () => {
+      ignore = true;
+    };
+  }, [user?.id]);
 
   const loadQuiz = useCallback(async () => {
-    if (!canDoQuiz) return;
     setShowModal(true);
+
+    // Jika kuota habis atau soal habis, kita tetap buka modal
+    // tapi tidak perlu fetch quiz baru jika sudah ada statusnya.
+    if (!canDoQuiz && (isQuotaReached || isQuestionPoolExhausted)) {
+      return;
+    }
     setIsLoading(true);
     setCurrentQuiz(null);
+
     try {
-      const quiz = await getBraveChoiceQuiz();
-      setCurrentQuiz(quiz);
+      const result = await getBraveChoiceQuiz();
+      setQuizUsedToday(result.quizUsedToday);
+      setIsQuotaReached(result.isQuotaReached);
+
+      if (!result.quiz) {
+        if (result.isQuotaReached) {
+          setIsQuestionPoolExhausted(false);
+          return;
+        }
+
+        setIsQuestionPoolExhausted(true);
+        return;
+      }
+
+      setIsQuestionPoolExhausted(false);
+      setCurrentQuiz(result.quiz);
     } catch {
-      // fallback tetap null, QuizModal sudah handle state ini
+      setShowModal(false);
+      setCurrentQuiz(null);
     } finally {
       setIsLoading(false);
     }
-  }, [canDoQuiz]);
+  }, [canDoQuiz, isQuotaReached, isQuestionPoolExhausted]);
 
   const loadNextQuiz = useCallback(async () => {
     setIsLoading(true);
     setCurrentQuiz(null);
+
     try {
-      const quiz = await getBraveChoiceQuiz();
-      setCurrentQuiz(quiz);
+      const result = await getBraveChoiceQuiz();
+      setQuizUsedToday(result.quizUsedToday);
+      setIsQuotaReached(result.isQuotaReached);
+
+      if (!result.quiz) {
+        if (result.isQuotaReached) {
+          setIsQuestionPoolExhausted(false);
+          return;
+        }
+
+        setIsQuestionPoolExhausted(true);
+        return;
+      }
+
+      setIsQuestionPoolExhausted(false);
+      setCurrentQuiz(result.quiz);
+    } catch {
+      setShowModal(false);
+      setCurrentQuiz(null);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   const handleAnswerSubmit = useCallback(
-    async (quizId: string, selectedLabel: string, isBrave: boolean) => {
-      setQuizUsedToday((prev) => prev + 1);
+    async (quizId: string, selectedLabel: string) => {
       try {
-        // TODO: kirim ke server saat backend siap
-        await submitQuizAnswer(quizId, selectedLabel, isBrave);
+        const result = await submitQuizAnswer(quizId, selectedLabel);
+        setQuizUsedToday(result.quizUsedToday);
+        setIsQuotaReached(
+          user?.plan === "free" &&
+            result.quizUsedToday >= PLAN_CONFIG.free.quizPerDay,
+        );
       } catch {
-        // silent fail — counter local sudah update
+        return;
       }
     },
-    [],
+    [user?.plan],
   );
+
+  const handleResetQuestions = useCallback(async () => {
+    setIsResetting(true);
+
+    try {
+      await resetBraveChoiceProgress();
+      await loadNextQuiz();
+    } catch {
+      setIsQuestionPoolExhausted(true);
+    } finally {
+      setIsResetting(false);
+    }
+  }, [loadNextQuiz]);
 
   const closeModal = useCallback(() => {
     setShowModal(false);
@@ -76,12 +170,16 @@ export function useBraveChoice(user: UserProfile | null) {
     showModal,
     currentQuiz,
     isLoading,
+    isResetting,
+    isQuestionPoolExhausted,
+    isQuotaReached,
     quizRemaining,
     quizUsedToday,
     canDoQuiz,
     planCfg,
     loadQuiz,
     loadNextQuiz,
+    handleResetQuestions,
     handleAnswerSubmit,
     closeModal,
   };

@@ -446,6 +446,218 @@ data: {"success": true}
 }
 ```
 
+### 3.6 Get BraveChoice Quiz
+- **Endpoint**: `GET /api/diary/brave-choice`
+- **Description**: Retrieves one BraveChoice question for the logged-in user. Questions already answered correctly by the same user are excluded. For free users, usage is limited to **5 attempts per day**.
+- **Authentication**: Required
+- **Query Parameters**:
+  - `timezone` (Optional): e.g., `Asia/Jakarta`
+
+**Response (200 OK - Question Available):**
+```json
+{
+  "success": true,
+  "data": {
+    "quiz": {
+      "id": "question-uuid",
+      "category": "Bullying",
+      "scenario": "Temanmu diejek di grup kelas.",
+      "options": [
+        {
+          "label": "A",
+          "text": "Membela teman",
+          "isBrave": true
+        },
+        {
+          "label": "B",
+          "text": "Diam saja",
+          "isBrave": false
+        }
+      ],
+      "explanationWrong": "Diam memperkuat perilaku pelaku.",
+      "explanationRight": "Membela teman adalah pilihan yang tepat."
+    },
+    "quizUsedToday": 1,
+    "isQuotaReached": false
+  }
+}
+```
+
+**Response (200 OK - Quota Reached / No Question Left):**
+```json
+{
+  "success": true,
+  "data": {
+    "quiz": null,
+    "quizUsedToday": 5,
+    "isQuotaReached": true
+  }
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "Terjadi kesalahan saat mengambil soal BraveChoice."
+}
+```
+
+### 3.7 Submit BraveChoice Answer
+- **Endpoint**: `POST /api/diary/brave-choice`
+- **Description**: Submits the selected option for a BraveChoice question. The user-question status is stored as a single row (not append-only), so `isCorrect` can evolve from `false` to `true`.
+- **Authentication**: Required
+
+**Request Body:**
+```json
+{
+  "questionId": "question-uuid",
+  "chosenOption": "A",
+  "timezone": "Asia/Jakarta"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "questionId": "question-uuid",
+    "chosenOption": "A",
+    "isCorrect": true,
+    "explanation": "Membela teman adalah pilihan yang tepat.",
+    "quizUsedToday": 2
+  }
+}
+```
+
+**Response (400 Bad Request):**
+```json
+{
+  "error": "Pilihan jawaban harus A atau B.",
+  "code": "INVALID_OPTION"
+}
+```
+
+**Response (403 Forbidden):**
+```json
+{
+  "error": "Batas 5 soal BraveChoice per hari sudah tercapai.",
+  "code": "QUIZ_QUOTA_EXCEEDED"
+}
+```
+
+**Response (404 Not Found):**
+```json
+{
+  "error": "Soal BraveChoice tidak ditemukan.",
+  "code": "QUESTION_NOT_FOUND"
+}
+```
+
+### 3.8 Reset BraveChoice Progress
+- **Endpoint**: `POST /api/diary/brave-choice/reset`
+- **Description**: Resets BraveChoice progress for the current user by setting all stored BraveChoice statuses back to `isCorrect = false`, making all questions available again.
+- **Authentication**: Required
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "resetCount": 15
+  }
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "Terjadi kesalahan saat mereset progres BraveChoice."
+}
+```
+
+### 3.9 Get BraveChoice Status
+- **Endpoint**: `GET /api/diary/brave-choice/status`
+- **Description**: Returns current BraveChoice usage status for the logged-in user (used count today, quota state, and whether there are still unanswered question candidates).
+- **Authentication**: Required
+- **Query Parameters**:
+  - `timezone` (Optional): e.g., `Asia/Jakarta`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "quizUsedToday": 5,
+    "isQuotaReached": true,
+    "hasAvailableQuestion": false
+  }
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "Terjadi kesalahan saat mengambil status BraveChoice."
+}
+```
+
+}
+```
+
+### 3.10 Get BraveChoice Stats
+- **Endpoint**: `GET /api/diary/brave-choice/stats`
+- **Description**: Returns the user's BraveChoice statistics, including total questions answered, total correct, and accuracy percentage. This is used for the dashboard card.
+- **Authentication**: Required
+- **Query Parameters**: None
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "correct": 22,
+    "total": 25,
+    "pct": 88
+  }
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "Internal Server Error"
+}
+```
+
 ---
 
 ## 4. Mood API

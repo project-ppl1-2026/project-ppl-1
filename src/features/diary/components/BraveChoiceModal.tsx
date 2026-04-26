@@ -1,8 +1,3 @@
-// ============================================================
-//  src/features/diary/components/BraveChoiceModal.tsx
-//  Modal quiz Brave Choice — terpisah agar mudah di-test sendiri
-// ============================================================
-
 import {
   X,
   HelpCircle,
@@ -11,8 +6,9 @@ import {
   AlertCircle,
   ChevronRight,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
 import { colors as C, fonts } from "../constants/tokens";
 import type { BraveChoiceQuiz, PlanType } from "../types";
 
@@ -21,12 +17,17 @@ type Props = {
   onClose: () => void;
   quiz: BraveChoiceQuiz | null;
   isLoading: boolean;
+  isResetting: boolean;
+  isQuestionPoolExhausted: boolean;
+  isQuotaReached: boolean;
   quizRemaining: number;
   quizPerDay: number;
   plan: PlanType;
   canLoadNext: boolean;
   onNextQuiz: () => void;
-  onAnswerSubmit: (quizId: string, label: string, isBrave: boolean) => void;
+  onResetQuestions: () => void;
+  onUpgrade: () => void;
+  onAnswerSubmit: (quizId: string, label: string) => void;
 };
 
 export function BraveChoiceModal({
@@ -34,11 +35,16 @@ export function BraveChoiceModal({
   onClose,
   quiz,
   isLoading,
+  isResetting,
+  isQuestionPoolExhausted,
+  isQuotaReached,
   quizRemaining,
   quizPerDay,
   plan,
   canLoadNext,
   onNextQuiz,
+  onResetQuestions,
+  onUpgrade,
   onAnswerSubmit,
 }: Props) {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
@@ -56,7 +62,7 @@ export function BraveChoiceModal({
     if (selectedIdx === null || !quiz) return;
     const opt = quiz.options[selectedIdx];
     setIsChecked(true);
-    onAnswerSubmit(quiz.id, opt.label, opt.isBrave);
+    onAnswerSubmit(quiz.id, opt.label);
   };
 
   const handleClose = () => {
@@ -251,7 +257,7 @@ export function BraveChoiceModal({
                     Cek Jawaban
                   </button>
                   <button
-                    onClick={handleClose}
+                    onClick={onNextQuiz}
                     style={{
                       height: 42,
                       padding: "0 18px",
@@ -265,7 +271,7 @@ export function BraveChoiceModal({
                       fontFamily: fonts.sans,
                     }}
                   >
-                    Lewati
+                    Lewati Soal
                   </button>
                 </div>
               ) : (
@@ -287,7 +293,7 @@ export function BraveChoiceModal({
                   >
                     Lanjutkan Menulis
                   </button>
-                  {canLoadNext && (
+                  {canLoadNext ? (
                     <button
                       onClick={onNextQuiz}
                       style={{
@@ -309,15 +315,28 @@ export function BraveChoiceModal({
                       Soal Lagi
                       <ChevronRight size={13} color={C.ink} />
                     </button>
-                  )}
+                  ) : isQuotaReached ? (
+                    <button onClick={onUpgrade} style={upgradeButtonStyle}>
+                      <Crown size={14} color={C.gold} />
+                      Premium
+                    </button>
+                  ) : null}
                 </div>
               )}
 
               {/* Upgrade nudge */}
-              {plan === "free" && quizRemaining <= 1 && !isChecked && (
-                <UpgradeNudge />
+              {plan === "free" && quizRemaining <= 1 && (
+                <UpgradeNudge onUpgrade={onUpgrade} />
               )}
             </>
+          ) : isQuestionPoolExhausted ? (
+            <ExhaustedState
+              isResetting={isResetting}
+              onResetQuestions={onResetQuestions}
+              onClose={handleClose}
+              onUpgrade={onUpgrade}
+              plan={plan}
+            />
           ) : null}
         </div>
       </div>
@@ -388,17 +407,110 @@ function LoadingState() {
         color={C.ink}
         style={{ animation: "ttSpin 0.8s linear infinite" }}
       />
-      <p
+    </div>
+  );
+}
+
+function ExhaustedState({
+  isResetting,
+  onResetQuestions,
+  onClose,
+  onUpgrade,
+  plan,
+}: {
+  isResetting: boolean;
+  onResetQuestions: () => void;
+  onClose: () => void;
+  onUpgrade: () => void;
+  plan: PlanType;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <div
         style={{
-          fontSize: 12,
-          color: C.sub,
-          fontFamily: fonts.serif,
-          fontStyle: "italic",
-          margin: 0,
+          padding: "14px 16px",
+          borderRadius: 12,
+          background: C.inkS,
+          border: `1px solid ${C.bd}`,
         }}
       >
-        Menyiapkan soal untukmu...
-      </p>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 13,
+            lineHeight: 1.6,
+            color: C.text,
+            fontFamily: fonts.serif,
+          }}
+        >
+          Semua soal di segmenmu sudah selesai. Tekan reset untuk membuka semua
+          soal lagi dari awal.
+        </p>
+      </div>
+
+      {plan === "free" ? (
+        <button onClick={onUpgrade} style={upgradeButtonStyle}>
+          <Crown size={14} color={C.gold} />
+          Upgrade Premium
+        </button>
+      ) : null}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          onClick={onResetQuestions}
+          disabled={isResetting}
+          style={{
+            flex: 1,
+            height: 42,
+            borderRadius: 12,
+            border: "none",
+            background: `linear-gradient(135deg,${C.inkD},${C.inkM})`,
+            color: C.white,
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: fonts.sans,
+            cursor: isResetting ? "wait" : "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+          }}
+        >
+          {isResetting ? (
+            <Loader2
+              size={14}
+              style={{ animation: "ttSpin 0.8s linear infinite" }}
+            />
+          ) : (
+            <RotateCcw size={14} />
+          )}
+          Reset Soal
+        </button>
+
+        <button
+          onClick={onClose}
+          style={{
+            height: 42,
+            padding: "0 18px",
+            borderRadius: 12,
+            border: `1.5px solid ${C.bdL}`,
+            background: C.white,
+            fontSize: 13,
+            fontWeight: 600,
+            color: C.muted,
+            cursor: "pointer",
+            fontFamily: fonts.sans,
+          }}
+        >
+          Tutup
+        </button>
+      </div>
     </div>
   );
 }
@@ -572,7 +684,7 @@ function ExplanationCard({
   );
 }
 
-function UpgradeNudge() {
+function UpgradeNudge({ onUpgrade }: { onUpgrade: () => void }) {
   return (
     <div
       style={{
@@ -590,6 +702,41 @@ function UpgradeNudge() {
       <p style={{ fontSize: 11, color: C.gold, fontWeight: 600, margin: 0 }}>
         Ini soal terakhirmu hari ini. Upgrade ke Premium untuk akses unlimited!
       </p>
+      <button
+        onClick={onUpgrade}
+        style={{
+          marginLeft: "auto",
+          height: 26,
+          padding: "0 10px",
+          borderRadius: 999,
+          border: `1px solid ${C.goldL}`,
+          background: C.goldS,
+          color: C.amber,
+          fontSize: 10,
+          fontWeight: 800,
+          cursor: "pointer",
+          fontFamily: fonts.sans,
+        }}
+      >
+        Upgrade
+      </button>
     </div>
   );
 }
+
+const upgradeButtonStyle: CSSProperties = {
+  flex: 1,
+  height: 42,
+  borderRadius: 12,
+  border: `1.5px solid ${C.goldL}`,
+  background: C.goldS,
+  color: C.amber,
+  fontSize: 13,
+  fontWeight: 800,
+  fontFamily: fonts.sans,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+};

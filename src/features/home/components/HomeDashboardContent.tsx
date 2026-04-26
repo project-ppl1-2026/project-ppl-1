@@ -125,6 +125,23 @@ export function HomeDashboardContent() {
       staleTime: 300_000,
     });
 
+  const { data: braveChoiceStats = null, isLoading: braveChoiceLoading } =
+    useQuery({
+      queryKey: ["brave-choice-stats"],
+      queryFn: async () => {
+        const res = await fetch(
+          `/api/diary/brave-choice/stats?timezone=${timezone}`,
+          {
+            cache: "no-store",
+          },
+        );
+        if (!res.ok) return null;
+        const json = await res.json();
+        return json.data ?? null;
+      },
+      enabled: !!sessionUser?.id,
+    });
+
   const weeks = useMemo(
     () => buildWeeksFromLogs(moodLogs, timezone, 24),
     [moodLogs, timezone],
@@ -160,15 +177,18 @@ export function HomeDashboardContent() {
   const isPremium = sessionUser?.isPremium ?? false;
   const parentEmail = sessionUser?.parentEmail ?? null;
 
-  const braveChoice = {
-    pct: 88,
-    weekDelta: 3,
-    correct: 22,
-    total: 25,
+  const braveChoice = braveChoiceStats ?? {
+    pct: 0,
+    correct: 0,
+    total: 0,
   };
 
   const isLoading =
-    sessionLoading || moodLoading || baselineLoading || countLoading;
+    sessionLoading ||
+    moodLoading ||
+    baselineLoading ||
+    countLoading ||
+    braveChoiceLoading;
 
   const handleInsightClick = () => {
     if (!isPremium) {
