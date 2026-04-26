@@ -31,6 +31,7 @@ type Props = {
   planCfg: PlanConfig;
   quizRemaining: number;
   canDoQuiz: boolean;
+  isQuestionPoolExhausted: boolean;
   onSelectEntry: (entry: DiaryEntry) => void;
   onGoToToday: () => void;
   onOpenQuiz: () => void;
@@ -129,6 +130,7 @@ export function DiaryLeftPage({
   planCfg,
   quizRemaining,
   canDoQuiz,
+  isQuestionPoolExhausted,
   onSelectEntry,
   onGoToToday,
   onOpenQuiz,
@@ -216,6 +218,7 @@ export function DiaryLeftPage({
               planCfg={planCfg}
               quizRemaining={quizRemaining}
               canDoQuiz={canDoQuiz}
+              isQuestionPoolExhausted={isQuestionPoolExhausted}
               onSelectEntry={onSelectEntry}
               onGoToToday={onGoToToday}
               onOpenQuiz={onOpenQuiz}
@@ -280,6 +283,7 @@ export function DiaryLeftPage({
         planCfg={planCfg}
         quizRemaining={quizRemaining}
         canDoQuiz={canDoQuiz}
+        isQuestionPoolExhausted={isQuestionPoolExhausted}
         onSelectEntry={onSelectEntry}
         onGoToToday={onGoToToday}
         onOpenQuiz={onOpenQuiz}
@@ -302,6 +306,7 @@ type PanelContentProps = {
   planCfg: PlanConfig;
   quizRemaining: number;
   canDoQuiz: boolean;
+  isQuestionPoolExhausted: boolean;
   onSelectEntry: (entry: DiaryEntry) => void;
   onGoToToday: () => void;
   onOpenQuiz: () => void;
@@ -322,6 +327,7 @@ function PanelContent({
   planCfg,
   quizRemaining,
   canDoQuiz,
+  isQuestionPoolExhausted,
   onSelectEntry,
   onGoToToday,
   onOpenQuiz,
@@ -332,6 +338,7 @@ function PanelContent({
   mobileMode = false,
 }: PanelContentProps) {
   const timezone = React.useMemo(() => getTimezone(), []);
+  const canOpenQuiz = canDoQuiz || isQuestionPoolExhausted;
 
   const { data: moodLogs = [] } = useQuery<MoodLog[]>({
     queryKey: ["mood-logs"],
@@ -534,25 +541,25 @@ function PanelContent({
 
         <button
           type="button"
-          onClick={canDoQuiz ? onOpenQuiz : undefined}
+          onClick={canOpenQuiz ? onOpenQuiz : undefined}
           style={{
             width: "100%",
             minHeight: 36,
             borderRadius: 11,
-            border: `1px solid ${canDoQuiz ? C.bd : C.bdL}`,
-            background: canDoQuiz ? C.inkS : "#F7F8F8",
-            color: canDoQuiz ? C.ink : C.sub,
+            border: `1px solid ${canOpenQuiz ? C.bd : C.bdL}`,
+            background: canOpenQuiz ? C.inkS : "#F7F8F8",
+            color: canOpenQuiz ? C.ink : C.sub,
             fontSize: 11,
             fontWeight: 700,
-            cursor: canDoQuiz ? "pointer" : "not-allowed",
+            cursor: canOpenQuiz ? "pointer" : "not-allowed",
             display: "flex",
             alignItems: "center",
             gap: 8,
             padding: "0 11px",
-            opacity: canDoQuiz ? 1 : 0.7,
+            opacity: canOpenQuiz ? 1 : 0.7,
           }}
         >
-          <HelpCircle size={14} color={canDoQuiz ? C.ink : C.sub} />
+          <HelpCircle size={14} color={canOpenQuiz ? C.ink : C.sub} />
           <span>Brave Choice Quiz</span>
           <div style={{ flex: 1 }} />
           {user.plan === "free" ? (
@@ -560,20 +567,68 @@ function PanelContent({
               style={{
                 fontSize: 8,
                 fontWeight: 800,
-                color: canDoQuiz ? C.ink : C.redD,
+                color: isQuestionPoolExhausted
+                  ? C.amber
+                  : canOpenQuiz
+                    ? C.ink
+                    : C.redD,
                 padding: "3px 7px",
                 borderRadius: 999,
-                background: canDoQuiz ? C.inkT : C.redL,
-                border: `1px solid ${canDoQuiz ? C.bd : "#F7B6B6"}`,
+                background: isQuestionPoolExhausted
+                  ? C.goldS
+                  : canOpenQuiz
+                    ? C.inkT
+                    : C.redL,
+                border: `1px solid ${
+                  isQuestionPoolExhausted
+                    ? C.goldL
+                    : canOpenQuiz
+                      ? C.bd
+                      : "#F7B6B6"
+                }`,
                 whiteSpace: "nowrap",
               }}
             >
-              {quizRemaining}/{planCfg.quizPerDay}
+              {isQuestionPoolExhausted
+                ? "HABIS"
+                : `${quizRemaining}/${planCfg.quizPerDay}`}
             </span>
           ) : (
             <Crown size={13} color={C.gold} />
           )}
         </button>
+
+        {isQuestionPoolExhausted ? (
+          <div
+            style={{
+              padding: "7px 9px",
+              borderRadius: 10,
+              background: C.goldS,
+              border: `1px solid ${C.goldL}`,
+              display: "flex",
+              gap: 7,
+              alignItems: "flex-start",
+            }}
+          >
+            <AlertTriangle
+              size={13}
+              color={C.amber}
+              style={{ flexShrink: 0, marginTop: 1 }}
+            />
+            <p
+              style={{
+                margin: 0,
+                fontSize: 9,
+                lineHeight: 1.45,
+                color: C.amber,
+                fontWeight: 600,
+              }}
+            >
+              Semua soal sudah selesai. Buka Brave Choice Quiz untuk reset soal
+              jika ingin mengulang.
+            </p>
+          </div>
+        ) : null}
 
         {!canDoQuiz && user.plan === "free" ? (
           <div
@@ -605,6 +660,33 @@ function PanelContent({
               unlimited.
             </p>
           </div>
+        ) : null}
+
+        {!canDoQuiz && user.plan === "free" ? (
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = "/subscription";
+            }}
+            style={{
+              width: "100%",
+              height: 34,
+              borderRadius: 10,
+              border: `1px solid ${C.goldL}`,
+              background: C.goldS,
+              color: C.amber,
+              fontSize: 10,
+              fontWeight: 800,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            <Crown size={12} color={C.gold} />
+            Upgrade Premium
+          </button>
         ) : null}
       </div>
 
