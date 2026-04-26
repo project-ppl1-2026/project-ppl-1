@@ -178,52 +178,36 @@ export default function InsightPageContent() {
             onDateChange={handleDateChange}
           />
 
-          {isGenerating && (
-            <div
-              className="mb-4 rounded-[20px] border px-5 py-4 text-sm font-semibold"
-              style={{
-                background: "var(--tt-dashboard-brand-soft)",
-                borderColor: "rgba(26,150,136,0.18)",
-                color: "var(--tt-dashboard-brand-deep)",
-              }}
-            >
-              Insight sedang dibuat. Biasanya perlu beberapa detik.
+          {isLoading || isGenerating ? (
+            <div className="flex flex-col gap-4 mt-4 w-full">
+              <div className="h-[460px] w-full rounded-[32px] bg-slate-200/50 animate-pulse" />
+              <div className="h-[360px] w-full rounded-[32px] bg-slate-200/50 animate-pulse" />
+              <div className="h-[200px] w-full rounded-[32px] bg-slate-200/50 animate-pulse" />
             </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-4 mt-4">
+                <InsightTrendSection
+                  selectedMonth={selectedMonth}
+                  hasTrendData={hasTrendData}
+                  trendData={trendData}
+                  peakMood={peakMood}
+                  lowMood={lowMood}
+                  avgMood={avgMood}
+                  stableDays={stableDays}
+                />
+
+                <InsightReflectionSection
+                  effectiveDate={effectiveDate}
+                  availableDates={availableDates}
+                  isToday={isToday}
+                  selectedInsight={selectedInsight}
+                />
+              </div>
+
+              <InsightRecommendationSection selectedInsight={selectedInsight} />
+            </>
           )}
-
-          {isLoading && !isGenerating && (
-            <div
-              className="mb-4 rounded-[20px] border px-5 py-4 text-sm font-semibold"
-              style={{
-                background: "#FFFFFF",
-                borderColor: "rgba(25,39,44,0.08)",
-                color: "var(--tt-dashboard-text-2)",
-              }}
-            >
-              Memuat data insight dan mood...
-            </div>
-          )}
-
-          <div className="flex flex-col gap-4">
-            <InsightReflectionSection
-              effectiveDate={effectiveDate}
-              availableDates={availableDates}
-              isToday={isToday}
-              selectedInsight={selectedInsight}
-            />
-
-            <InsightTrendSection
-              selectedMonth={selectedMonth}
-              hasTrendData={hasTrendData}
-              trendData={trendData}
-              peakMood={peakMood}
-              lowMood={lowMood}
-              avgMood={avgMood}
-              stableDays={stableDays}
-            />
-          </div>
-
-          <InsightRecommendationSection selectedInsight={selectedInsight} />
         </div>
       </div>
     </main>

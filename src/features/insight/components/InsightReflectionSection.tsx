@@ -3,7 +3,6 @@
 import {
   EmptyReflectionState,
   InsightPlaceholderCard,
-  NotebookReflection,
   TopCard,
   TopCardHeader,
 } from "./insight-primitives";
@@ -70,7 +69,21 @@ export function InsightReflectionSection({
       <div className="flex flex-col gap-4 px-6 py-6 xl:flex-1">
         {hasInsight && selectedInsight ? (
           <>
-            <NotebookReflection text={selectedInsight.reflection} />
+            <div
+              className="rounded-3xl border px-6 py-6"
+              style={{
+                background: "#FFFFFF",
+                borderColor: "rgba(25,39,44,0.08)",
+                flex: "1 1 auto",
+              }}
+            >
+              <p
+                className="text-base leading-8"
+                style={{ color: "var(--tt-dashboard-text)" }}
+              >
+                {selectedInsight.reflection}
+              </p>
+            </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
               <div

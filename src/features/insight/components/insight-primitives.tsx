@@ -119,7 +119,7 @@ export function InsightActionButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-all duration-200",
+        "inline-flex h-10 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-all duration-200",
         disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer",
       )}
       style={{
@@ -135,13 +135,13 @@ export function InsightActionButton({
     >
       {isGenerating ? (
         <>
-          <Loader2 size={13} className="animate-spin" />
-          Membuat insight...
+          <Loader2 size={15} className="animate-spin" />
+          Membuat AI Insight...
         </>
       ) : hasInsight ? (
-        "Insight hari ini sudah tersedia"
+        "Insight Tersedia"
       ) : (
-        "Lihat Insight Hari Ini"
+        "Generate Insight"
       )}
     </button>
   );
