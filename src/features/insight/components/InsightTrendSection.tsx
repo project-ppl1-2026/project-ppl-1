@@ -17,13 +17,13 @@ import {
   TopCardHeader,
   TrendPlaceholder,
 } from "./insight-primitives";
-import { MONTHS_ID } from "./insight-data";
-import { getAvgLabel } from "./insight-utils";
-import type { TrendPoint } from "./insight-types";
+import { MONTHS_ID } from "../lib/insight-data";
+import type { TrendPoint } from "../lib/insight-types";
+import { getAvgLabel } from "../lib/insight-utils";
 
 export function InsightTrendSection({
   selectedMonth,
-  hasInsight,
+  hasTrendData,
   trendData,
   peakMood,
   lowMood,
@@ -31,7 +31,7 @@ export function InsightTrendSection({
   stableDays,
 }: {
   selectedMonth: number;
-  hasInsight: boolean;
+  hasTrendData: boolean;
   trendData: TrendPoint[];
   peakMood: number;
   lowMood: number;
@@ -45,7 +45,7 @@ export function InsightTrendSection({
         subtitle={`Gambaran mood kamu selama bulan ${MONTHS_ID[selectedMonth].toLowerCase()}.`}
       />
 
-      {hasInsight ? (
+      {hasTrendData ? (
         <div className="flex flex-1 flex-col px-6 py-6">
           <div className="mb-4 grid grid-cols-2 gap-4 2xl:grid-cols-4">
             <StatBox
@@ -81,7 +81,7 @@ export function InsightTrendSection({
               borderColor: "rgba(25,39,44,0.08)",
             }}
           >
-            <div className="min-h-[320px] flex-1">
+            <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={trendData}
@@ -163,12 +163,18 @@ export function InsightTrendSection({
                     stroke="var(--tt-dashboard-brand-deep)"
                     strokeWidth={4}
                     fill="url(#moodAreaGradient)"
-                    dot={false}
+                    dot={{
+                      r: 4,
+                      strokeWidth: 2,
+                      fill: "#FFFFFF",
+                      stroke: "var(--tt-dashboard-brand)",
+                    }}
                     activeDot={{
-                      r: 5,
+                      r: 6,
                       strokeWidth: 0,
                       fill: "var(--tt-dashboard-brand)",
                     }}
+                    connectNulls={true}
                   />
                 </AreaChart>
               </ResponsiveContainer>

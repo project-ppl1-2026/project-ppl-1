@@ -8,7 +8,7 @@ import {
   PillButton,
   PremiumBadge,
 } from "./insight-primitives";
-import { formatDateID, getRelativeLabel } from "./insight-utils";
+import { formatDateID, getRelativeLabel } from "../lib/insight-utils";
 
 export function InsightPageHeader({
   effectiveDate,
@@ -17,6 +17,7 @@ export function InsightPageHeader({
   dateInputRef,
   isToday,
   hasInsight,
+  isGenerating,
   onGenerateTodayInsight,
   onPrevDate,
   onNextDate,
@@ -28,6 +29,7 @@ export function InsightPageHeader({
   dateInputRef: React.RefObject<HTMLInputElement | null>;
   isToday: boolean;
   hasInsight: boolean;
+  isGenerating: boolean;
   onGenerateTodayInsight: () => void;
   onPrevDate: () => void;
   onNextDate: () => void;
@@ -40,6 +42,7 @@ export function InsightPageHeader({
         <InsightActionButton
           isToday={isToday}
           hasInsight={hasInsight}
+          isGenerating={isGenerating}
           onClick={onGenerateTodayInsight}
         />
       </div>

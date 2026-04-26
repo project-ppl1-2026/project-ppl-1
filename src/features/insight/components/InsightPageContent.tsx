@@ -1,75 +1,98 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+
+import { InsightPageHeader } from "./InsightPageHeader";
+import { InsightRecommendationSection } from "./InsightRecommendationSection";
+import { InsightReflectionSection } from "./InsightReflectionSection";
+import { InsightTrendSection } from "./InsightTrendSection";
 import {
-  BASE_INSIGHT_BY_DATE,
-  buildGeneratedInsight,
-  TODAY_DATE,
-} from "./insight-data";
+  getDateKeyInTimeZone,
+  getTodayDateString,
+  getUserTimeZone,
+} from "../lib/insight-data";
+import type { DayInsight } from "../lib/insight-types";
 import {
   countStableDays,
   getAverageMood,
   getLowMood,
   getMonthData,
   getPeakMood,
-} from "./insight-utils";
-import type { DayInsight } from "./insight-types";
-import { InsightPageHeader } from "./InsightPageHeader";
-import { InsightReflectionSection } from "./InsightReflectionSection";
-import { InsightTrendSection } from "./InsightTrendSection";
-import { InsightRecommendationSection } from "./InsightRecommendationSection";
+} from "../lib/insight-utils";
 
 export default function InsightPageContent() {
-  const [generatedInsightMap, setGeneratedInsightMap] = useState<
+  const [timezone] = useState(() => getUserTimeZone());
+  const [todayDate] = useState(() => getTodayDateString(timezone));
+  const [selectedDate, setSelectedDate] = useState(() =>
+    getTodayDateString(timezone),
+  );
+  const [insightMap, setInsightMap] = useState<
     Record<string, Omit<DayInsight, "date">>
   >({});
+  const [moodMap, setMoodMap] = useState<Record<string, number>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const dateInputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     try {
-      const raw = localStorage.getItem("tt-generated-daily-insight-map");
-      if (raw) {
-        setGeneratedInsightMap(JSON.parse(raw));
+      setIsLoading(true);
+      const [insightRes, moodRes] = await Promise.all([
+        fetch("/api/insight"),
+        fetch(`/api/mood?timezone=${encodeURIComponent(timezone)}`),
+      ]);
+
+      if (insightRes.ok) {
+        const { data } = await insightRes.json();
+        setInsightMap(data || {});
       }
-    } catch {}
-  }, []);
+
+      if (moodRes.ok) {
+        const { data } = await moodRes.json();
+        const mappedMoods: Record<string, number> = {};
+        if (Array.isArray(data)) {
+          data.forEach(
+            (mood: { createdAt: string | Date; moodScore: number }) => {
+              const dateStr = getDateKeyInTimeZone(
+                new Date(mood.createdAt),
+                timezone,
+              );
+              mappedMoods[dateStr] = mood.moodScore;
+            },
+          );
+        }
+        setMoodMap(mappedMoods);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [timezone]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        "tt-generated-daily-insight-map",
-        JSON.stringify(generatedInsightMap),
-      );
-    } catch {}
-  }, [generatedInsightMap]);
-
-  const mergedInsightMap = useMemo(
-    () => ({
-      ...BASE_INSIGHT_BY_DATE,
-      ...generatedInsightMap,
-    }),
-    [generatedInsightMap],
-  );
+    fetchData();
+  }, [fetchData]);
 
   const availableDates = useMemo(() => {
     const dateSet = new Set<string>([
-      ...Object.keys(BASE_INSIGHT_BY_DATE),
-      ...Object.keys(generatedInsightMap),
-      TODAY_DATE,
+      ...Object.keys(insightMap),
+      ...Object.keys(moodMap),
+      todayDate,
     ]);
     return Array.from(dateSet).sort();
-  }, [generatedInsightMap]);
-
-  const [selectedDate, setSelectedDate] = useState(TODAY_DATE);
+  }, [insightMap, moodMap, todayDate]);
 
   const currentIndex = availableDates.indexOf(selectedDate);
   const effectiveDate =
     availableDates[currentIndex] ?? availableDates[availableDates.length - 1];
 
-  const selectedInsight = mergedInsightMap[effectiveDate];
+  const selectedInsight = insightMap[effectiveDate];
   const hasInsight = Boolean(selectedInsight);
-  const isToday = effectiveDate === TODAY_DATE;
-  const canGenerateToday = isToday && !hasInsight;
+  const isToday = effectiveDate === todayDate;
+  const canGenerateToday = !hasInsight;
 
   const selectedDateObj = useMemo(
     () => new Date(`${effectiveDate}T00:00:00`),
@@ -80,14 +103,15 @@ export default function InsightPageContent() {
   const selectedMonth = selectedDateObj.getMonth();
 
   const trendData = useMemo(
-    () => getMonthData(selectedYear, selectedMonth, mergedInsightMap),
-    [selectedYear, selectedMonth, mergedInsightMap],
+    () => getMonthData(selectedYear, selectedMonth, moodMap),
+    [selectedYear, selectedMonth, moodMap],
   );
 
   const avgMood = useMemo(() => getAverageMood(trendData), [trendData]);
   const peakMood = useMemo(() => getPeakMood(trendData), [trendData]);
   const lowMood = useMemo(() => getLowMood(trendData), [trendData]);
   const stableDays = useMemo(() => countStableDays(trendData), [trendData]);
+  const hasTrendData = trendData.some((item) => item.mood !== null);
 
   function handlePrevDate() {
     if (currentIndex > 0) {
@@ -106,13 +130,31 @@ export default function InsightPageContent() {
     setSelectedDate(newDate);
   }
 
-  function handleGenerateTodayInsight() {
-    if (!canGenerateToday) return;
+  async function handleGenerateTodayInsight() {
+    if (!canGenerateToday || isGenerating) return;
 
-    setGeneratedInsightMap((prev) => ({
-      ...prev,
-      [TODAY_DATE]: buildGeneratedInsight(),
-    }));
+    try {
+      setIsGenerating(true);
+      const res = await fetch("/api/insight/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: effectiveDate, timezone }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Gagal menghasilkan Insight.");
+        return;
+      }
+
+      toast.success("Insight berhasil dihasilkan untuk hari ini!");
+      // Refetch insights to get the new data
+      await fetchData();
+    } catch {
+      toast.error("Terjadi kesalahan.");
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   return (
@@ -129,22 +171,50 @@ export default function InsightPageContent() {
             dateInputRef={dateInputRef}
             isToday={isToday}
             hasInsight={hasInsight}
+            isGenerating={isGenerating}
             onGenerateTodayInsight={handleGenerateTodayInsight}
             onPrevDate={handlePrevDate}
             onNextDate={handleNextDate}
             onDateChange={handleDateChange}
           />
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-stretch">
+          {isGenerating && (
+            <div
+              className="mb-4 rounded-[20px] border px-5 py-4 text-sm font-semibold"
+              style={{
+                background: "var(--tt-dashboard-brand-soft)",
+                borderColor: "rgba(26,150,136,0.18)",
+                color: "var(--tt-dashboard-brand-deep)",
+              }}
+            >
+              Insight sedang dibuat. Biasanya perlu beberapa detik.
+            </div>
+          )}
+
+          {isLoading && !isGenerating && (
+            <div
+              className="mb-4 rounded-[20px] border px-5 py-4 text-sm font-semibold"
+              style={{
+                background: "#FFFFFF",
+                borderColor: "rgba(25,39,44,0.08)",
+                color: "var(--tt-dashboard-text-2)",
+              }}
+            >
+              Memuat data insight dan mood...
+            </div>
+          )}
+
+          <div className="flex flex-col gap-4">
             <InsightReflectionSection
               effectiveDate={effectiveDate}
               availableDates={availableDates}
+              isToday={isToday}
               selectedInsight={selectedInsight}
             />
 
             <InsightTrendSection
               selectedMonth={selectedMonth}
-              hasInsight={hasInsight}
+              hasTrendData={hasTrendData}
               trendData={trendData}
               peakMood={peakMood}
               lowMood={lowMood}
