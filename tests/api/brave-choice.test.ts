@@ -3,10 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, POST } from "@/app/api/diary/brave-choice/route";
 import { POST as POST_RESET } from "@/app/api/diary/brave-choice/reset/route";
 import { GET as GET_STATUS } from "@/app/api/diary/brave-choice/status/route";
+import { GET as GET_STATS } from "@/app/api/diary/brave-choice/stats/route";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import {
   getBraveChoiceQuizForUser,
   getBraveChoiceStatusForUser,
+  getBraveChoiceStatsForUser,
   resetBraveChoiceProgressForUser,
   submitBraveChoiceAnswerForUser,
 } from "@/lib/diary/brave-choice-service";
@@ -18,6 +20,7 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/lib/diary/brave-choice-service", () => ({
   getBraveChoiceQuizForUser: vi.fn(),
   getBraveChoiceStatusForUser: vi.fn(),
+  getBraveChoiceStatsForUser: vi.fn(),
   submitBraveChoiceAnswerForUser: vi.fn(),
   resetBraveChoiceProgressForUser: vi.fn(),
 }));
@@ -27,6 +30,7 @@ const mockGetAuthenticatedUserIdFromRequest = vi.mocked(
 );
 const mockGetBraveChoiceQuizForUser = vi.mocked(getBraveChoiceQuizForUser);
 const mockGetBraveChoiceStatusForUser = vi.mocked(getBraveChoiceStatusForUser);
+const mockGetBraveChoiceStatsForUser = vi.mocked(getBraveChoiceStatsForUser);
 const mockSubmitBraveChoiceAnswerForUser = vi.mocked(
   submitBraveChoiceAnswerForUser,
 );
@@ -119,6 +123,41 @@ describe("BraveChoice API Route", () => {
       expect(json.data.quizUsedToday).toBe(5);
       expect(json.data.isQuotaReached).toBe(true);
       expect(json.data.hasAvailableQuestion).toBe(false);
+    });
+  });
+
+  describe("GET /api/diary/brave-choice/stats", () => {
+    it("returns stats payload when authenticated", async () => {
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user-1");
+      mockGetBraveChoiceStatsForUser.mockResolvedValue({
+        correct: 22,
+        total: 25,
+        pct: 88,
+      });
+
+      const request = new Request(
+        "http://localhost/api/diary/brave-choice/stats?timezone=Asia/Jakarta",
+      );
+      const response = await GET_STATS(request);
+
+      expect(response.status).toBe(200);
+      const json = await response.json();
+      expect(json.success).toBe(true);
+      expect(json.data.pct).toBe(88);
+      expect(mockGetBraveChoiceStatsForUser).toHaveBeenCalledWith("user-1");
+    });
+
+    it("returns 401 when not authenticated", async () => {
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue(null);
+
+      const request = new Request(
+        "http://localhost/api/diary/brave-choice/stats",
+      );
+      const response = await GET_STATS(request);
+
+      expect(response.status).toBe(401);
+      const json = await response.json();
+      expect(json.success).toBe(false);
     });
   });
 
