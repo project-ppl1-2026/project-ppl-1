@@ -20,7 +20,7 @@ export function HomeDashboardInsightCard({
         role="button"
         tabIndex={0}
         onKeyDown={onKeyDown}
-        className="flex min-h-[88px] cursor-pointer items-center gap-2.5 p-3"
+        className="flex h-full min-h-[88px] cursor-pointer items-center gap-3 p-4"
       >
         <div className="flex-1">
           <div className="flex items-center gap-2">
@@ -42,7 +42,7 @@ export function HomeDashboardInsightCard({
             </motion.span>
           </div>
           <p
-            className="mt-0.5 text-[12px]"
+            className="mt-1 text-[11px]"
             style={{ color: "var(--tt-dashboard-text-2)" }}
           >
             Analisis premium emosimu

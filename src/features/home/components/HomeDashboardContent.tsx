@@ -5,7 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, NotebookPen } from "lucide-react";
+import { ArrowRight, LogOut, User } from "lucide-react";
+import Image from "next/image";
 
 import { authClient } from "@/lib/auth-client";
 import type {
@@ -14,6 +15,7 @@ import type {
   SessionUser,
   WeekData,
 } from "../types";
+
 import {
   buildWeeksFromLogs,
   computeLongestStreak,
@@ -30,6 +32,8 @@ export function HomeDashboardContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [timezone] = useState(() => getTimezone());
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const now = useMemo(() => new Date(), []);
 
@@ -57,7 +61,6 @@ export function HomeDashboardContent() {
 
   useEffect(() => {
     if (!sessionUser?.id) return;
-
     const syncStreak = async () => {
       try {
         const res = await fetch("/api/mood/streak", {
@@ -65,11 +68,7 @@ export function HomeDashboardContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ timezone }),
         });
-
-        if (!res.ok) {
-          throw new Error("Failed to sync streak");
-        }
-
+        if (!res.ok) throw new Error("Failed to sync streak");
         await queryClient.invalidateQueries({ queryKey: ["session"] });
         await queryClient.refetchQueries({
           queryKey: ["session"],
@@ -79,7 +78,6 @@ export function HomeDashboardContent() {
         console.error(error);
       }
     };
-
     void syncStreak();
   }, [sessionUser?.id, timezone, queryClient]);
 
@@ -131,9 +129,7 @@ export function HomeDashboardContent() {
       queryFn: async () => {
         const res = await fetch(
           `/api/diary/brave-choice/stats?timezone=${timezone}`,
-          {
-            cache: "no-store",
-          },
+          { cache: "no-store" },
         );
         if (!res.ok) return null;
         const json = await res.json();
@@ -176,12 +172,7 @@ export function HomeDashboardContent() {
   const currentStreak = sessionUser?.currentStreak ?? 0;
   const isPremium = sessionUser?.isPremium ?? false;
   const parentEmail = sessionUser?.parentEmail ?? null;
-
-  const braveChoice = braveChoiceStats ?? {
-    pct: 0,
-    correct: 0,
-    total: 0,
-  };
+  const braveChoice = braveChoiceStats ?? { pct: 0, correct: 0, total: 0 };
 
   const isLoading =
     sessionLoading ||
@@ -191,11 +182,7 @@ export function HomeDashboardContent() {
     braveChoiceLoading;
 
   const handleInsightClick = () => {
-    if (!isPremium) {
-      router.push("/subscription");
-      return;
-    }
-    router.push("/insight");
+    router.push(isPremium ? "/insight" : "/subscription");
   };
 
   const handleInsightKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -223,28 +210,50 @@ export function HomeDashboardContent() {
 
   const handleCalendarDateChange = (date: Date | undefined) => {
     setSelectedDate(date);
-
     if (!date) return;
-
     const targetTime = date.getTime();
-
     const matchedWeek = weeks.find((week) => {
       const first = week.days[0]?.fullDate?.getTime();
       const last = week.days[6]?.fullDate?.getTime();
-
       return !!first && !!last && targetTime >= first && targetTime <= last;
     });
+    if (matchedWeek) setSelectedWeekId(matchedWeek.id);
+  };
 
-    if (matchedWeek) {
-      setSelectedWeekId(matchedWeek.id);
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    try {
+      setIsLoggingOut(true);
+      setProfileOpen(false);
+      await authClient.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
   const streakWeek = weeks[weeks.length - 1]?.days ?? [];
 
+  const userImageSrc =
+    typeof sessionUser?.image === "string" && sessionUser.image.trim() !== ""
+      ? sessionUser.image
+      : null;
+
+  const userInitials = sessionUser?.name
+    ? sessionUser.name
+        .split(" ")
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "?";
+
   if (isLoading) {
     return (
-      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden bg-[var(--tt-dashboard-page-bg)] px-2.5 py-2.5">
+      <div className="flex h-full flex-col bg-[var(--tt-dashboard-page-bg)]">
         <style jsx global>{`
           @keyframes tt-skeleton {
             0% {
@@ -255,27 +264,28 @@ export function HomeDashboardContent() {
             }
           }
         `}</style>
-
-        <div className="mx-auto w-full max-w-none">
-          <div className="mb-3">
-            <SkeletonBox h={38} />
+        <div
+          className="flex shrink-0 items-center justify-between border-b px-6 py-4"
+          style={{ borderColor: "var(--tt-dashboard-card-border)" }}
+        >
+          <div className="w-48 space-y-2">
+            <SkeletonBox h={12} />
+            <SkeletonBox h={26} />
           </div>
-
-          <div className="grid gap-2.5 xl:grid-cols-[0.86fr_2.14fr]">
-            <SkeletonBox h={220} />
-            <div className="grid gap-2.5 md:grid-cols-2">
-              <SkeletonBox h={110} />
-              <SkeletonBox h={110} />
-              <SkeletonBox h={88} />
-              <SkeletonBox h={88} />
+          <SkeletonBox h={36} />
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="space-y-4">
+            <div className="grid gap-3 xl:grid-cols-[280px_1fr]">
+              <SkeletonBox h={220} />
+              <div className="grid grid-cols-2 gap-3">
+                <SkeletonBox h={110} />
+                <SkeletonBox h={110} />
+                <SkeletonBox h={88} />
+                <SkeletonBox h={88} />
+              </div>
             </div>
-          </div>
-
-          <div className="mt-2.5">
-            <SkeletonBox h={84} />
-          </div>
-
-          <div className="mt-2.5 pb-2">
+            <SkeletonBox h={72} />
             <SkeletonBox h={330} />
           </div>
         </div>
@@ -284,93 +294,241 @@ export function HomeDashboardContent() {
   }
 
   return (
-    <div className="h-full min-h-0 overflow-hidden bg-[var(--tt-dashboard-page-bg)] px-2.5 py-2.5">
-      <div className="tt-dashboard-scroll-y mx-auto h-full overflow-y-auto pl-4 pr-2.5 py-2.5">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          custom={0}
-          className="mb-3"
-        >
+    <div className="flex h-full flex-col bg-[var(--tt-dashboard-page-bg)]">
+      {/* ── Top Header Bar ── */}
+      <motion.header
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        custom={0}
+        className="flex shrink-0 items-center justify-between border-b px-6 py-4"
+        style={{ borderColor: "var(--tt-dashboard-card-border)" }}
+      >
+        {/* Left: greeting + title */}
+        <div>
           <p
-            className="mb-1 text-[8px] font-bold uppercase tracking-[0.13em]"
+            className="mb-0.5 text-[11px] font-semibold"
             style={{ color: "var(--tt-dashboard-text-2)" }}
           >
-            DASHBOARD · {dateStr.toUpperCase()}
+            Selamat datang kembali,{" "}
+            <span style={{ color: "var(--tt-dashboard-brand)" }}>
+              {sessionUser?.name ?? "Teman"}!
+            </span>
           </p>
           <h1
-            className="text-[20px] font-extrabold leading-tight md:text-[25px]"
+            className="text-[22px] font-black leading-tight md:text-[26px]"
             style={{ color: "var(--tt-dashboard-text)" }}
           >
-            Selamat datang, {sessionUser?.name ?? "Teman"}!
+            Dashboard
           </h1>
-        </motion.div>
+        </div>
 
-        <HomeDashboardTopSection
-          currentStreak={currentStreak}
-          longestStreak={longestStreak}
-          totalDiaries={totalDiaries}
-          streakWeek={streakWeek}
-          getMoodColor={getMoodColor}
-          braveChoice={braveChoice}
-          parentEmail={parentEmail}
-          currentWeek={currentWeek}
-          year={now.getFullYear()}
-          isPremium={isPremium}
-          baseline={baseline}
-          onInsightClick={handleInsightClick}
-          onInsightKeyDown={handleInsightKeyDown}
-        />
-
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          custom={6}
-          className="mt-2.5"
-          whileHover={{ y: -3 }}
-          whileTap={{ scale: 0.985 }}
-        >
-          <Link
-            href="/diary"
-            className="flex items-center gap-2.5 rounded-[1.15rem] p-3 text-white transition-shadow duration-300"
-            style={{
-              background: "var(--tt-dashboard-button-bg)",
-              boxShadow: "0 10px 20px rgba(26,150,136,0.14)",
-            }}
+        {/* Right: avatar + name (dropdown) + logout button */}
+        <div className="relative flex items-center gap-2">
+          {/* Avatar + name — opens profile dropdown */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setProfileOpen((prev) => !prev)}
+            className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors duration-200"
+            style={{ background: "var(--tt-dashboard-chip-bg)" }}
+            aria-label="Profil pengguna"
           >
-            <motion.div
-              whileHover={{ scale: 1.06, rotate: -4 }}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15"
+            <div
+              className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[11px] font-black text-white"
+              style={{ background: "var(--tt-dashboard-brand)" }}
             >
-              <NotebookPen size={15} />
-            </motion.div>
-
-            <div className="flex-1">
-              <h3 className="text-[14px] font-extrabold">Tulis Diary</h3>
-              <p className="mt-0.5 text-[12px] text-white/85">
-                Lanjutkan refleksi harianmu bersama TemanCerita!
-              </p>
+              {userImageSrc ? (
+                <Image
+                  src={userImageSrc}
+                  alt={sessionUser?.name ?? "avatar"}
+                  width={28}
+                  height={28}
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                userInitials
+              )}
             </div>
+            <span
+              className="hidden text-[12px] font-bold sm:block"
+              style={{ color: "var(--tt-dashboard-text)" }}
+            >
+              {sessionUser?.name ?? "Pengguna"}
+            </span>
+          </motion.button>
 
-            <motion.div whileHover={{ x: 2 }}>
-              <ArrowRight size={15} />
-            </motion.div>
-          </Link>
-        </motion.div>
+          {/* Logout — always visible red button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              void handleLogout();
+            }}
+            disabled={isLoggingOut}
+            className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ background: "#FEE2E2", color: "#DC2626" }}
+            aria-label="Keluar"
+            title="Keluar"
+          >
+            <LogOut size={15} />
+          </motion.button>
 
-        <HomeDashboardMoodHistory
-          selectedDate={selectedDate}
-          onDateChange={handleCalendarDateChange}
-          onPrev={handlePrevWeek}
-          onNext={handleNextWeek}
-          disablePrev={currentWeekIndex <= 0}
-          disableNext={
-            currentWeekIndex < 0 || currentWeekIndex >= weeks.length - 1
-          }
-          currentWeek={currentWeek}
-        />
+          {/* Profile dropdown */}
+          {profileOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setProfileOpen(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-2xl border shadow-xl"
+                style={{
+                  background: "var(--tt-dashboard-card-bg)",
+                  borderColor: "var(--tt-dashboard-card-border)",
+                  boxShadow: "0 16px 40px rgba(26,40,64,0.12)",
+                }}
+              >
+                <div
+                  className="border-b px-4 py-3"
+                  style={{ borderColor: "var(--tt-dashboard-card-border)" }}
+                >
+                  <p
+                    className="text-[13px] font-bold"
+                    style={{ color: "var(--tt-dashboard-text)" }}
+                  >
+                    {sessionUser?.name ?? "Pengguna"}
+                  </p>
+                  <p
+                    className="mt-0.5 truncate text-[11px]"
+                    style={{ color: "var(--tt-dashboard-text-2)" }}
+                  >
+                    {sessionUser?.email ?? ""}
+                  </p>
+                </div>
+                <div className="p-1.5">
+                  <Link
+                    href="/profile"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition-colors duration-150"
+                    style={{ color: "var(--tt-dashboard-text)" }}
+                  >
+                    <User
+                      size={13}
+                      style={{ color: "var(--tt-dashboard-text-2)" }}
+                    />
+                    Lihat Profil
+                  </Link>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </div>
+      </motion.header>
+
+      {/* ── Scrollable Body ── */}
+      <div className="tt-dashboard-scroll-y flex-1 overflow-y-auto">
+        <div className="px-6 py-5">
+          <motion.p
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            custom={1}
+            className="mb-4 text-[10px] font-bold uppercase tracking-[0.13em]"
+            style={{ color: "var(--tt-dashboard-text-2)" }}
+          >
+            {dateStr.toUpperCase()}
+          </motion.p>
+
+          <HomeDashboardTopSection
+            currentStreak={currentStreak}
+            longestStreak={longestStreak}
+            totalDiaries={totalDiaries}
+            streakWeek={streakWeek}
+            getMoodColor={getMoodColor}
+            braveChoice={braveChoice}
+            parentEmail={parentEmail}
+            currentWeek={currentWeek}
+            year={now.getFullYear()}
+            isPremium={isPremium}
+            baseline={baseline}
+            onInsightClick={handleInsightClick}
+            onInsightKeyDown={handleInsightKeyDown}
+          />
+
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            custom={6}
+            className="mt-3"
+            whileHover={{
+              y: -3,
+              boxShadow: "0 14px 32px rgba(26,150,136,0.16)",
+            }}
+            whileTap={{ scale: 0.985 }}
+            style={{ borderRadius: "1.15rem" }}
+          >
+            <Link
+              href="/diary"
+              className="relative flex items-center gap-4 overflow-hidden rounded-[1.15rem] px-5 py-4"
+              style={{
+                background: "rgba(26, 150, 136, 0.09)",
+                border: "1px solid rgba(26, 150, 136, 0.22)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+              }}
+            >
+              {/* decorative glow circle */}
+              <div
+                className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full"
+                style={{ background: "rgba(26, 150, 136, 0.10)" }}
+              />
+
+              {/* text body */}
+              <div className="relative flex-1">
+                <h3
+                  className="text-[15px] font-extrabold"
+                  style={{ color: "var(--tt-dashboard-brand-deep)" }}
+                >
+                  Tulis Diary
+                </h3>
+                <p
+                  className="mt-0.5 text-[12px]"
+                  style={{ color: "var(--tt-dashboard-text-2)" }}
+                >
+                  Lanjutkan refleksi harianmu bersama TemanCerita!
+                </p>
+              </div>
+
+              {/* arrow CTA */}
+              <motion.div
+                whileHover={{ x: 2 }}
+                transition={{ duration: 0.18 }}
+                className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                style={{ background: "var(--tt-dashboard-brand)" }}
+              >
+                <ArrowRight size={14} color="white" />
+              </motion.div>
+            </Link>
+          </motion.div>
+
+          <HomeDashboardMoodHistory
+            selectedDate={selectedDate}
+            onDateChange={handleCalendarDateChange}
+            onPrev={handlePrevWeek}
+            onNext={handleNextWeek}
+            disablePrev={currentWeekIndex <= 0}
+            disableNext={
+              currentWeekIndex < 0 || currentWeekIndex >= weeks.length - 1
+            }
+            currentWeek={currentWeek}
+          />
+        </div>
       </div>
     </div>
   );

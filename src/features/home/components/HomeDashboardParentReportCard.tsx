@@ -16,9 +16,9 @@ export function HomeDashboardParentReportCard({
   year: number;
 }) {
   return (
-    <MotionCard custom={3} className="tt-dashboard-card rounded-[1.15rem] p-3">
+    <MotionCard custom={3} className="tt-dashboard-card rounded-[1.15rem] p-4">
       <div className="flex h-full flex-col">
-        <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="mb-2.5 flex items-center justify-between gap-2">
           <p
             className="text-[10px] font-bold uppercase tracking-[0.11em]"
             style={{ color: "var(--tt-dashboard-text-2)" }}
@@ -30,9 +30,9 @@ export function HomeDashboardParentReportCard({
             <motion.span
               whileHover={{ scale: 1.04 }}
               className="inline-flex items-center gap-1 text-[10px] font-bold"
-              style={{ color: "var(--tt-dashboard-text)" }}
+              style={{ color: "var(--tt-dashboard-brand)" }}
             >
-              <CheckCircle2 size={14} /> Terverifikasi
+              <CheckCircle2 size={12} /> Terverifikasi
             </motion.span>
           ) : (
             <motion.span
@@ -68,11 +68,11 @@ export function HomeDashboardParentReportCard({
           {parentEmail && currentWeek ? (
             <motion.div
               whileHover={{ x: 1 }}
-              className="mt-5 flex items-center gap-2 text-[11px]"
+              className="mt-4 flex items-center gap-2 text-[11px]"
               style={{ color: "var(--tt-dashboard-text)" }}
             >
               <span>
-                Periode: {currentWeek.days[0]?.date ?? "-"} -{" "}
+                Periode: {currentWeek.days[0]?.date ?? "-"} –{" "}
                 {currentWeek.days[6]?.date ?? "-"}{" "}
                 {currentWeek.days[6]?.month ?? ""} {year}
               </span>

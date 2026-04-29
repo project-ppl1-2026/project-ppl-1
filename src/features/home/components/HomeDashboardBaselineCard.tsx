@@ -16,9 +16,9 @@ export function HomeDashboardBaselineCard({
   if (!baseline) return null;
 
   return (
-    <MotionCard custom={5} className="tt-dashboard-card rounded-[1.15rem] p-3">
+    <MotionCard custom={5} className="tt-dashboard-card rounded-[1.15rem] p-4">
       <p
-        className="mb-1 text-[8px] font-bold uppercase tracking-[0.11em]"
+        className="mb-1 text-[9px] font-bold uppercase tracking-[0.11em]"
         style={{ color: "var(--tt-dashboard-text-2)" }}
       >
         LEVEL {baseline.isBeginner ? "BEGINNER" : "INTERMEDIATE"}
@@ -34,15 +34,15 @@ export function HomeDashboardBaselineCard({
       <motion.div
         whileHover={{ x: 2 }}
         whileTap={{ scale: 0.98 }}
-        className="w-fit"
+        className="mt-3 w-fit"
       >
         <Link
           href="/baseline"
-          className="mt-3 inline-flex items-center gap-2 text-[12px] font-bold"
-          style={{ color: "var(--tt-dashboard-text)" }}
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold"
+          style={{ color: "var(--tt-dashboard-brand)" }}
         >
-          Kerjakan kembali Baseline Assessment
-          <ArrowRight size={13} />
+          Kerjakan kembali
+          <ArrowRight size={12} />
         </Link>
       </motion.div>
     </MotionCard>
