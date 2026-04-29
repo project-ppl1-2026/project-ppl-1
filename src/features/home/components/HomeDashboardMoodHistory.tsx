@@ -31,14 +31,16 @@ export function HomeDashboardMoodHistory({
       initial="hidden"
       animate="visible"
       custom={custom}
-      className="mt-2.5 pb-3"
+      className="mt-3 pb-4"
     >
       <div
-        className="tt-dashboard-card relative overflow-visible rounded-[1.15rem] p-3"
+        className="tt-dashboard-card relative overflow-visible rounded-[1.15rem] p-4"
         style={{ isolation: "isolate" }}
       >
-        <div className="relative z-10 mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
+        {/* Header row — always inline: title left, filter right */}
+        <div className="relative z-10 mb-4 flex flex-nowrap items-center justify-between gap-2">
+          {/* Title — shrinks but never wraps below the filter */}
+          <div className="min-w-0 flex-1">
             <h2
               className="truncate text-[15px] font-extrabold"
               style={{ color: "var(--tt-dashboard-text)" }}
@@ -46,26 +48,30 @@ export function HomeDashboardMoodHistory({
               Riwayat Mood
             </h2>
             <p
-              className="text-[10px]"
+              className="truncate text-[10px]"
               style={{ color: "var(--tt-dashboard-text-2)" }}
             >
               {currentWeek?.label ?? "Belum ada data"}
             </p>
           </div>
 
-          <WeekFilterBar
-            selectedDate={selectedDate}
-            onDateChange={onDateChange}
-            onPrev={onPrev}
-            onNext={onNext}
-            disablePrev={disablePrev}
-            disableNext={disableNext}
-          />
+          {/* Filter — never shrinks or wraps */}
+          <div className="shrink-0">
+            <WeekFilterBar
+              selectedDate={selectedDate}
+              onDateChange={onDateChange}
+              onPrev={onPrev}
+              onNext={onNext}
+              disablePrev={disablePrev}
+              disableNext={disableNext}
+            />
+          </div>
         </div>
 
+        {/* Day cards */}
         {currentWeek?.days?.length ? (
           <div className="relative z-20 overflow-x-auto overflow-y-visible pb-2">
-            <div className="relative pt-3">
+            <div className="relative pt-2">
               <div className="relative grid min-w-[700px] grid-flow-col auto-cols-[88px] gap-2 md:min-w-0 md:grid-flow-row md:auto-cols-auto md:grid-cols-7">
                 {currentWeek.days.map((d, i) => (
                   <motion.div

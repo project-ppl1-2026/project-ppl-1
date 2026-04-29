@@ -25,58 +25,60 @@ export function HomeDashboardHeroCard({
   return (
     <MotionCard
       custom={1}
-      className="rounded-[1.15rem] p-3"
+      className="rounded-[1.15rem] p-4"
       style={{
         background: "var(--tt-dashboard-hero-bg)",
         boxShadow: "var(--tt-dashboard-hero-shadow)",
+        minHeight: 220,
       }}
     >
-      <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.11em] text-white/90">
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.11em] text-white/80">
         Mood Streak
       </p>
 
-      <div className="mb-2.5 mt-4 flex items-center gap-2">
+      {/* Big streak number */}
+      <div className="mb-4 flex items-center gap-3">
         <motion.div
-          whileHover={{ scale: 1.06, rotate: -6 }}
+          whileHover={{ scale: 1.08, rotate: -6 }}
           transition={{ duration: 0.22 }}
-          className="flex h-8 w-8 items-center justify-center rounded-lg"
+          className="flex h-12 w-10 items-center justify-center rounded-xl"
         >
           <Flame
-            size={32}
-            className="text-[var(--tt-dashboard-warning)] drop-shadow-[0_0_10px_rgba(255,190,92,0.35)]"
+            size={40}
+            className="text-[var(--tt-dashboard-warning)] drop-shadow-[0_0_10px_rgba(255,190,92,0.4)]"
           />
         </motion.div>
 
-        <div>
-          <div className="flex items-end gap-1">
-            <span className="text-[34px] font-black leading-none text-white">
-              {currentStreak}
-            </span>
-            <span className="pb-0.5 text-[13px] font-semibold text-white/75">
-              Hari
-            </span>
-          </div>
+        <div className="flex items-end gap-1.5">
+          <span className="text-[42px] font-black leading-none text-white">
+            {currentStreak}
+          </span>
+          <span className="mb-1.5 text-[13px] font-semibold text-white/70">
+            Hari
+          </span>
         </div>
       </div>
 
-      <div className="mb-2.5 mt-6 grid grid-cols-2 gap-1.5">
+      {/* Stats row */}
+      <div className="mb-4 grid grid-cols-2 gap-2">
         <motion.div
-          whileHover={{ y: -2, backgroundColor: "rgba(255,255,255,0.14)" }}
-          className="rounded-lg bg-white/10 px-2.5 py-2 text-center transition-colors duration-200"
+          whileHover={{ y: -2, backgroundColor: "rgba(255,255,255,0.16)" }}
+          className="rounded-xl bg-white/10 px-3 py-2.5 text-center transition-colors duration-200"
         >
-          <p className="text-[15px] font-black text-white">{longestStreak}</p>
-          <p className="text-[10px] text-white/90">Terpanjang</p>
+          <p className="text-[16px] font-black text-white">{longestStreak}</p>
+          <p className="text-[9px] text-white/75 mt-0.5">Terpanjang</p>
         </motion.div>
 
         <motion.div
-          whileHover={{ y: -2, backgroundColor: "rgba(255,255,255,0.14)" }}
-          className="rounded-lg bg-white/10 px-2.5 py-2 text-center transition-colors duration-200"
+          whileHover={{ y: -2, backgroundColor: "rgba(255,255,255,0.16)" }}
+          className="rounded-xl bg-white/10 px-3 py-2.5 text-center transition-colors duration-200"
         >
-          <p className="text-[15px] font-black text-white">{totalDiaries}</p>
-          <p className="text-[10px] text-white/90">Total Diary</p>
+          <p className="text-[16px] font-black text-white">{totalDiaries}</p>
+          <p className="text-[9px] text-white/75 mt-0.5">Total Diary</p>
         </motion.div>
       </div>
 
+      {/* Weekly mood bar */}
       <div className="grid grid-cols-7 gap-1">
         {streakWeek.map((d, i) => (
           <motion.div

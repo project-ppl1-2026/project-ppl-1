@@ -16,7 +16,7 @@ export function HomeDashboardBraveChoiceCard({
     <MotionCard custom={2} className="tt-dashboard-card rounded-[1.15rem] p-4">
       <div className="flex h-full flex-col">
         <p
-          className="mb-1 text-[10px] font-bold uppercase tracking-[0.11em]"
+          className="mb-3 text-[10px] font-bold uppercase tracking-[0.11em]"
           style={{ color: "var(--tt-dashboard-text-2)" }}
         >
           Brave Choice
@@ -24,18 +24,18 @@ export function HomeDashboardBraveChoiceCard({
 
         <div className="flex flex-1 items-center gap-4">
           <motion.div
-            whileHover={{ scale: 1.05, rotate: 4 }}
+            whileHover={{ scale: 1.06, rotate: 4 }}
             transition={{ duration: 0.22 }}
-            className="relative flex items-center justify-center"
+            className="relative flex shrink-0 items-center justify-center"
           >
             <DonutRing
               pct={pct}
               color="var(--tt-dashboard-warning)"
-              size={54}
+              size={56}
               stroke={6}
             />
             <span
-              className="absolute text-[13px] font-black"
+              className="absolute text-[12px] font-black"
               style={{ color: "var(--tt-dashboard-text)" }}
             >
               {pct}%
@@ -44,13 +44,13 @@ export function HomeDashboardBraveChoiceCard({
 
           <div className="flex flex-col justify-center">
             <p
-              className="text-[22px] font-black leading-none"
+              className="text-[24px] font-black leading-none"
               style={{ color: "var(--tt-dashboard-text)" }}
             >
               {correct}/{total}
             </p>
             <p
-              className="mt-1.5 text-[12px] font-bold"
+              className="mt-1 text-[11px] font-semibold"
               style={{ color: "var(--tt-dashboard-text-2)" }}
             >
               pilihan benar

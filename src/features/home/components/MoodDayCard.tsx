@@ -102,7 +102,7 @@ export function MoodDayCard({ d }: { d: MoodDay }) {
             : "var(--tt-dashboard-brand-soft)",
           border: d.today
             ? "1.5px solid var(--tt-dashboard-warning)"
-            : "1px solid var(--tt-dashboard-card-border)",
+            : "1px solid rgba(26, 150, 136, 0.18)",
         }}
       >
         <p
@@ -159,7 +159,7 @@ export function MoodDayCard({ d }: { d: MoodDay }) {
         </p>
 
         <p
-          className="mt-1 min-h-[20px] text-[8px] leading-4 md:text-[9px]"
+          className="mt-1 min-h-[20px] text-[9px] leading-4"
           style={{ color: "var(--tt-dashboard-text-2)" }}
         >
           {getMoodLabel(d.score)}
@@ -168,7 +168,7 @@ export function MoodDayCard({ d }: { d: MoodDay }) {
         <div className="mt-auto pt-1.5">
           {d.today ? (
             <div
-              className="inline-flex rounded-full px-2 py-0.5 text-[7px] font-bold md:text-[8px]"
+              className="inline-flex rounded-full px-2 py-0.5 text-[8px] font-bold"
               style={{
                 background: "var(--tt-dashboard-warning-soft)",
                 color: "var(--tt-dashboard-warning)",

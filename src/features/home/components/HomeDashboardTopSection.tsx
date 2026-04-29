@@ -46,7 +46,14 @@ export function HomeDashboardTopSection({
   onInsightKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
 }) {
   return (
-    <div className="grid gap-2.5 xl:grid-cols-[0.86fr_2.14fr]">
+    /**
+     * Layout reference: CoachPro dashboard
+     * Left column  → hero card (streak) — fixed narrower width
+     * Right column → 2×2 grid of stat cards
+     * On mobile    → stacks vertically
+     */
+    <div className="grid gap-3 xl:grid-cols-[280px_1fr]">
+      {/* ── Left: Hero streak card ── */}
       <HomeDashboardHeroCard
         currentStreak={currentStreak}
         longestStreak={longestStreak}
@@ -55,7 +62,8 @@ export function HomeDashboardTopSection({
         getMoodColor={getMoodColor}
       />
 
-      <div className="grid gap-2.5 md:grid-cols-2">
+      {/* ── Right: 2×2 stat cards ── */}
+      <div className="grid grid-cols-2 gap-3">
         <HomeDashboardBraveChoiceCard
           correct={braveChoice.correct}
           total={braveChoice.total}
