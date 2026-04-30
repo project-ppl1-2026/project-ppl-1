@@ -35,20 +35,29 @@ export function InsightPageHeader({
   onDateChange: (newDate: string) => void;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-4">
+    <div
+      className="mb-6 flex flex-col gap-4"
+      style={{ fontFamily: "var(--font-plus-jakarta), system-ui, sans-serif" }}
+    >
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-4">
             <h1
-              className="text-[40px] font-bold leading-[1.1] tracking-[-0.02em] md:text-[48px]"
-              style={{ color: "var(--tt-dashboard-text)" }}
+              className="text-[40px] font-bold leading-[1.05] tracking-[-0.025em] md:text-[48px]"
+              style={{
+                color: "var(--tt-dashboard-text)",
+                fontFamily: "var(--font-plus-jakarta), system-ui, sans-serif",
+              }}
             >
               Insight Harian
             </h1>
           </div>
           <p
             className="text-base leading-7"
-            style={{ color: "var(--tt-dashboard-text-2)" }}
+            style={{
+              color: "var(--tt-dashboard-text-2)",
+              fontFamily: "var(--font-plus-jakarta), system-ui, sans-serif",
+            }}
           >
             Ringkasan mood, pola, dan saran yang lebih mudah dipahami.
           </p>

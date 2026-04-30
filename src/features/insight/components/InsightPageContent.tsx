@@ -148,7 +148,6 @@ export default function InsightPageContent() {
       }
 
       toast.success("Insight berhasil dihasilkan untuk hari ini!");
-      // Refetch insights to get the new data
       await fetchData();
     } catch {
       toast.error("Terjadi kesalahan.");
@@ -160,7 +159,10 @@ export default function InsightPageContent() {
   return (
     <main
       className="h-full min-h-0 overflow-hidden px-4 py-4 md:px-6 md:py-6 xl:px-8"
-      style={{ background: "var(--tt-dashboard-page-bg)" }}
+      style={{
+        background: "var(--tt-dashboard-page-bg)",
+        fontFamily: "var(--font-plus-jakarta), system-ui, sans-serif",
+      }}
     >
       <div className="tt-dashboard-scroll-y mx-auto h-full pl-4 pr-2.5 py-2.5 max-w-[1320px] overflow-y-auto pr-1">
         <div className="pb-6">
@@ -179,14 +181,14 @@ export default function InsightPageContent() {
           />
 
           {isLoading || isGenerating ? (
-            <div className="flex flex-col gap-4 mt-4 w-full">
-              <div className="h-[460px] w-full rounded-[32px] bg-slate-200/50 animate-pulse" />
-              <div className="h-[360px] w-full rounded-[32px] bg-slate-200/50 animate-pulse" />
-              <div className="h-[200px] w-full rounded-[32px] bg-slate-200/50 animate-pulse" />
+            <div className="flex flex-col gap-5 mt-4 w-full">
+              <div className="h-[460px] w-full rounded-[28px] bg-slate-200/50 animate-pulse" />
+              <div className="h-[360px] w-full rounded-[28px] bg-slate-200/50 animate-pulse" />
+              <div className="h-[200px] w-full rounded-[28px] bg-slate-200/50 animate-pulse" />
             </div>
           ) : (
             <>
-              <div className="flex flex-col gap-4 mt-4">
+              <div className="flex flex-col gap-5 mt-4">
                 <InsightTrendSection
                   selectedMonth={selectedMonth}
                   hasTrendData={hasTrendData}

@@ -15,7 +15,7 @@ import {
 import { BookSpine } from "@/features/diary/components/BookSpine";
 import { DiaryRightPage } from "@/features/diary/components/DiaryRightPage";
 import { BraveChoiceModal } from "@/features/diary/components/BraveChoiceModal";
-import { DiaryBookIntro } from "@/features/diary/components/DiaryBookIntro";
+import { DiaryBookIntro } from "@/features/diary/components/DiaryBookIntro/DiaryBookIntro";
 
 type DiaryPageClientProps = {
   entryId: string;
@@ -173,7 +173,7 @@ export function DiaryPageClient({
                   style={floatingButtonStyle()}
                 >
                   <ArrowLeft size={15} />
-                  <span>Back to Home</span>
+                  <span>Kembali</span>
                 </button>
 
                 <button
