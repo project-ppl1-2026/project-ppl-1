@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   CreditCard,
   LayoutDashboard,
@@ -11,7 +12,10 @@ import {
   NotebookPen,
   X,
   Lock,
+  LogOut,
 } from "lucide-react";
+
+import { authClient } from "@/lib/auth-client";
 
 type ShellUser = {
   name: string;
@@ -82,12 +86,30 @@ function MobileSidebar({
   onClose,
   user,
   pathname,
+  onLogout,
+  isLoggingOut,
 }: {
   open: boolean;
   onClose: () => void;
   user: ShellUser;
   pathname: string;
+  onLogout: () => void;
+  isLoggingOut: boolean;
 }) {
+  const userImageSrc =
+    typeof user.image === "string" && user.image.trim() !== ""
+      ? user.image
+      : null;
+
+  const userInitials = user.name
+    ? user.name
+        .split(" ")
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "?";
+
   return (
     <>
       {/* Backdrop */}
@@ -100,7 +122,7 @@ function MobileSidebar({
 
       {/* Drawer */}
       <aside
-        className={`fixed inset-y-0 left-0 z-[90] flex w-[88px] flex-col border-r px-3 py-4 shadow-xl backdrop-blur-md transition-transform duration-300 lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-[90] flex w-[260px] flex-col border-r px-3 py-4 shadow-xl backdrop-blur-md transition-transform duration-300 lg:hidden ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{
@@ -109,8 +131,22 @@ function MobileSidebar({
             "linear-gradient(180deg, rgba(246,250,249,0.98) 0%, rgba(241,247,246,0.98) 100%)",
         }}
       >
-        {/* Close button */}
-        <div className="mb-4 flex items-center justify-between">
+        {/* Header: brand + close */}
+        <div className="mb-4 flex items-center justify-between px-1">
+          <div>
+            <p
+              className="text-[10px] font-extrabold uppercase tracking-[0.14em]"
+              style={{ color: "var(--tt-dashboard-text-2)" }}
+            >
+              TEMANTUMBUH
+            </p>
+            <h2
+              className="text-[15px] font-extrabold leading-none"
+              style={{ color: "var(--tt-dashboard-text)" }}
+            >
+              Dashboard
+            </h2>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -125,47 +161,88 @@ function MobileSidebar({
           </button>
         </div>
 
-        {/* Nav icons */}
-        <nav className="mt-2 flex flex-col gap-2">
-          {navItems.map((item) => {
-            const active =
-              pathname === item.href ||
-              (item.href !== "/home" && pathname.startsWith(item.href));
-
-            const isLocked = item.href === "/insight" && !user.isPremium;
-
-            return (
-              <Link
-                key={item.href}
-                href={isLocked ? "/subscription" : item.href}
-                onClick={onClose}
-                className="relative flex h-12 w-12 items-center justify-center rounded-xl transition-all"
-                style={{
-                  background: active
-                    ? "var(--tt-dashboard-active-bg)"
-                    : "transparent",
-                  color: active
-                    ? "var(--tt-dashboard-active-text)"
-                    : "var(--tt-dashboard-text)",
-                  boxShadow: active
-                    ? "0 8px 18px rgba(26,150,136,0.14)"
-                    : "none",
-                  opacity: isLocked ? 0.8 : 1,
-                }}
-                title={item.label}
-                aria-label={item.label}
-                aria-current={active ? "page" : undefined}
+        {/* Profile card + Logout button (side by side) */}
+        <div className="mb-3 flex items-stretch gap-2">
+          {/* Profile card — clickable, navigates straight to /profile */}
+          <Link
+            href="/profile"
+            onClick={onClose}
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border px-3 py-3 transition-all hover:shadow-md"
+            style={{
+              background: "var(--tt-dashboard-card-bg)",
+              borderColor: "var(--tt-dashboard-card-border)",
+            }}
+          >
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[12px] font-black text-white"
+              style={{ background: "var(--tt-dashboard-brand)" }}
+            >
+              {userImageSrc ? (
+                <Image
+                  src={userImageSrc}
+                  alt={user.name ?? "avatar"}
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                userInitials
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p
+                className="truncate text-[13px] font-bold"
+                style={{ color: "var(--tt-dashboard-text)" }}
               >
-                <item.icon size={18} />
-                {isLocked && (
-                  <Lock
-                    size={10}
-                    className="absolute right-1 top-1 opacity-70"
-                  />
-                )}
-              </Link>
-            );
-          })}
+                {user.name ?? "Pengguna"}
+              </p>
+              <p
+                className="truncate text-[11px]"
+                style={{ color: "var(--tt-dashboard-text-2)" }}
+              >
+                {user.email ?? ""}
+              </p>
+            </div>
+          </Link>
+
+          {/* Logout — icon only, beside profile */}
+          <button
+            type="button"
+            onClick={onLogout}
+            disabled={isLoggingOut}
+            className="flex w-12 shrink-0 items-center justify-center rounded-2xl transition-all disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ color: "#DC2626" }}
+            aria-label="Keluar"
+            title="Keluar"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto">
+          <div className="space-y-1.5">
+            {navItems.map((item) => {
+              const active =
+                pathname === item.href ||
+                (item.href !== "/home" && pathname.startsWith(item.href));
+
+              const isLocked = item.href === "/insight" && !user.isPremium;
+
+              return (
+                <SidebarNavItem
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  active={active}
+                  locked={isLocked}
+                  onClick={onClose}
+                />
+              );
+            })}
+          </div>
         </nav>
       </aside>
     </>
@@ -174,9 +251,11 @@ function MobileSidebar({
 
 export function AppSidebarShell({ user, children }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isPremium, setIsPremium] = useState(Boolean(user.isPremium));
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const shellUser = useMemo(() => ({ ...user, isPremium }), [isPremium, user]);
 
@@ -209,6 +288,36 @@ export function AppSidebarShell({ user, children }: Props) {
     return () => window.clearInterval(intervalId);
   }, [pathname, refreshPremiumStatus]);
 
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    try {
+      setIsLoggingOut(true);
+      setMobileOpen(false);
+      await authClient.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  // For mobile collapsed bar avatar
+  const userImageSrc =
+    typeof shellUser.image === "string" && shellUser.image.trim() !== ""
+      ? shellUser.image
+      : null;
+
+  const userInitials = shellUser.name
+    ? shellUser.name
+        .split(" ")
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "?";
+
   return (
     /* Fullscreen — zero padding, no wrapper card */
     <div className="h-[100dvh] w-full overflow-hidden bg-[var(--tt-dashboard-page-bg)]">
@@ -218,6 +327,8 @@ export function AppSidebarShell({ user, children }: Props) {
         onClose={() => setMobileOpen(false)}
         user={shellUser}
         pathname={pathname}
+        onLogout={() => void handleLogout()}
+        isLoggingOut={isLoggingOut}
       />
 
       <div className="flex h-full w-full">
@@ -276,7 +387,7 @@ export function AppSidebarShell({ user, children }: Props) {
 
         {/* ── Content area ── */}
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* Mobile hamburger bar — nav only, no profile/logout (those live in the page header) */}
+          {/* Mobile hamburger bar — left: hamburger + brand, right: avatar + logout */}
           <div
             className="flex shrink-0 items-center gap-3 border-b px-4 py-3 lg:hidden"
             style={{
@@ -297,7 +408,7 @@ export function AppSidebarShell({ user, children }: Props) {
               <Menu size={18} />
             </button>
 
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p
                 className="text-[9px] font-extrabold uppercase tracking-[0.14em]"
                 style={{ color: "var(--tt-dashboard-text-2)" }}
@@ -305,9 +416,45 @@ export function AppSidebarShell({ user, children }: Props) {
                 TEMANTUMBUH
               </p>
             </div>
+
+            {/* Right: avatar (-> /profile) + logout (icon only) */}
+            <div className="flex items-center gap-2">
+              <Link
+                href="/profile"
+                className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[11px] font-black text-white"
+                style={{ background: "var(--tt-dashboard-brand)" }}
+                aria-label="Profil"
+                title="Profil"
+              >
+                {userImageSrc ? (
+                  <Image
+                    src={userImageSrc}
+                    alt={shellUser.name ?? "avatar"}
+                    width={36}
+                    height={36}
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  userInitials
+                )}
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => void handleLogout()}
+                disabled={isLoggingOut}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ color: "#DC2626" }}
+                aria-label="Keluar"
+                title="Keluar"
+              >
+                <LogOut size={15} />
+              </button>
+            </div>
           </div>
 
-          {/* Page content — each page owns its own header with profile/logout */}
+          {/* Page content */}
           <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
         </div>
       </div>

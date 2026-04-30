@@ -44,10 +44,9 @@ export default async function MoodLayout({
     <div
       style={{
         minHeight: "100dvh",
-        height: "100dvh",
         width: "100%",
         background: "var(--tt-dashboard-page-bg)",
-        overflow: "hidden",
+        overflowY: "auto",
       }}
     >
       {children}

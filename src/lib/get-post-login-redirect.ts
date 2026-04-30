@@ -2,6 +2,8 @@ import prisma from "@/lib/prisma";
 import { getBaselineByUserId } from "@/lib/baseline/service";
 
 export type PostLoginRoute =
+  | "/login"
+  | "/admin"
   | "/register?completeProfile=1"
   | "/baseline"
   | "/mood"
@@ -30,23 +32,12 @@ function getJakartaDayRange(now = new Date()) {
 async function hasCompletedBaseline(userId: string): Promise<boolean> {
   const baseline = await getBaselineByUserId(userId);
 
-  // Kalau service kamu memang mengembalikan data hanya saat baseline selesai,
-  // check ini sudah cukup.
   return Boolean(baseline);
 }
 
 async function hasMoodToday(userId: string): Promise<boolean> {
   const { start, end } = getJakartaDayRange();
 
-  /**
-   * PENTING:
-   * Ganti `moodCheckIn` kalau nama model Prisma kamu berbeda.
-   * Contoh kemungkinan nama model:
-   * - moodCheckIn
-   * - moodEntry
-   * - dailyMood
-   * - moodTracker
-   */
   const mood = await prisma.moodLog.findFirst({
     where: {
       userId,
@@ -55,7 +46,9 @@ async function hasMoodToday(userId: string): Promise<boolean> {
         lte: end,
       },
     },
-    select: { id: true },
+    select: {
+      id: true,
+    },
   });
 
   return Boolean(mood);
@@ -65,20 +58,37 @@ export async function getPostLoginRedirect(
   userId: string,
 ): Promise<PostLoginRoute> {
   const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { profileFilled: true },
+    where: {
+      id: userId,
+    },
+    select: {
+      role: true,
+      profileFilled: true,
+    },
   });
 
-  if (!user?.profileFilled) {
+  if (!user) {
+    return "/login";
+  }
+
+  // Admin langsung masuk ke admin panel
+  // Admin tidak perlu lewat profile, baseline, atau mood check-in user biasa.
+  if (user.role === "admin") {
+    return "/admin";
+  }
+
+  if (!user.profileFilled) {
     return "/register?completeProfile=1";
   }
 
   const baselineCompleted = await hasCompletedBaseline(userId);
+
   if (!baselineCompleted) {
     return "/baseline";
   }
 
   const moodToday = await hasMoodToday(userId);
+
   if (!moodToday) {
     return "/mood";
   }

@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, LogOut, User } from "lucide-react";
+import { ArrowRight, LogOut } from "lucide-react";
 import Image from "next/image";
 
 import { authClient } from "@/lib/auth-client";
@@ -32,7 +32,6 @@ export function HomeDashboardContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [timezone] = useState(() => getTimezone());
-  const [profileOpen, setProfileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const now = useMemo(() => new Date(), []);
@@ -224,7 +223,6 @@ export function HomeDashboardContent() {
     if (isLoggingOut) return;
     try {
       setIsLoggingOut(true);
-      setProfileOpen(false);
       await authClient.signOut();
       router.push("/login");
       router.refresh();
@@ -323,43 +321,43 @@ export function HomeDashboardContent() {
           </h1>
         </div>
 
-        {/* Right: avatar + name (dropdown) + logout button */}
-        <div className="relative flex items-center gap-2">
-          {/* Avatar + name — opens profile dropdown */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setProfileOpen((prev) => !prev)}
-            className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors duration-200"
-            style={{ background: "var(--tt-dashboard-chip-bg)" }}
-            aria-label="Profil pengguna"
-          >
-            <div
-              className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[11px] font-black text-white"
-              style={{ background: "var(--tt-dashboard-brand)" }}
+        {/* Right: avatar + logout — DESKTOP ONLY (mobile uses sidebar shell) */}
+        <div className="hidden items-center gap-2 lg:flex">
+          {/* Profile button — direct link to /profile, no dropdown */}
+          <Link href="/profile" aria-label="Profil pengguna">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors duration-200"
+              style={{ background: "var(--tt-dashboard-chip-bg)" }}
             >
-              {userImageSrc ? (
-                <Image
-                  src={userImageSrc}
-                  alt={sessionUser?.name ?? "avatar"}
-                  width={28}
-                  height={28}
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                userInitials
-              )}
-            </div>
-            <span
-              className="hidden text-[12px] font-bold sm:block"
-              style={{ color: "var(--tt-dashboard-text)" }}
-            >
-              {sessionUser?.name ?? "Pengguna"}
-            </span>
-          </motion.button>
+              <div
+                className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[11px] font-black text-white"
+                style={{ background: "var(--tt-dashboard-brand)" }}
+              >
+                {userImageSrc ? (
+                  <Image
+                    src={userImageSrc}
+                    alt={sessionUser?.name ?? "avatar"}
+                    width={28}
+                    height={28}
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  userInitials
+                )}
+              </div>
+              <span
+                className="text-[12px] font-bold"
+                style={{ color: "var(--tt-dashboard-text)" }}
+              >
+                {sessionUser?.name ?? "Pengguna"}
+              </span>
+            </motion.div>
+          </Link>
 
-          {/* Logout — always visible red button */}
+          {/* Logout — icon only red button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -374,59 +372,6 @@ export function HomeDashboardContent() {
           >
             <LogOut size={15} />
           </motion.button>
-
-          {/* Profile dropdown */}
-          {profileOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setProfileOpen(false)}
-              />
-              <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-2xl border shadow-xl"
-                style={{
-                  background: "var(--tt-dashboard-card-bg)",
-                  borderColor: "var(--tt-dashboard-card-border)",
-                  boxShadow: "0 16px 40px rgba(26,40,64,0.12)",
-                }}
-              >
-                <div
-                  className="border-b px-4 py-3"
-                  style={{ borderColor: "var(--tt-dashboard-card-border)" }}
-                >
-                  <p
-                    className="text-[13px] font-bold"
-                    style={{ color: "var(--tt-dashboard-text)" }}
-                  >
-                    {sessionUser?.name ?? "Pengguna"}
-                  </p>
-                  <p
-                    className="mt-0.5 truncate text-[11px]"
-                    style={{ color: "var(--tt-dashboard-text-2)" }}
-                  >
-                    {sessionUser?.email ?? ""}
-                  </p>
-                </div>
-                <div className="p-1.5">
-                  <Link
-                    href="/profile"
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition-colors duration-150"
-                    style={{ color: "var(--tt-dashboard-text)" }}
-                  >
-                    <User
-                      size={13}
-                      style={{ color: "var(--tt-dashboard-text-2)" }}
-                    />
-                    Lihat Profil
-                  </Link>
-                </div>
-              </motion.div>
-            </>
-          )}
         </div>
       </motion.header>
 

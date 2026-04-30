@@ -60,7 +60,7 @@ export function HomeDashboardHeroCard({
       </div>
 
       {/* Stats row */}
-      <div className="mb-4 grid grid-cols-2 gap-2">
+      <div className="mb-4 grid grid-cols-2 gap-2 mt-8">
         <motion.div
           whileHover={{ y: -2, backgroundColor: "rgba(255,255,255,0.16)" }}
           className="rounded-xl bg-white/10 px-3 py-2.5 text-center transition-colors duration-200"
