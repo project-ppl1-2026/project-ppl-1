@@ -40,6 +40,7 @@ export type SessionUser = {
   id: string;
   name: string;
   email: string;
+  image?: string | null;
   isPremium?: boolean;
   currentStreak?: number;
   parentEmail?: string | null;
