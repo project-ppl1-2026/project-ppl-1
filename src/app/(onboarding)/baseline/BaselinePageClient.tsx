@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import QueryProvider from "@/components/providers/query-providers";
 import { BrandPageBackground } from "@/components/layout/brand-page-background";
 import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/manual/page-loader";
@@ -118,6 +117,7 @@ function buildAnswerTuple(
 
 function BaselinePageContent() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, AnswerValue>>({});
@@ -160,6 +160,7 @@ function BaselinePageContent() {
           : "Baseline berhasil disimpan.",
       );
 
+      void queryClient.invalidateQueries({ queryKey: ["baseline"] });
       setIsRedirecting(true);
       router.replace("/");
       router.refresh();
@@ -332,9 +333,5 @@ function BaselinePageContent() {
 }
 
 export default function BaselinePageClient() {
-  return (
-    <QueryProvider>
-      <BaselinePageContent />
-    </QueryProvider>
-  );
+  return <BaselinePageContent />;
 }
