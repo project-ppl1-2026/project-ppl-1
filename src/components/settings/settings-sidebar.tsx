@@ -25,9 +25,14 @@ export function SettingsSidebar({ profile }: SettingsSidebarProps) {
 
   const handleLogout = async () => {
     try {
-      await authClient.signOut();
-      toast.success("Berhasil keluar.");
-      router.push("/login");
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            toast.success("Berhasil keluar.");
+            window.location.href = "/login";
+          },
+        },
+      });
     } catch {
       toast.error("Gagal keluar.");
     }

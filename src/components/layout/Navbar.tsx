@@ -573,8 +573,13 @@ function ProfileDropdown({ session }: { session: Session }) {
               <button
                 onClick={async () => {
                   setOpen(false);
-                  await authClient.signOut();
-                  window.location.href = "/login";
+                  await authClient.signOut({
+                    fetchOptions: {
+                      onSuccess: () => {
+                        window.location.href = "/login";
+                      },
+                    },
+                  });
                 }}
                 className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition"
                 style={{ color: "#DC2626" }}
@@ -811,8 +816,13 @@ function MobileMenu({
                 <button
                   onClick={async () => {
                     onClose();
-                    await authClient.signOut();
-                    window.location.href = "/login";
+                    await authClient.signOut({
+                      fetchOptions: {
+                        onSuccess: () => {
+                          window.location.href = "/login";
+                        },
+                      },
+                    });
                   }}
                   className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium"
                   style={{ color: "#EF4444" }}

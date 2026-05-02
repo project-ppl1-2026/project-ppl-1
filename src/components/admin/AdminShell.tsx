@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState, useEffect, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -343,19 +343,21 @@ function Topbar({
   onOpenMenu: () => void;
 }) {
   const { title, sub } = PAGE_META[activePage];
-  const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
     try {
       setIsLoggingOut(true);
-      await authClient.signOut();
-      router.push("/login");
-      router.refresh();
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            window.location.href = "/login";
+          },
+        },
+      });
     } catch (e) {
       console.error(e);
-    } finally {
       setIsLoggingOut(false);
     }
   };

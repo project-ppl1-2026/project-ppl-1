@@ -223,12 +223,15 @@ export function HomeDashboardContent() {
     if (isLoggingOut) return;
     try {
       setIsLoggingOut(true);
-      await authClient.signOut();
-      router.push("/login");
-      router.refresh();
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            window.location.href = "/login";
+          },
+        },
+      });
     } catch (error) {
       console.error("Logout failed:", error);
-    } finally {
       setIsLoggingOut(false);
     }
   };

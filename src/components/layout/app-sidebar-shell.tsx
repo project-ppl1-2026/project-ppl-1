@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import {
   CreditCard,
@@ -251,7 +251,6 @@ function MobileSidebar({
 
 export function AppSidebarShell({ user, children }: Props) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isPremium, setIsPremium] = useState(Boolean(user.isPremium));
@@ -293,12 +292,15 @@ export function AppSidebarShell({ user, children }: Props) {
     try {
       setIsLoggingOut(true);
       setMobileOpen(false);
-      await authClient.signOut();
-      router.push("/login");
-      router.refresh();
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            window.location.href = "/login";
+          },
+        },
+      });
     } catch (error) {
       console.error("Logout failed:", error);
-    } finally {
       setIsLoggingOut(false);
     }
   };
