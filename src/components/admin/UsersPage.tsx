@@ -18,7 +18,6 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import {
   Search,
-  Lock,
   Mail,
   Calendar,
   Flame,
@@ -2097,36 +2096,6 @@ export function UsersPage({
           setModal("add");
         }}
       />
-
-      {/* Google login notice */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "10px 14px",
-          borderRadius: 13,
-          background: "rgba(26,150,136,0.07)",
-          border: "1px solid rgba(26,150,136,0.18)",
-        }}
-      >
-        <Lock
-          size={14}
-          strokeWidth={2}
-          color="var(--tt-dashboard-brand)"
-          style={{ flexShrink: 0 }}
-        />
-        <p
-          style={{
-            fontSize: 12,
-            color: "var(--tt-dashboard-brand)",
-            fontWeight: 600,
-            lineHeight: 1.4,
-          }}
-        >
-          Login via Google — Reset password tidak tersedia dari panel ini.
-        </p>
-      </div>
 
       {/* Count info */}
       <p style={{ fontSize: 12, color: C.text3 }}>
