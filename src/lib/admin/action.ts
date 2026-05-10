@@ -66,18 +66,48 @@ export async function createUserAction(
     });
     if (existing) return fail("Email sudah terdaftar");
 
-    await prisma.user.create({
-      data: {
-        id: randomUUID(),
-        name,
-        email,
-        emailVerified: true,
-        isPremium,
-        status,
-        role: "user",
-        profileFilled: false,
-        currentStreak: 0,
-      },
+    const newUserId = randomUUID();
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.create({
+        data: {
+          id: newUserId,
+          name,
+          email,
+          emailVerified: true,
+          isPremium,
+          status,
+          role: "user",
+          profileFilled: false,
+          currentStreak: 0,
+        },
+      });
+
+      if (isPremium) {
+        const now = new Date();
+        const expiresAt = new Date(now);
+        expiresAt.setFullYear(now.getFullYear() + 100);
+
+        const payment = await tx.payment.create({
+          data: {
+            userId: newUserId,
+            orderId: `admin-grant-${randomUUID()}`,
+            grossAmount: 0,
+            status: "settlement",
+            durationMonths: 1200,
+          },
+        });
+
+        await tx.subscription.create({
+          data: {
+            userId: newUserId,
+            paymentId: payment.id,
+            startedAt: now,
+            expiresAt,
+            isActive: true,
+          },
+        });
+      }
     });
 
     revalidatePath("/admin/users");
@@ -105,9 +135,50 @@ export async function updateUserAction(
 
     const { id, name, isPremium, status } = parsed.data;
 
-    await prisma.user.update({
+    const current = await prisma.user.findUnique({
       where: { id },
-      data: { name, isPremium, status },
+      select: { isPremium: true },
+    });
+    if (!current) return fail("User tidak ditemukan");
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id },
+        data: { name, isPremium, status },
+      });
+
+      if (isPremium && !current.isPremium) {
+        // Admin granted premium
+        const now = new Date();
+        const expiresAt = new Date(now);
+        expiresAt.setFullYear(now.getFullYear() + 100);
+
+        const payment = await tx.payment.create({
+          data: {
+            userId: id,
+            orderId: `admin-grant-${randomUUID()}`,
+            grossAmount: 0,
+            status: "settlement",
+            durationMonths: 1200,
+          },
+        });
+
+        await tx.subscription.create({
+          data: {
+            userId: id,
+            paymentId: payment.id,
+            startedAt: now,
+            expiresAt,
+            isActive: true,
+          },
+        });
+      } else if (!isPremium && current.isPremium) {
+        // Admin revoked premium
+        await tx.subscription.updateMany({
+          where: { userId: id, isActive: true },
+          data: { isActive: false },
+        });
+      }
     });
 
     revalidatePath("/admin/users");
@@ -174,14 +245,51 @@ export async function togglePremiumAction(id: string): Promise<ActionResult> {
     });
     if (!current) return fail("User tidak ditemukan");
 
-    await prisma.user.update({
-      where: { id },
-      data: { isPremium: !current.isPremium },
+    const next = !current.isPremium;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id },
+        data: { isPremium: next },
+      });
+
+      if (next) {
+        // Admin granted premium
+        const now = new Date();
+        const expiresAt = new Date(now);
+        expiresAt.setFullYear(now.getFullYear() + 100);
+
+        const payment = await tx.payment.create({
+          data: {
+            userId: id,
+            orderId: `admin-grant-${randomUUID()}`,
+            grossAmount: 0,
+            status: "settlement",
+            durationMonths: 1200,
+          },
+        });
+
+        await tx.subscription.create({
+          data: {
+            userId: id,
+            paymentId: payment.id,
+            startedAt: now,
+            expiresAt,
+            isActive: true,
+          },
+        });
+      } else {
+        // Admin revoked premium
+        await tx.subscription.updateMany({
+          where: { userId: id, isActive: true },
+          data: { isActive: false },
+        });
+      }
     });
 
     revalidatePath("/admin/users");
     revalidatePath("/admin");
-    return ok(current.isPremium ? "Diturunkan ke Basic" : "Dijadikan Premium");
+    return ok(next ? "Dijadikan Premium (Admin Grant)" : "Diturunkan ke Basic");
   } catch (e) {
     console.error("togglePremiumAction:", e);
     return fail(e instanceof Error ? e.message : "Gagal mengubah premium");
