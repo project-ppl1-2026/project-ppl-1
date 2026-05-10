@@ -53,7 +53,7 @@ export default async function AdminUsersPage({ searchParams }: UserPageProps) {
           select: { email: true, status: true },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
       // limit=0 → ambil semua (skip .take dan .skip)
       ...(limit > 0 ? { skip: (page - 1) * limit, take: limit } : {}),
     }),

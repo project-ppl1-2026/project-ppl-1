@@ -7,7 +7,7 @@ export default async function AdminQuizPage() {
   await requireAdmin();
 
   const questions = await prisma.quizQuestion.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
     select: {
       id: true,
       scenario: true,

@@ -2,7 +2,13 @@
 
 // src/components/admin/BraveChoicePage.tsx
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
+import {
+  createQuizQuestionAction,
+  updateQuizQuestionAction,
+  deleteQuizQuestionAction,
+  toggleQuizQuestionActiveAction,
+} from "@/lib/admin/quiz-action";
 import {
   Plus,
   Pencil,
@@ -1153,7 +1159,15 @@ function PaginationBar({
 // ── Main ──────────────────────────────────────────────────────────
 export function BraveChoicePage({ initialQuestions }: Props) {
   const isMobile = useIsMobile();
+  const [, startTransition] = useTransition();
+
   const [questions, setQuestions] = useState<QuizQuestion[]>(initialQuestions);
+
+  // Sync with props when revalidated
+  useEffect(() => {
+    setQuestions(initialQuestions);
+  }, [initialQuestions]);
+
   const [search, setSearch] = useState("");
   const [segFilter, setSegFilter] = useState<Segment | "all">("all");
   const [statusFilter, setStatusFilter] = useState<
@@ -1210,14 +1224,12 @@ export function BraveChoicePage({ initialQuestions }: Props) {
     setSaving(true);
     setError(null);
     try {
-      // TODO: await fetch("/api/admin/quiz", { method: "POST", body: JSON.stringify(data), headers: { "Content-Type": "application/json" } });
-      const newQ: QuizQuestion = {
-        id: crypto.randomUUID(),
-        ...data,
-        createdAt: new Date(),
-      };
-      setQuestions((prev) => [newQ, ...prev]);
-      setModalState("none");
+      const result = await createQuizQuestionAction(data);
+      if (!result.success) {
+        setError(result.error);
+      } else {
+        setModalState("none");
+      }
     } catch {
       setError("Gagal menyimpan soal. Silakan coba lagi.");
     } finally {
@@ -1230,12 +1242,16 @@ export function BraveChoicePage({ initialQuestions }: Props) {
     setSaving(true);
     setError(null);
     try {
-      // TODO: await fetch(`/api/admin/quiz/${editTarget.id}`, { method: "PATCH", body: JSON.stringify(data), headers: { "Content-Type": "application/json" } });
-      setQuestions((prev) =>
-        prev.map((q) => (q.id === editTarget.id ? { ...q, ...data } : q)),
-      );
-      setModalState("none");
-      setEditTarget(null);
+      const result = await updateQuizQuestionAction({
+        id: editTarget.id,
+        ...data,
+      });
+      if (!result.success) {
+        setError(result.error);
+      } else {
+        setModalState("none");
+        setEditTarget(null);
+      }
     } catch {
       setError("Gagal mengubah soal. Silakan coba lagi.");
     } finally {
@@ -1248,9 +1264,12 @@ export function BraveChoicePage({ initialQuestions }: Props) {
     setDeleting(true);
     setError(null);
     try {
-      // TODO: await fetch(`/api/admin/quiz/${deleteTarget.id}`, { method: "DELETE" });
-      setQuestions((prev) => prev.filter((q) => q.id !== deleteTarget.id));
-      setDeleteTarget(null);
+      const result = await deleteQuizQuestionAction(deleteTarget.id);
+      if (!result.success) {
+        setError(result.error);
+      } else {
+        setDeleteTarget(null);
+      }
     } catch {
       setError("Gagal menghapus soal. Silakan coba lagi.");
     } finally {
@@ -1258,12 +1277,26 @@ export function BraveChoicePage({ initialQuestions }: Props) {
     }
   }
 
-  function handleToggleActive(q: QuizQuestion) {
-    setQuestions((prev) =>
-      prev.map((item) =>
-        item.id === q.id ? { ...item, isActive: !item.isActive } : item,
-      ),
-    );
+  async function handleToggleActive(q: QuizQuestion) {
+    startTransition(async () => {
+      // Optimistic update
+      setQuestions((prev) =>
+        prev.map((item) =>
+          item.id === q.id ? { ...item, isActive: !item.isActive } : item,
+        ),
+      );
+
+      const result = await toggleQuizQuestionActiveAction(q.id);
+      if (!result.success) {
+        // Revert optimistic update on failure
+        setQuestions((prev) =>
+          prev.map((item) =>
+            item.id === q.id ? { ...item, isActive: !item.isActive } : item,
+          ),
+        );
+        setError(result.error);
+      }
+    });
   }
 
   const pad = isMobile ? "14px" : "24px 28px";
