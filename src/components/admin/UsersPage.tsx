@@ -20,7 +20,6 @@ import {
   Search,
   Mail,
   Calendar,
-  Flame,
   Plus,
   MoreVertical,
   Eye,
@@ -1599,10 +1598,6 @@ function UserCard({ u, menuItems }: { u: User; menuItems: MenuItem[] }) {
           label={u.status}
           variant={u.status === "Aktif" ? "success" : "danger"}
         />
-        <Badge
-          label={u.profileFilled ? "Profil Lengkap" : "Profil Belum"}
-          variant={u.profileFilled ? "success" : "muted"}
-        />
         {u.parentEmail && (
           <span
             style={{
@@ -1622,94 +1617,36 @@ function UserCard({ u, menuItems }: { u: User; menuItems: MenuItem[] }) {
 
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 8,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           paddingTop: 10,
           borderTop: "1px solid var(--tt-dashboard-card-border)",
         }}
       >
-        <div>
-          <p
-            style={{
-              fontSize: 9,
-              fontWeight: 700,
-              color: C.text3,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-          >
-            Usia
-          </p>
-          <p
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: C.text2,
-              marginTop: 2,
-            }}
-          >
-            {resolveAge(u.birthYear)}
-          </p>
-        </div>
-        <div>
-          <p
-            style={{
-              fontSize: 9,
-              fontWeight: 700,
-              color: C.text3,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-          >
-            Streak
-          </p>
-          <p
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: u.currentStreak > 0 ? C.warning : C.text3,
-              marginTop: 2,
-              display: "flex",
-              alignItems: "center",
-              gap: 3,
-            }}
-          >
-            {u.currentStreak > 0 ? (
-              <>
-                <Flame size={11} strokeWidth={2} /> {u.currentStreak} hari
-              </>
-            ) : (
-              "—"
-            )}
-          </p>
-        </div>
-        <div>
-          <p
-            style={{
-              fontSize: 9,
-              fontWeight: 700,
-              color: C.text3,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-          >
-            Bergabung
-          </p>
-          <p
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: C.text2,
-              marginTop: 2,
-              display: "flex",
-              alignItems: "center",
-              gap: 3,
-            }}
-          >
-            <Calendar size={10} strokeWidth={2} /> {fmt(u.createdAt)}
-          </p>
-        </div>
+        <p
+          style={{
+            fontSize: 9,
+            fontWeight: 700,
+            color: C.text3,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+          }}
+        >
+          Bergabung
+        </p>
+        <p
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: C.text2,
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <Calendar size={10} strokeWidth={2} /> {fmt(u.createdAt)}
+        </p>
       </div>
     </div>
   );
@@ -2182,9 +2119,6 @@ export function UsersPage({
                     "Email",
                     "Premium",
                     "Status",
-                    "Usia",
-                    "Streak",
-                    "Profil",
                     "Bergabung",
                     "Aksi",
                   ].map((h) => (
@@ -2259,33 +2193,6 @@ export function UsersPage({
                       <Badge
                         label={u.status}
                         variant={u.status === "Aktif" ? "success" : "danger"}
-                      />
-                    </td>
-                    <td
-                      style={{
-                        ...C.td,
-                        fontSize: 12,
-                        color: C.text3,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {resolveAge(u.birthYear)}
-                    </td>
-                    <td style={{ ...C.td, whiteSpace: "nowrap" }}>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: u.currentStreak > 0 ? C.warning : C.text3,
-                        }}
-                      >
-                        {u.currentStreak > 0 ? `${u.currentStreak} hari` : "—"}
-                      </span>
-                    </td>
-                    <td style={C.td}>
-                      <Badge
-                        label={u.profileFilled ? "Lengkap" : "Belum"}
-                        variant={u.profileFilled ? "success" : "muted"}
                       />
                     </td>
                     <td
