@@ -1,8 +1,6 @@
 // src/components/admin/OverviewPage.tsx
 // Server component — no "use client"
 
-import { AlertCircle } from "lucide-react";
-
 type SegmentCount = { segment: string; count: number };
 type Stats = {
   totalUsers: number;
@@ -87,13 +85,6 @@ const SEG_META: Record<string, { label: string; color: string }> = {
 };
 const SEGS = ["ANAK", "REMAJA", "MAHASISWA", "DEWASA_MUDA"] as const;
 
-const SYSTEMS = [
-  { label: "API Server", ok: true },
-  { label: "Database", ok: true },
-  { label: "AI / Insights", ok: true },
-  { label: "Email Service", ok: true },
-];
-
 function SectionCard({
   title,
   children,
@@ -146,7 +137,7 @@ const RESPONSIVE_CSS = `
   }
   .tt-row-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
     align-items: stretch;
   }
@@ -234,55 +225,6 @@ export function OverviewPage({ stats }: { stats: Stats }) {
 
         {/* ── Row 2 ── */}
         <div className="tt-row-grid">
-          {/* Status Sistem */}
-          <SectionCard title="Status Sistem">
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {SYSTEMS.map((s) => (
-                <div
-                  key={s.label}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "11px 14px",
-                    borderRadius: 12,
-                    background: s.ok
-                      ? "var(--tt-dashboard-success-soft)"
-                      : "var(--tt-dashboard-warning-soft)",
-                    border: `1px solid ${s.ok ? "rgba(15,138,95,0.15)" : "rgba(214,161,27,0.18)"}`,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: s.ok ? C.success : C.warning,
-                      boxShadow: s.ok
-                        ? "0 0 0 3px rgba(15,138,95,0.15)"
-                        : "0 0 0 3px rgba(214,161,27,0.15)",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>
-                      {s.label}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: 10,
-                        color: s.ok ? C.success : C.warning,
-                        marginTop: 1,
-                      }}
-                    >
-                      {s.ok ? "Operational" : "Degraded"}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-
           {/* Soal per Segmen */}
           <SectionCard title="Soal BraveChoice per Segmen">
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -432,43 +374,6 @@ export function OverviewPage({ stats }: { stats: Stats }) {
               ))}
             </div>
           </SectionCard>
-        </div>
-
-        {/* ── Info note ── */}
-        <div
-          style={{
-            padding: "12px 16px",
-            borderRadius: 14,
-            background: "rgba(26,150,136,0.06)",
-            border: "1px solid rgba(26,150,136,0.15)",
-            display: "flex",
-            gap: 10,
-            alignItems: "flex-start",
-          }}
-        >
-          <AlertCircle
-            size={15}
-            strokeWidth={2}
-            color={C.brand}
-            style={{ flexShrink: 0, marginTop: 1 }}
-          />
-          <p style={{ fontSize: 12, color: C.text2, lineHeight: 1.6 }}>
-            <strong style={{ color: C.brand }}>Admin Panel</strong> — Halaman
-            ini hanya bisa diakses oleh akun dengan role{" "}
-            <code
-              style={{
-                fontSize: 11,
-                padding: "1px 6px",
-                borderRadius: 6,
-                background: "rgba(26,150,136,0.12)",
-                color: C.brand,
-                fontFamily: "monospace",
-              }}
-            >
-              admin
-            </code>
-            . Semua data diambil langsung dari database.
-          </p>
         </div>
       </div>
     </>
