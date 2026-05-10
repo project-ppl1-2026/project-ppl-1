@@ -179,6 +179,12 @@ export async function updateUserAction(
           data: { isActive: false },
         });
       }
+
+      if (status === "Nonaktif") {
+        await tx.session.deleteMany({
+          where: { userId: id },
+        });
+      }
     });
 
     revalidatePath("/admin/users");
@@ -222,7 +228,16 @@ export async function toggleStatusAction(id: string): Promise<ActionResult> {
     if (!current) return fail("User tidak ditemukan");
 
     const next = current.status === "Aktif" ? "Nonaktif" : "Aktif";
-    await prisma.user.update({ where: { id }, data: { status: next } });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id }, data: { status: next } });
+
+      if (next === "Nonaktif") {
+        await tx.session.deleteMany({
+          where: { userId: id },
+        });
+      }
+    });
 
     revalidatePath("/admin/users");
     return ok(`Status diubah ke ${next}`);

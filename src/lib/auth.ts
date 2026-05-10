@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { APIError } from "better-auth/api";
 // If your Prisma file is located elsewhere, you can change the path
 
 import { sendEmail } from "./email";
@@ -209,6 +210,23 @@ export const auth = betterAuth({
     },
     session: {
       create: {
+        before: async (session) => {
+          const incoming = { ...(session as Record<string, unknown>) };
+          const userId = incoming.userId as string;
+
+          if (userId) {
+            const user = await prisma.user.findUnique({
+              where: { id: userId },
+              select: { status: true },
+            });
+            if (user?.status === "Nonaktif") {
+              throw new APIError("UNAUTHORIZED", {
+                message: "Akun kamu telah dinonaktifkan oleh Admin.",
+              });
+            }
+          }
+          return { data: incoming };
+        },
         after: async (session) => {
           await syncGoogleImageForUser(session.userId);
         },
