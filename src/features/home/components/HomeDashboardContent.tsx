@@ -330,7 +330,7 @@ export function HomeDashboardContent() {
           {/* Left: greeting + title */}
           <div>
             <p
-              className="mb-0.5 text-[12px] font-semibold"
+              className="mb-0.5 text-[16x] font-semibold"
               style={{ color: "var(--tt-dashboard-text-2)" }}
             >
               Selamat datang kembali,{" "}

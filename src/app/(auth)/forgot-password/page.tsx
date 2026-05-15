@@ -57,6 +57,22 @@ function ForgotPasswordPageContent() {
 
   const forgotPasswordMutation = useMutation({
     mutationFn: async (data: ForgotPasswordInput) => {
+      // First check if email exists
+      const checkRes = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: data.email }),
+      });
+
+      if (checkRes.ok) {
+        const checkData = (await checkRes.json()) as { exists: boolean };
+        if (!checkData.exists) {
+          throw new Error(
+            "Email belum terdaftar. Silakan daftar terlebih dahulu.",
+          );
+        }
+      }
+
       const redirectTo = `${window.location.origin}/reset-password`;
 
       const response = await authClient.requestPasswordReset({

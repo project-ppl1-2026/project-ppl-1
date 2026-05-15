@@ -347,7 +347,7 @@ export function AppSidebarShell({ user, children }: Props) {
             <Link href="/home" className="flex items-center gap-3">
               <div>
                 <p
-                  className="text-[11px] font-extrabold uppercase tracking-[0.14em]"
+                  className="text-[12px] font-extrabold uppercase tracking-[0.14em]"
                   style={{ color: "var(--tt-dashboard-text-2)" }}
                 >
                   TEMANTUMBUH

@@ -19,10 +19,6 @@ import {
   ChevronDown,
   AlertCircle,
   BookOpen,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Filter,
 } from "lucide-react";
 
@@ -55,7 +51,7 @@ const SEG_MAP = Object.fromEntries(SEGMENTS.map((s) => [s.value, s])) as Record<
   (typeof SEGMENTS)[number]
 >;
 
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 0] as const;
+const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100, 0] as const;
 type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
 
 // ── Design tokens ─────────────────────────────────────────────────
@@ -193,11 +189,11 @@ function Modal({
   return (
     <>
       <style>{`
-        .tt-modal-overlay { display:flex; align-items:flex-end; justify-content:center; }
-        .tt-modal-sheet   { border-radius:20px 20px 0 0; max-height:95vh; }
-        @media (min-width:640px) {
-          .tt-modal-overlay { align-items:center; padding:16px; }
-          .tt-modal-sheet   { border-radius:20px !important; max-height:92vh; }
+        .tt-modal-overlay { display:flex; align-items:center; justify-content:center; padding:16px; }
+        .tt-modal-sheet   { border-radius:20px; max-height:90vh; }
+        @media (max-width:639px) {
+          .tt-modal-overlay { padding:12px; }
+          .tt-modal-sheet   { max-height:92vh; }
         }
         .tt-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
         @media (max-width:480px) {
@@ -230,25 +226,6 @@ function Modal({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Drag handle visible on mobile */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              padding: "10px 0 0",
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                width: 36,
-                height: 4,
-                borderRadius: 2,
-                background: "rgba(0,0,0,0.1)",
-              }}
-            />
-          </div>
-
           {/* Header */}
           <div
             style={{
@@ -262,6 +239,7 @@ function Modal({
               top: 0,
               zIndex: 1,
               flexShrink: 0,
+              borderRadius: "20px 20px 0 0",
             }}
           >
             <p
@@ -989,11 +967,7 @@ function PaginationBar({
     color: C.text2,
     flexShrink: 0,
   };
-  const btnDisabled: React.CSSProperties = {
-    ...btnBase,
-    opacity: 0.35,
-    cursor: "not-allowed",
-  };
+
   const btnActive: React.CSSProperties = {
     ...btnBase,
     background: "#1a9688",
@@ -1091,22 +1065,6 @@ function PaginationBar({
             flexWrap: "wrap",
           }}
         >
-          <button
-            type="button"
-            disabled={currentPage === 1}
-            onClick={() => onPageChange(1)}
-            style={currentPage === 1 ? btnDisabled : btnBase}
-          >
-            <ChevronsLeft size={13} strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            disabled={currentPage === 1}
-            onClick={() => onPageChange(currentPage - 1)}
-            style={currentPage === 1 ? btnDisabled : btnBase}
-          >
-            <ChevronLeft size={13} strokeWidth={2} />
-          </button>
           {pageNumbers().map((p, i) =>
             p === "…" ? (
               <span
@@ -1134,22 +1092,6 @@ function PaginationBar({
               </button>
             ),
           )}
-          <button
-            type="button"
-            disabled={currentPage === totalPages}
-            onClick={() => onPageChange(currentPage + 1)}
-            style={currentPage === totalPages ? btnDisabled : btnBase}
-          >
-            <ChevronRight size={13} strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            disabled={currentPage === totalPages}
-            onClick={() => onPageChange(totalPages)}
-            style={currentPage === totalPages ? btnDisabled : btnBase}
-          >
-            <ChevronsRight size={13} strokeWidth={2} />
-          </button>
         </div>
       )}
     </div>
