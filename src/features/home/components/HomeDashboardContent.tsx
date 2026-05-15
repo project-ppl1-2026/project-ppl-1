@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowRight, LogOut } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, LogOut, User, ChevronDown } from "lucide-react";
 import Image from "next/image";
 
 import { authClient } from "@/lib/auth-client";
@@ -317,97 +317,55 @@ export function HomeDashboardContent() {
 
   return (
     <div className="flex h-full flex-col bg-[var(--tt-dashboard-page-bg)]">
-      {/* ── Top Header Bar ── */}
-      <motion.header
-        variants={fadeUp}
-        initial="hidden"
-        animate="visible"
-        custom={0}
-        className="flex shrink-0 items-center justify-between border-b px-6 py-4"
-        style={{ borderColor: "var(--tt-dashboard-card-border)" }}
-      >
-        {/* Left: greeting + title */}
-        <div>
-          <p
-            className="mb-0.5 text-[11px] font-semibold"
-            style={{ color: "var(--tt-dashboard-text-2)" }}
-          >
-            Selamat datang kembali,{" "}
-            <span style={{ color: "var(--tt-dashboard-brand)" }}>
-              {sessionUser?.name ?? "Teman"}!
-            </span>
-          </p>
-          <h1
-            className="text-[22px] font-black leading-tight md:text-[26px]"
-            style={{ color: "var(--tt-dashboard-text)" }}
-          >
-            Dashboard
-          </h1>
-        </div>
-
-        {/* Right: avatar + logout — DESKTOP ONLY (mobile uses sidebar shell) */}
-        <div className="hidden items-center gap-2 lg:flex">
-          {/* Profile button — direct link to /profile, no dropdown */}
-          <Link href="/profile" aria-label="Profil pengguna">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors duration-200"
-              style={{ background: "var(--tt-dashboard-chip-bg)" }}
-            >
-              <div
-                className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[11px] font-black text-white"
-                style={{ background: "var(--tt-dashboard-brand)" }}
-              >
-                {userImageSrc ? (
-                  <Image
-                    src={userImageSrc}
-                    alt={sessionUser?.name ?? "avatar"}
-                    width={28}
-                    height={28}
-                    className="h-full w-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  userInitials
-                )}
-              </div>
-              <span
-                className="text-[12px] font-bold"
-                style={{ color: "var(--tt-dashboard-text)" }}
-              >
-                {sessionUser?.name ?? "Pengguna"}
-              </span>
-            </motion.div>
-          </Link>
-
-          {/* Logout — icon only red button */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              void handleLogout();
-            }}
-            disabled={isLoggingOut}
-            className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60"
-            style={{ background: "#FEE2E2", color: "#DC2626" }}
-            aria-label="Keluar"
-            title="Keluar"
-          >
-            <LogOut size={15} />
-          </motion.button>
-        </div>
-      </motion.header>
-
-      {/* ── Scrollable Body ── */}
+      {/* ── Scrollable Body (header scrolls with content) ── */}
       <div className="tt-dashboard-scroll-y flex-1 overflow-y-auto">
+        {/* Header */}
+        <motion.header
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          custom={0}
+          className="flex items-center justify-between px-6 py-4"
+        >
+          {/* Left: greeting + title */}
+          <div>
+            <p
+              className="mb-0.5 text-[12px] font-semibold"
+              style={{ color: "var(--tt-dashboard-text-2)" }}
+            >
+              Selamat datang kembali,{" "}
+              <span style={{ color: "var(--tt-dashboard-brand)" }}>
+                {sessionUser?.name ?? "Teman"}!
+              </span>
+            </p>
+            <h1
+              className="text-[24px] font-black leading-tight md:text-[28px]"
+              style={{ color: "var(--tt-dashboard-text)" }}
+            >
+              Dashboard
+            </h1>
+          </div>
+
+          {/* Right: avatar + dropdown — DESKTOP ONLY (mobile uses sidebar shell) */}
+          <div className="relative hidden items-center gap-2 lg:flex">
+            {/* Profile dropdown trigger */}
+            <ProfileDropdown
+              userName={sessionUser?.name ?? "Pengguna"}
+              userImageSrc={userImageSrc}
+              userInitials={userInitials}
+              isLoggingOut={isLoggingOut}
+              onLogout={() => void handleLogout()}
+            />
+          </div>
+        </motion.header>
+
         <div className="px-6 py-5">
           <motion.p
             variants={fadeUp}
             initial="hidden"
             animate="visible"
             custom={1}
-            className="mb-4 text-[10px] font-bold uppercase tracking-[0.13em]"
+            className="mb-4 text-[11px] font-bold uppercase tracking-[0.13em]"
             style={{ color: "var(--tt-dashboard-text-2)" }}
           >
             {dateStr.toUpperCase()}
@@ -430,6 +388,7 @@ export function HomeDashboardContent() {
             timezone={timezone}
             isPremium={isPremium}
             baseline={baseline}
+            userId={sessionUser?.id}
             onInsightClick={handleInsightClick}
             onInsightKeyDown={handleInsightKeyDown}
             onReportSent={async () => {
@@ -507,6 +466,129 @@ export function HomeDashboardContent() {
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Profile Dropdown ─────────────────────────────────────────────────────────
+
+function ProfileDropdown({
+  userName,
+  userImageSrc,
+  userInitials,
+  isLoggingOut,
+  onLogout,
+}: {
+  userName: string;
+  userImageSrc: string | null;
+  userInitials: string;
+  isLoggingOut: boolean;
+  onLogout: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <motion.button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.97 }}
+        className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors duration-200"
+        style={{ background: "var(--tt-dashboard-chip-bg)" }}
+      >
+        <div
+          className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[11px] font-black text-white"
+          style={{ background: "var(--tt-dashboard-brand)" }}
+        >
+          {userImageSrc ? (
+            <Image
+              src={userImageSrc}
+              alt={userName}
+              width={32}
+              height={32}
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            userInitials
+          )}
+        </div>
+        <span
+          className="text-[13px] font-bold"
+          style={{ color: "var(--tt-dashboard-text)" }}
+        >
+          {userName}
+        </span>
+        <ChevronDown
+          size={14}
+          style={{
+            color: "var(--tt-dashboard-text-2)",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s",
+          }}
+        />
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.96 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border shadow-lg"
+            style={{
+              background: "rgba(255,255,255,0.98)",
+              borderColor: "var(--tt-dashboard-card-border)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <Link
+              href="/profile"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-3 text-[13px] font-semibold transition-colors hover:bg-[rgba(26,150,136,0.06)]"
+              style={{ color: "var(--tt-dashboard-text)" }}
+            >
+              <User size={15} style={{ color: "var(--tt-dashboard-brand)" }} />
+              Lihat Profil
+            </Link>
+
+            <div
+              className="mx-3 h-px"
+              style={{ background: "var(--tt-dashboard-card-border)" }}
+            />
+
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onLogout();
+              }}
+              disabled={isLoggingOut}
+              className="flex w-full items-center gap-2.5 px-4 py-3 text-[13px] font-semibold transition-colors hover:bg-[rgba(239,68,68,0.06)] disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ color: "#DC2626" }}
+            >
+              <LogOut size={15} />
+              Keluar
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

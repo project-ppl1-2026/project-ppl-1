@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+} from "react";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
 import { BrandPageBackground } from "@/components/layout/brand-page-background";
+import { PageLoader } from "@/components/ui/manual/page-loader";
 import {
   FaceHappy,
   FaceNeutral,
@@ -96,7 +103,7 @@ function getLocalDateString(timezone: string) {
   return `${year}-${month}-${day}`;
 }
 export function MoodCheckin({
-  userName: initialUserName = "[Username]",
+  userName: initialUserName = "",
 }: {
   userName?: string;
 }) {
@@ -104,6 +111,7 @@ export function MoodCheckin({
   const hasCheckedToday = useRef(false);
 
   const [userName, setUserName] = useState(initialUserName);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [moodScore, setMoodScore] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [lastSubmittedStreak, setLastSubmittedStreak] = useState<number | null>(
@@ -119,6 +127,8 @@ export function MoodCheckin({
         }
       } catch (error) {
         console.error("Failed to fetch session:", error);
+      } finally {
+        setIsLoadingUser(false);
       }
     };
 
@@ -250,11 +260,33 @@ export function MoodCheckin({
     },
   });
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (moodScore !== null && !isOverWords && !submitMutation.isPending) {
       submitMutation.mutate();
     }
-  };
+  }, [moodScore, isOverWords, submitMutation]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "Enter" &&
+        moodScore !== null &&
+        !isOverWords &&
+        !submitMutation.isPending &&
+        !(e.target instanceof HTMLTextAreaElement)
+      ) {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleSave, moodScore, isOverWords, submitMutation.isPending]);
+
+  if (isLoadingUser) {
+    return <PageLoader message="Memuat..." fullscreen />;
+  }
 
   return (
     <BrandPageBackground fillViewport>
@@ -462,18 +494,13 @@ export function MoodCheckin({
               }}
               type="button"
             >
-              {moodScore === null ? (
-                "Pilih emosimu terlebih dahulu"
-              ) : isOverWords ? (
-                "Kurangi jumlah kata"
-              ) : submitMutation.isPending ? (
-                "Mengirim..."
-              ) : (
-                <>
-                  Kirim
-                  <ArrowRight size={18} />
-                </>
-              )}
+              {moodScore === null
+                ? "Pilih emosimu terlebih dahulu"
+                : isOverWords
+                  ? "Kurangi jumlah kata"
+                  : submitMutation.isPending
+                    ? "Mengirim..."
+                    : "Kirim"}
             </button>
           </div>
 

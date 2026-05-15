@@ -59,7 +59,7 @@ export function WeekFilterBar({
       <button
         onClick={onPrev}
         disabled={disablePrev}
-        className="flex h-7 w-7 items-center justify-center rounded-lg transition disabled:opacity-30"
+        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30"
         style={{
           background: "var(--tt-dashboard-chip-bg)",
           color: "var(--tt-dashboard-text)",
@@ -72,7 +72,7 @@ export function WeekFilterBar({
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="inline-flex h-7 items-center justify-center gap-1 rounded-lg px-2 text-[11px] font-bold sm:gap-1.5 sm:px-3 sm:text-[12px]"
+            className="inline-flex h-7 cursor-pointer items-center justify-center gap-1 rounded-lg px-2 text-[11px] font-bold transition hover:opacity-80 sm:gap-1.5 sm:px-3 sm:text-[12px]"
             style={{
               background: "var(--tt-dashboard-chip-bg)",
               color: "var(--tt-dashboard-text)",
@@ -88,7 +88,7 @@ export function WeekFilterBar({
         </PopoverTrigger>
 
         <PopoverContent
-          align="end"
+          align="center"
           side="bottom"
           sideOffset={8}
           className="z-[9999] w-[280px] rounded-2xl border p-3 shadow-xl"
@@ -110,7 +110,7 @@ export function WeekFilterBar({
             fromYear={2020}
             toYear={2035}
             initialFocus
-            className="rounded-md"
+            className="mx-auto rounded-md"
           />
         </PopoverContent>
       </Popover>
@@ -118,7 +118,7 @@ export function WeekFilterBar({
       <button
         onClick={onNext}
         disabled={disableNext}
-        className="flex h-7 w-7 items-center justify-center rounded-lg transition disabled:opacity-30"
+        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30"
         style={{
           background: "var(--tt-dashboard-chip-bg)",
           color: "var(--tt-dashboard-text)",

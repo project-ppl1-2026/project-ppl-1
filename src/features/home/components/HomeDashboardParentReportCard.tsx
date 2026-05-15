@@ -115,7 +115,7 @@ export function HomeDashboardParentReportCard({
       <div className="flex h-full flex-col">
         <div className="mb-2.5 flex items-center justify-between gap-2">
           <p
-            className="text-[10px] font-bold uppercase tracking-[0.11em]"
+            className="text-[9px] font-bold uppercase tracking-[0.11em]"
             style={{ color: "var(--tt-dashboard-text-2)" }}
           >
             Laporan Orang Tua
@@ -145,14 +145,14 @@ export function HomeDashboardParentReportCard({
 
         <div className="flex flex-1 flex-col justify-center">
           <p
-            className="truncate text-[12px] font-bold"
+            className="text-[11px] font-bold leading-tight sm:text-[12px]"
             style={{ color: "var(--tt-dashboard-text)" }}
           >
             {parentEmail ?? "Belum ada email orang tua"}
           </p>
 
           <p
-            className="mt-1 text-[10px]"
+            className="hidden text-[10px] sm:block"
             style={{ color: "var(--tt-dashboard-text-2)" }}
           >
             {isVerified

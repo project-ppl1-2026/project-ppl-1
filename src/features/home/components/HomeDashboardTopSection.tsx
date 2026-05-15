@@ -33,6 +33,7 @@ export function HomeDashboardTopSection({
   timezone,
   isPremium,
   baseline,
+  userId,
   onInsightClick,
   onInsightKeyDown,
   onReportSent,
@@ -57,6 +58,7 @@ export function HomeDashboardTopSection({
   timezone: string;
   isPremium: boolean;
   baseline: BaselineResponse | null;
+  userId?: string;
   onInsightClick: () => void;
   onInsightKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   onReportSent?: () => Promise<void> | void;
@@ -76,6 +78,8 @@ export function HomeDashboardTopSection({
           correct={braveChoice.correct}
           total={braveChoice.total}
           pct={braveChoice.pct}
+          userId={userId}
+          plan={isPremium ? "premium" : "free"}
         />
 
         <HomeDashboardParentReportCard

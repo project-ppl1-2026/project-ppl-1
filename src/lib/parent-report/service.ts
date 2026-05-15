@@ -608,50 +608,82 @@ async function renderPremiumReportHtml(report: WeeklyParentReportData) {
 
 function buildBasicReportHtml(report: WeeklyParentReportData) {
   return `
-    <div style="margin:0;padding:0;background:#eef6f5;font-family:Arial,sans-serif;color:#16313b;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#eef6f5;padding:28px 12px;">
+    <div style="margin:0;padding:0;background:#f0f7f6;font-family:'Segoe UI',Arial,sans-serif;color:#16313b;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f0f7f6;padding:32px 12px;">
         <tr>
           <td align="center">
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:#ffffff;border:1px solid #d8ebe8;border-radius:20px;overflow:hidden;">
-              <tr><td style="height:6px;background:#1a9688;font-size:0;line-height:0;">&nbsp;</td></tr>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(26,150,136,0.08);">
+              <!-- Header -->
               <tr>
-                <td style="padding:28px 28px 8px;">
-                  <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#1a9688;">TemanTumbuh</p>
-                  <h1 style="margin:0;font-size:24px;line-height:1.3;color:#111111;">Kabar Mingguan ${escapeHtml(report.childName)}</h1>
-                  <p style="margin:10px 0 0;font-size:14px;line-height:1.8;color:#222222;">Halo Bapak/Ibu, berikut kabar singkat tentang suasana hati ${escapeHtml(report.childName)} minggu ini.</p>
+                <td style="background:linear-gradient(135deg,#144949 0%,#1a9688 60%,#4ecfc3 100%);padding:28px 28px 24px;">
+                  <p style="margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,0.7);">TEMANTUMBUH</p>
+                  <h1 style="margin:0;font-size:22px;line-height:1.3;color:#ffffff;font-weight:800;">Kabar Mingguan ${escapeHtml(report.childName)}</h1>
+                  <p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:rgba(255,255,255,0.85);">Halo Bapak/Ibu, berikut kabar singkat tentang suasana hati ${escapeHtml(report.childName)} minggu ini.</p>
                 </td>
               </tr>
+
+              <!-- Period -->
               <tr>
-                <td style="padding:12px 28px 0;">
-                  <div style="background:#f7fbfb;border:1px solid #d8ebe8;border-radius:16px;padding:16px 18px;">
-                    <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#58707c;">Periode</p>
-                    <p style="margin:0;font-size:17px;font-weight:800;color:#16313b;">${escapeHtml(report.period.periodLabel)}</p>
-                    <p style="margin:8px 0 0;font-size:12px;line-height:1.7;color:#333333;">Hari yang tercatat: ${escapeHtml(report.period.dataRangeLabel)}.</p>
+                <td style="padding:20px 28px 0;">
+                  <div style="background:#f0faf9;border:1.5px solid rgba(26,150,136,0.18);border-radius:14px;padding:14px 16px;">
+                    <p style="margin:0 0 3px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1a9688;">Periode</p>
+                    <p style="margin:0;font-size:16px;font-weight:800;color:#16313b;">${escapeHtml(report.period.periodLabel)}</p>
+                    <p style="margin:6px 0 0;font-size:11px;color:#58707c;">Hari yang tercatat: ${escapeHtml(report.period.dataRangeLabel)}</p>
                   </div>
                 </td>
               </tr>
+
+              <!-- Cerita Minggu Ini -->
               <tr>
-                <td style="padding:22px 28px 0;">
-                  <h2 style="margin:0 0 10px;font-size:18px;color:#111111;">Cerita Minggu Ini</h2>
-                  <p style="margin:0 0 8px;font-size:14px;line-height:1.8;color:#222222;">${escapeHtml(report.moodSummary.conclusion)}</p>
-                  <p style="margin:0 0 8px;font-size:14px;line-height:1.8;color:#222222;">${escapeHtml(report.moodSummary.trend)}</p>
-                  <p style="margin:0;font-size:14px;line-height:1.8;color:#222222;">${escapeHtml(report.moodSummary.guidance)}</p>
+                <td style="padding:24px 28px 0;">
+                  <h2 style="margin:0 0 10px;font-size:17px;font-weight:800;color:#16313b;">Cerita Minggu Ini</h2>
+                  <p style="margin:0 0 8px;font-size:14px;line-height:1.85;color:#2c3e50;">${escapeHtml(report.moodSummary.conclusion)}</p>
+                  <p style="margin:0 0 8px;font-size:14px;line-height:1.85;color:#2c3e50;">${escapeHtml(report.moodSummary.trend)}</p>
+                  <p style="margin:0;font-size:14px;line-height:1.85;color:#2c3e50;">${escapeHtml(report.moodSummary.guidance)}</p>
                 </td>
               </tr>
+
+              <!-- Catatan Harian -->
               <tr>
-                <td style="padding:22px 28px 0;">
-                  <h2 style="margin:0 0 10px;font-size:18px;color:#111111;">Catatan Harian</h2>
-                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;border-spacing:0 8px;">
-                    ${renderMoodRows(report.days)}
+                <td style="padding:24px 28px 0;">
+                  <div style="height:1px;background:rgba(26,150,136,0.12);margin-bottom:16px;"></div>
+                  <h2 style="margin:0 0 12px;font-size:17px;font-weight:800;color:#16313b;">Catatan Harian</h2>
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;border-spacing:0 6px;">
+                    ${renderBasicMoodRows(report.days)}
                   </table>
                 </td>
               </tr>
+
+              <!-- Premium Notice (no link, just notice) -->
               <tr>
-                <td style="padding:24px 28px 28px;text-align:center;">
-                  <p style="margin:0;font-size:12px;line-height:1.7;color:#333333;">Semoga laporan singkat ini membantu Bapak/Ibu menemani ${escapeHtml(report.childName)} dengan lebih hangat minggu ini.</p>
+                <td style="padding:28px 28px 0;">
+                  <div style="height:1px;background:rgba(26,150,136,0.12);margin-bottom:20px;"></div>
+                  <div style="border-radius:16px;overflow:hidden;background:#f8fafa;border:1px solid #e0ebe9;padding:24px 20px;">
+                    <!-- Blurred content preview -->
+                    <div style="opacity:0.3;filter:blur(2px);-webkit-filter:blur(2px);">
+                      <p style="margin:0 0 6px;font-size:15px;font-weight:800;color:#16313b;">Hal yang Terlihat</p>
+                      <p style="margin:0 0 6px;font-size:13px;line-height:1.7;color:#2c3e50;">Pola emosional dan catatan pendamping yang lebih detail tersedia di laporan premium...</p>
+                      <p style="margin:0;font-size:13px;line-height:1.7;color:#2c3e50;">Rekomendasi langkah konkret untuk mendampingi anak...</p>
+                    </div>
+                    <!-- Notice -->
+                    <div style="margin-top:16px;text-align:center;padding:14px 12px;background:#ffffff;border-radius:12px;border:1px solid rgba(26,150,136,0.14);">
+                      <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#16313b;">Laporan lebih lengkap tersedia untuk akun Premium</p>
+                      <p style="margin:0;font-size:12px;line-height:1.6;color:#58707c;">Untuk mendapatkan insight harian, pola emosional, dan rekomendasi personal, minta ${escapeHtml(report.childName)} untuk upgrade akunnya ke Premium melalui aplikasi TemanTumbuh.</p>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding:28px 28px 28px;text-align:center;">
+                  <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#1a9688;">TemanTumbuh</p>
+                  <p style="margin:0;font-size:11px;line-height:1.7;color:#58707c;">Semoga laporan ini membantu Bapak/Ibu menemani ${escapeHtml(report.childName)} dengan lebih hangat.</p>
                 </td>
               </tr>
             </table>
+
+            <p style="margin:16px 0 0;font-size:11px;color:#8fa3a0;text-align:center;">TemanTumbuh 2026 - Menemani tumbuh kembang anak dengan aman</p>
           </td>
         </tr>
       </table>
@@ -699,18 +731,82 @@ function buildPremiumReportText(report: WeeklyParentReportData) {
 function renderMoodRows(days: ReportDay[]) {
   return days
     .map((day) => {
-      const mood =
+      const moodColor =
         day.score === null
-          ? "Belum ada mood tercatat"
+          ? "#8fa3a0"
+          : day.score >= 4
+            ? "#059669"
+            : day.score >= 3
+              ? "#d97706"
+              : "#dc2626";
+      const moodFace = getMoodFaceSvg(day.score);
+      const moodText =
+        day.score === null
+          ? "Belum ada mood"
           : `${escapeHtml(day.moodLabel)} (${day.score}/5)`;
       return `
         <tr>
-          <td style="padding:12px 14px;background:#ffffff;border:1px solid #dddddd;border-right:0;border-radius:10px 0 0 10px;font-size:13px;font-weight:700;color:#111111;">${escapeHtml(day.dayName)}, ${escapeHtml(day.dateLabel)}</td>
-          <td style="padding:12px 14px;background:#ffffff;border:1px solid #dddddd;border-left:0;border-radius:0 10px 10px 0;font-size:13px;color:#111111;text-align:right;">${mood}</td>
+          <td style="padding:10px 14px;background:#f8fcfb;border:1px solid rgba(26,150,136,0.12);border-right:0;border-radius:10px 0 0 10px;font-size:13px;font-weight:700;color:#16313b;">${escapeHtml(day.dayName)}, ${escapeHtml(day.dateLabel)}</td>
+          <td style="padding:10px 14px;background:#f8fcfb;border:1px solid rgba(26,150,136,0.12);border-left:0;border-radius:0 10px 10px 0;font-size:13px;font-weight:600;color:${moodColor};text-align:right;vertical-align:middle;">
+            <span style="display:inline-block;vertical-align:middle;margin-right:6px;">${moodFace}</span>
+            <span style="vertical-align:middle;">${moodText}</span>
+          </td>
         </tr>
       `;
     })
     .join("");
+}
+
+function renderBasicMoodRows(days: ReportDay[]) {
+  return days
+    .map((day) => {
+      const moodColor =
+        day.score === null
+          ? "#8fa3a0"
+          : day.score >= 4
+            ? "#059669"
+            : day.score >= 3
+              ? "#d97706"
+              : "#dc2626";
+      const moodFace = getMoodFaceSvg(day.score);
+      const moodText =
+        day.score === null
+          ? "Belum ada mood"
+          : `${escapeHtml(day.moodLabel)} (${day.score}/5)`;
+      return `
+        <tr>
+          <td style="padding:10px 14px;background:#f8fcfb;border:1px solid rgba(26,150,136,0.12);border-right:0;border-radius:10px 0 0 10px;font-size:13px;font-weight:700;color:#16313b;">${escapeHtml(day.dayName)}, ${escapeHtml(day.dateLabel)}</td>
+          <td style="padding:10px 14px;background:#f8fcfb;border:1px solid rgba(26,150,136,0.12);border-left:0;border-radius:0 10px 10px 0;font-size:13px;font-weight:600;color:${moodColor};text-align:right;vertical-align:middle;">
+            <span style="display:inline-block;vertical-align:middle;margin-right:6px;">${moodFace}</span>
+            <span style="vertical-align:middle;">${moodText}</span>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function getMoodFaceSvg(score: number | null): string {
+  if (score === null) return "";
+  const size = 18;
+  const colors: Record<number, string> = {
+    1: "#EF4444",
+    2: "#F97316",
+    3: "#EAB308",
+    4: "#22C55E",
+    5: "#10B981",
+  };
+  const color = colors[score] ?? "#8fa3a0";
+
+  // Simple circle face SVG
+  const mouth =
+    score >= 4
+      ? `<path d="M6 11c0 0 1.5 2.5 3 2.5s3-2.5 3-2.5" stroke="${color}" stroke-width="1.2" fill="none" stroke-linecap="round"/>`
+      : score === 3
+        ? `<line x1="6" y1="12" x2="12" y2="12" stroke="${color}" stroke-width="1.2" stroke-linecap="round"/>`
+        : `<path d="M6 13c0 0 1.5-2.5 3-2.5s3 2.5 3 2.5" stroke="${color}" stroke-width="1.2" fill="none" stroke-linecap="round"/>`;
+
+  return `<svg width="${size}" height="${size}" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8" stroke="${color}" stroke-width="1.5" fill="none"/><circle cx="6.5" cy="7.5" r="1" fill="${color}"/><circle cx="11.5" cy="7.5" r="1" fill="${color}"/>${mouth}</svg>`;
 }
 
 function renderInsightRows(insights: ReportInsight[]) {

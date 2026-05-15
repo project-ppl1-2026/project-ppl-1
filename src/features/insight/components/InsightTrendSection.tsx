@@ -288,7 +288,7 @@ export function InsightTrendSection({
         </div>
 
         <div className="px-4 py-5 sm:px-6 sm:py-7">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <MoodStatBox
               value={`${peakMood}/5`}
               score={peakMood}
@@ -316,6 +316,66 @@ export function InsightTrendSection({
               helper="Jumlah hari dengan mood di level cukup baik."
               valueColor="#7C3AED"
             />
+          </div>
+        </div>
+
+        {/* Mood Scale Legend */}
+        <div
+          className="border-t px-4 py-4 sm:px-6 sm:py-5"
+          style={{ borderColor: "rgba(25,39,44,0.06)" }}
+        >
+          <p
+            className="mb-3 text-[11px] font-bold uppercase tracking-[0.1em]"
+            style={{ color: "var(--tt-dashboard-text-2)" }}
+          >
+            Keterangan Skor Mood
+          </p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-x-6">
+            <div className="flex items-center gap-1.5">
+              <MoodFaceIcon score={1} size={18} />
+              <span
+                className="text-[11px] font-medium sm:text-[12px]"
+                style={{ color: "var(--tt-dashboard-text-2)" }}
+              >
+                1 = Sangat Sedih
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MoodFaceIcon score={2} size={18} />
+              <span
+                className="text-[11px] font-medium sm:text-[12px]"
+                style={{ color: "var(--tt-dashboard-text-2)" }}
+              >
+                2 = Sedih
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MoodFaceIcon score={3} size={18} />
+              <span
+                className="text-[11px] font-medium sm:text-[12px]"
+                style={{ color: "var(--tt-dashboard-text-2)" }}
+              >
+                3 = Biasa Aja
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MoodFaceIcon score={4} size={18} />
+              <span
+                className="text-[11px] font-medium sm:text-[12px]"
+                style={{ color: "var(--tt-dashboard-text-2)" }}
+              >
+                4 = Senang
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MoodFaceIcon score={5} size={18} />
+              <span
+                className="text-[11px] font-medium sm:text-[12px]"
+                style={{ color: "var(--tt-dashboard-text-2)" }}
+              >
+                5 = Sangat Senang
+              </span>
+            </div>
           </div>
         </div>
       </SurfaceCard>

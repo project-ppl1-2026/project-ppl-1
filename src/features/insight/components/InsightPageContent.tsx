@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Sparkles } from "lucide-react";
 
 import { InsightPageHeader } from "./InsightPageHeader";
 import { InsightRecommendationSection } from "./InsightRecommendationSection";
 import { InsightReflectionSection } from "./InsightReflectionSection";
 import { InsightTrendSection } from "./InsightTrendSection";
+import { SurfaceCard } from "./insight-primitives";
 import {
   getDateKeyInTimeZone,
   getTodayDateString,
@@ -158,13 +160,13 @@ export default function InsightPageContent() {
 
   return (
     <main
-      className="h-full min-h-0 overflow-hidden px-4 py-4 md:px-6 md:py-6 xl:px-8"
+      className="h-full min-h-0 overflow-hidden"
       style={{
         background: "var(--tt-dashboard-page-bg)",
         fontFamily: "var(--font-plus-jakarta), system-ui, sans-serif",
       }}
     >
-      <div className="tt-dashboard-scroll-y mx-auto h-full pl-4 pr-2.5 py-2.5 max-w-[1320px] overflow-y-auto pr-1">
+      <div className="tt-dashboard-scroll-y h-full overflow-y-auto px-4 py-4 md:px-6 md:py-5">
         <div className="pb-6">
           <InsightPageHeader
             effectiveDate={effectiveDate}
@@ -180,11 +182,13 @@ export default function InsightPageContent() {
             onDateChange={handleDateChange}
           />
 
-          {isLoading || isGenerating ? (
+          {isLoading ? (
             <div className="flex flex-col gap-5 mt-4 w-full">
-              <div className="h-[460px] w-full rounded-[28px] bg-slate-200/50 animate-pulse" />
-              <div className="h-[360px] w-full rounded-[28px] bg-slate-200/50 animate-pulse" />
-              <div className="h-[200px] w-full rounded-[28px] bg-slate-200/50 animate-pulse" />
+              <div className="h-[300px] w-full rounded-[28px] bg-slate-200/40 animate-pulse" />
+              <div
+                className="h-[260px] w-full rounded-[28px] bg-slate-200/40 animate-pulse"
+                style={{ animationDelay: "200ms" }}
+              />
             </div>
           ) : (
             <>
@@ -199,19 +203,111 @@ export default function InsightPageContent() {
                   stableDays={stableDays}
                 />
 
-                <InsightReflectionSection
-                  effectiveDate={effectiveDate}
-                  availableDates={availableDates}
-                  isToday={isToday}
-                  selectedInsight={selectedInsight}
-                />
+                {/* Secondary "Tampilkan Insight" button — visible and prominent */}
+                {isToday && !hasInsight && !isGenerating && (
+                  <button
+                    type="button"
+                    onClick={handleGenerateTodayInsight}
+                    className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl text-[14px] font-semibold text-white transition-all hover:translate-y-[-1px] sm:h-14 sm:text-[15px]"
+                    style={{
+                      background: "var(--gradient-brand-btn)",
+                      boxShadow: "0 12px 28px rgba(26,150,136,0.20)",
+                    }}
+                  >
+                    <Sparkles size={18} />
+                    Tampilkan Insight Hari Ini
+                  </button>
+                )}
+
+                {isGenerating ? (
+                  <InsightSkeletonTyping />
+                ) : (
+                  <InsightReflectionSection
+                    effectiveDate={effectiveDate}
+                    availableDates={availableDates}
+                    isToday={isToday}
+                    selectedInsight={selectedInsight}
+                  />
+                )}
               </div>
 
-              <InsightRecommendationSection selectedInsight={selectedInsight} />
+              {isGenerating ? null : (
+                <InsightRecommendationSection
+                  selectedInsight={selectedInsight}
+                />
+              )}
             </>
           )}
         </div>
       </div>
     </main>
+  );
+}
+
+// ─── Skeleton Typing Animation ────────────────────────────────────────────────
+
+function InsightSkeletonTyping() {
+  return (
+    <SurfaceCard className="overflow-hidden">
+      <style>{`
+        @keyframes insightShimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .insight-shimmer {
+          background: linear-gradient(90deg, rgba(26,150,136,0.08) 25%, rgba(26,150,136,0.16) 50%, rgba(26,150,136,0.08) 75%);
+          background-size: 200% 100%;
+          animation: insightShimmer 1.5s ease-in-out infinite;
+        }
+      `}</style>
+      <div
+        className="border-b px-6 py-5"
+        style={{ borderColor: "rgba(25,39,44,0.06)" }}
+      >
+        <p
+          className="text-[17px] font-bold"
+          style={{ color: "var(--tt-dashboard-brand-deep)" }}
+        >
+          Refleksi AI Harian
+        </p>
+        <p
+          className="mt-1 text-sm"
+          style={{ color: "var(--tt-dashboard-text-2)" }}
+        >
+          Sedang menganalisis data harianmu...
+        </p>
+      </div>
+      <div className="space-y-4 px-6 py-6">
+        <div className="space-y-3">
+          <div className="insight-shimmer h-4 w-[92%] rounded-full" />
+          <div
+            className="insight-shimmer h-4 w-[78%] rounded-full"
+            style={{ animationDelay: "0.2s" }}
+          />
+          <div
+            className="insight-shimmer h-4 w-[85%] rounded-full"
+            style={{ animationDelay: "0.4s" }}
+          />
+          <div
+            className="insight-shimmer h-4 w-[63%] rounded-full"
+            style={{ animationDelay: "0.6s" }}
+          />
+        </div>
+        <div className="mt-6 space-y-3">
+          <div
+            className="insight-shimmer h-4 w-[72%] rounded-full"
+            style={{ animationDelay: "0.8s" }}
+          />
+          <div
+            className="insight-shimmer h-4 w-[58%] rounded-full"
+            style={{ animationDelay: "1.0s" }}
+          />
+          <div
+            className="insight-shimmer h-4 w-[45%] rounded-full"
+            style={{ animationDelay: "1.2s" }}
+          />
+        </div>
+      </div>
+    </SurfaceCard>
   );
 }

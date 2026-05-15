@@ -68,6 +68,7 @@ type Props = {
   onResetQuestions: () => void;
   onUpgrade: () => void;
   onAnswerSubmit: (quizId: string, label: string) => void;
+  onContinueWriting?: () => void;
 };
 
 // ─── main component ───────────────────────────────────────────────────────────
@@ -88,6 +89,7 @@ export function BraveChoiceModal({
   onResetQuestions,
   onUpgrade,
   onAnswerSubmit,
+  onContinueWriting,
 }: Props) {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [isChecked, setIsChecked] = useState(false);
@@ -98,6 +100,46 @@ export function BraveChoiceModal({
     setIsChecked(false);
     setIsSubmitting(false);
   }, [quiz?.id]);
+
+  // Enter key handler for check answer / continue
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+
+      if (isChecked) {
+        // After checking, Enter = continue writing
+        if (onContinueWriting) {
+          onContinueWriting();
+        } else {
+          onClose();
+        }
+      } else if (selectedIdx !== null && quiz && !isSubmitting) {
+        // Before checking, Enter = check answer
+        const opt = quiz.options[selectedIdx];
+        setIsSubmitting(true);
+        onAnswerSubmit(quiz.id, opt.label);
+        setTimeout(() => {
+          setIsChecked(true);
+          setIsSubmitting(false);
+        }, 320);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    isOpen,
+    isChecked,
+    selectedIdx,
+    quiz,
+    isSubmitting,
+    onAnswerSubmit,
+    onContinueWriting,
+    onClose,
+  ]);
 
   if (!isOpen) return null;
 
@@ -276,7 +318,7 @@ export function BraveChoiceModal({
                       }}
                       onCheck={handleCheck}
                       onNext={onNextQuiz}
-                      onClose={handleClose}
+                      onClose={onContinueWriting ?? handleClose}
                       onUpgrade={onUpgrade}
                     />
                   </motion.div>

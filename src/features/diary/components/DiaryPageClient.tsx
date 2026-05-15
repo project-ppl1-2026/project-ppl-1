@@ -8,10 +8,7 @@ import { PageLoader } from "@/components/ui/manual/page-loader";
 import { colors as C } from "@/features/diary/constants/tokens";
 import { useDiary } from "@/features/diary/hooks/useDiary";
 import { useBraveChoice } from "@/features/diary/hooks/useBraveChoice";
-import {
-  DiaryLeftPage,
-  MOBILE_STRIP_WIDTH,
-} from "@/features/diary/components/DiaryLeftPage";
+import { DiaryLeftPage } from "@/features/diary/components/DiaryLeftPage";
 import { BookSpine } from "@/features/diary/components/BookSpine";
 import { DiaryRightPage } from "@/features/diary/components/DiaryRightPage";
 import { BraveChoiceModal } from "@/features/diary/components/BraveChoiceModal";
@@ -95,45 +92,42 @@ export function DiaryPageClient({
             minHeight: 0,
             minWidth: 0,
             overflow: "hidden",
-            background: C.spine,
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
+            background: desktopHistoryOpen ? C.spine : C.paper,
+            boxShadow: desktopHistoryOpen
+              ? "inset 0 1px 0 rgba(255,255,255,0.22)"
+              : "none",
           }}
         >
-          {/* LEFT CLOSED RAIL */}
+          {/* LEFT CLOSED RAIL — single toggle button */}
           {!desktopHistoryOpen ? (
             <div
               style={{
-                width: 56,
-                minWidth: 56,
-                maxWidth: 56,
-                background: C.paper,
-                borderRight: `1px solid ${C.bdL}`,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                paddingTop: 14,
-                gap: 10,
-                flexShrink: 0,
+                position: "absolute",
+                top: 18,
+                left: 18,
+                zIndex: 10,
               }}
             >
               <button
                 type="button"
-                onClick={() => router.push("/home")}
-                style={railButtonStyle()}
-                aria-label="Back to Home"
-                title="Back to Home"
-              >
-                <ArrowLeft size={16} />
-              </button>
-
-              <button
-                type="button"
                 onClick={() => setDesktopHistoryOpen(true)}
-                style={railButtonStyle()}
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  border: "none",
+                  background: "transparent",
+                  color: C.inkD,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                }}
                 aria-label="Buka Riwayat Diary"
                 title="Buka Riwayat Diary"
               >
-                <PanelLeft size={16} />
+                <PanelLeft size={18} />
               </button>
             </div>
           ) : null}
@@ -293,18 +287,38 @@ export function DiaryPageClient({
           background: C.paper,
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            top: 12,
-            left: 12,
-            right: 12,
-            zIndex: 20,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        />
+        {/* Floating sidebar toggle — always visible */}
+        {!mobileHistoryOpen && (
+          <div
+            style={{
+              position: "absolute",
+              top: 10,
+              left: 8,
+              zIndex: 20,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setMobileHistoryOpen(true)}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 10,
+                border: "none",
+                background: "transparent",
+                color: C.inkD,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+              aria-label="Buka Riwayat Diary"
+              title="Buka Riwayat Diary"
+            >
+              <PanelLeft size={18} />
+            </button>
+          </div>
+        )}
 
         <div
           style={{
@@ -312,8 +326,6 @@ export function DiaryPageClient({
             width: "100%",
             background: C.paper,
             overflow: "hidden",
-            paddingLeft: mobileHistoryOpen ? 0 : MOBILE_STRIP_WIDTH,
-            transition: "padding-left 260ms cubic-bezier(0.22,1,0.36,1)",
             boxSizing: "border-box",
           }}
         >
@@ -465,18 +477,16 @@ function floatingButtonStyle(): React.CSSProperties {
     height: 40,
     padding: "0 14px",
     borderRadius: 999,
-    border: `1px solid ${C.bdL}`,
-    background: "rgba(255,255,255,0.92)",
+    border: "none",
+    background: "transparent",
     color: C.inkD,
     fontSize: 12,
     fontWeight: 800,
     display: "inline-flex",
     alignItems: "center",
     gap: 8,
-    boxShadow: "0 8px 20px rgba(13,70,70,0.08)",
     cursor: "pointer",
     flexShrink: 0,
-    backdropFilter: "blur(10px)",
   };
 }
 
@@ -485,30 +495,12 @@ function iconButtonStyle(): React.CSSProperties {
     width: 40,
     height: 40,
     borderRadius: 12,
-    border: `1px solid ${C.bdL}`,
-    background: "rgba(255,255,255,0.96)",
+    border: "none",
+    background: "transparent",
     color: C.inkD,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 8px 18px rgba(13,70,70,0.08)",
-    cursor: "pointer",
-    flexShrink: 0,
-  };
-}
-
-function railButtonStyle(): React.CSSProperties {
-  return {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    border: `1px solid ${C.bdL}`,
-    background: "rgba(255,255,255,0.96)",
-    color: C.inkD,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 6px 14px rgba(13,70,70,0.06)",
     cursor: "pointer",
     flexShrink: 0,
   };
