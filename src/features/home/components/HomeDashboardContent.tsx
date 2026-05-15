@@ -12,6 +12,7 @@ import { authClient } from "@/lib/auth-client";
 import type {
   BaselineResponse,
   MoodLog,
+  ParentStatusResponse,
   SessionUser,
   WeekData,
 } from "../types";
@@ -122,6 +123,22 @@ export function HomeDashboardContent() {
       staleTime: 300_000,
     });
 
+  const {
+    data: parentStatusData = null,
+    isLoading: parentStatusLoading,
+    refetch: refetchParentStatus,
+  } = useQuery<ParentStatusResponse>({
+    queryKey: ["parent-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/parent/status", { cache: "no-store" });
+      if (!res.ok) return null;
+      return (await res.json()) as ParentStatusResponse;
+    },
+    enabled: !!sessionUser?.id,
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+
   const { data: braveChoiceStats = null, isLoading: braveChoiceLoading } =
     useQuery({
       queryKey: ["brave-choice-stats"],
@@ -170,7 +187,10 @@ export function HomeDashboardContent() {
   const longestStreak = computeLongestStreak(moodLogs, timezone);
   const currentStreak = sessionUser?.currentStreak ?? 0;
   const isPremium = sessionUser?.isPremium ?? false;
-  const parentEmail = sessionUser?.parentEmail ?? null;
+  const parentEmail =
+    parentStatusData?.status === "verified"
+      ? parentStatusData.email
+      : (sessionUser?.parentEmail ?? null);
   const braveChoice = braveChoiceStats ?? { pct: 0, correct: 0, total: 0 };
 
   const isLoading =
@@ -178,7 +198,8 @@ export function HomeDashboardContent() {
     moodLoading ||
     baselineLoading ||
     countLoading ||
-    braveChoiceLoading;
+    braveChoiceLoading ||
+    parentStatusLoading;
 
   const handleInsightClick = () => {
     router.push(isPremium ? "/insight" : "/subscription");
@@ -400,12 +421,20 @@ export function HomeDashboardContent() {
             getMoodColor={getMoodColor}
             braveChoice={braveChoice}
             parentEmail={parentEmail}
+            parentStatus={parentStatusData?.status ?? null}
+            lastReportSentAt={parentStatusData?.lastSentAt ?? null}
+            lastReportType={parentStatusData?.lastReportType ?? null}
+            lastReportStatus={parentStatusData?.lastReportStatus ?? null}
             currentWeek={currentWeek}
             year={now.getFullYear()}
+            timezone={timezone}
             isPremium={isPremium}
             baseline={baseline}
             onInsightClick={handleInsightClick}
             onInsightKeyDown={handleInsightKeyDown}
+            onReportSent={async () => {
+              await refetchParentStatus();
+            }}
           />
 
           <motion.div

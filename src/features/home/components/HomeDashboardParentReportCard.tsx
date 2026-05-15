@@ -2,19 +2,114 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2, Send } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
 import { MotionCard } from "./home-dashboard-primitives";
 import type { WeekData } from "../types";
 
+type ParentStatus = "pending" | "verified" | "expired" | null;
+type ReportType = "free_summary" | "premium_pdf" | null;
+type ReportStatus = "sent" | "failed" | null;
+
 export function HomeDashboardParentReportCard({
   parentEmail,
+  parentStatus,
+  lastReportSentAt,
+  lastReportType,
+  lastReportStatus,
   currentWeek,
   year,
+  timezone,
+  onReportSent,
 }: {
   parentEmail: string | null;
+  parentStatus: ParentStatus;
+  lastReportSentAt?: string | null;
+  lastReportType?: ReportType;
+  lastReportStatus?: ReportStatus;
   currentWeek?: WeekData;
   year: number;
+  timezone: string;
+  onReportSent?: () => Promise<void> | void;
 }) {
+  const [isSending, setIsSending] = useState(false);
+  const isVerified = parentStatus === "verified" && Boolean(parentEmail);
+
+  const lastSentLabel =
+    lastReportStatus && lastReportSentAt
+      ? new Intl.DateTimeFormat("id-ID", {
+          day: "numeric",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(new Date(lastReportSentAt))
+      : null;
+
+  const reportTypeLabel =
+    lastReportType === "premium_pdf"
+      ? "PDF premium"
+      : lastReportType === "free_summary"
+        ? "Email ringkas"
+        : null;
+
+  const statusLabel =
+    lastReportStatus === "failed"
+      ? lastSentLabel
+        ? `Gagal: ${lastSentLabel}`
+        : "Gagal terkirim"
+      : lastReportStatus === "sent" && lastSentLabel
+        ? `Terakhir: ${lastSentLabel}`
+        : "Belum pernah dikirim";
+
+  const reportMetaLabel = reportTypeLabel
+    ? `${statusLabel} - ${reportTypeLabel}`
+    : statusLabel;
+  const inactiveLabel =
+    parentStatus === "pending"
+      ? "Menunggu"
+      : parentStatus === "expired"
+        ? "Kedaluwarsa"
+        : "Belum aktif";
+
+  const handleSendReport = async () => {
+    if (!isVerified || isSending) return;
+
+    try {
+      setIsSending(true);
+      const res = await fetch("/api/parent-report/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timezone }),
+      });
+      const payload = (await res.json()) as {
+        message?: string;
+        error?: string;
+        data?: {
+          skipped?: boolean;
+          reason?: string;
+        };
+      };
+
+      if (!res.ok) {
+        toast.error(payload.error || "Gagal mengirim laporan mingguan.");
+        return;
+      }
+
+      if (payload.data?.skipped) {
+        toast.info(payload.message || "Laporan tidak dikirim.");
+      } else {
+        toast.success(payload.message || "Laporan mingguan berhasil dikirim.");
+      }
+      await onReportSent?.();
+    } catch {
+      toast.error("Terjadi kesalahan saat mengirim laporan mingguan.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <MotionCard custom={3} className="tt-dashboard-card rounded-[1.15rem] p-4">
       <div className="flex h-full flex-col">
@@ -26,7 +121,7 @@ export function HomeDashboardParentReportCard({
             Laporan Orang Tua
           </p>
 
-          {parentEmail ? (
+          {isVerified ? (
             <motion.span
               whileHover={{ scale: 1.04 }}
               className="inline-flex items-center gap-1 text-[10px] font-bold"
@@ -43,7 +138,7 @@ export function HomeDashboardParentReportCard({
                 color: "var(--tt-dashboard-chip-text)",
               }}
             >
-              Belum aktif
+              {inactiveLabel}
             </motion.span>
           )}
         </div>
@@ -60,23 +155,45 @@ export function HomeDashboardParentReportCard({
             className="mt-1 text-[10px]"
             style={{ color: "var(--tt-dashboard-text-2)" }}
           >
-            {parentEmail
-              ? "Jadwal pengiriman laporan berikutnya"
+            {isVerified
+              ? reportMetaLabel
               : "Tambahkan email untuk laporan mingguan"}
           </p>
 
-          {parentEmail && currentWeek ? (
-            <motion.div
-              whileHover={{ x: 1 }}
-              className="mt-4 flex items-center gap-2 text-[11px]"
-              style={{ color: "var(--tt-dashboard-text)" }}
-            >
-              <span>
-                Periode: {currentWeek.days[0]?.date ?? "-"} –{" "}
-                {currentWeek.days[6]?.date ?? "-"}{" "}
-                {currentWeek.days[6]?.month ?? ""} {year}
-              </span>
-            </motion.div>
+          {isVerified && currentWeek ? (
+            <div className="mt-4 space-y-2">
+              <motion.div
+                whileHover={{ x: 1 }}
+                className="flex items-center gap-2 text-[11px]"
+                style={{ color: "var(--tt-dashboard-text)" }}
+              >
+                <span>
+                  Periode: {currentWeek.days[0]?.date ?? "-"} -{" "}
+                  {currentWeek.days[6]?.date ?? "-"}{" "}
+                  {currentWeek.days[6]?.month ?? ""} {year}
+                </span>
+              </motion.div>
+
+              <motion.button
+                type="button"
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => void handleSendReport()}
+                disabled={isSending}
+                className="inline-flex h-8 items-center gap-2 rounded-xl px-3 text-[10px] font-bold text-white transition-shadow duration-300 disabled:cursor-not-allowed disabled:opacity-70"
+                style={{
+                  background: "var(--tt-dashboard-button-bg)",
+                  boxShadow: "0 8px 18px rgba(26,150,136,0.14)",
+                }}
+              >
+                {isSending ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : (
+                  <Send size={11} />
+                )}
+                {isSending ? "Mengirim..." : "Kirim Sekarang"}
+              </motion.button>
+            </div>
           ) : (
             <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
               <Link

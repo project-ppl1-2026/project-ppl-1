@@ -7,6 +7,10 @@ import { HomeDashboardInsightCard } from "./HomeDashboardInsightCard";
 import { HomeDashboardBaselineCard } from "./HomeDashboardBaselineCard";
 import type { BaselineResponse, WeekData } from "../types";
 
+type ParentStatus = "pending" | "verified" | "expired" | null;
+type ReportType = "free_summary" | "premium_pdf" | null;
+type ReportStatus = "sent" | "failed" | null;
+
 type StreakDay = {
   day: string;
   score: number | null;
@@ -20,12 +24,18 @@ export function HomeDashboardTopSection({
   getMoodColor,
   braveChoice,
   parentEmail,
+  parentStatus,
+  lastReportSentAt,
+  lastReportType,
+  lastReportStatus,
   currentWeek,
   year,
+  timezone,
   isPremium,
   baseline,
   onInsightClick,
   onInsightKeyDown,
+  onReportSent,
 }: {
   currentStreak: number;
   longestStreak: number;
@@ -38,22 +48,21 @@ export function HomeDashboardTopSection({
     total: number;
   };
   parentEmail: string | null;
+  parentStatus: ParentStatus;
+  lastReportSentAt?: string | null;
+  lastReportType?: ReportType;
+  lastReportStatus?: ReportStatus;
   currentWeek?: WeekData;
   year: number;
+  timezone: string;
   isPremium: boolean;
   baseline: BaselineResponse | null;
   onInsightClick: () => void;
   onInsightKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+  onReportSent?: () => Promise<void> | void;
 }) {
   return (
-    /**
-     * Layout reference: CoachPro dashboard
-     * Left column  → hero card (streak) — fixed narrower width
-     * Right column → 2×2 grid of stat cards
-     * On mobile    → stacks vertically
-     */
     <div className="grid gap-3 xl:grid-cols-[280px_1fr]">
-      {/* ── Left: Hero streak card ── */}
       <HomeDashboardHeroCard
         currentStreak={currentStreak}
         longestStreak={longestStreak}
@@ -62,7 +71,6 @@ export function HomeDashboardTopSection({
         getMoodColor={getMoodColor}
       />
 
-      {/* ── Right: 2×2 stat cards ── */}
       <div className="grid grid-cols-2 gap-3">
         <HomeDashboardBraveChoiceCard
           correct={braveChoice.correct}
@@ -72,8 +80,14 @@ export function HomeDashboardTopSection({
 
         <HomeDashboardParentReportCard
           parentEmail={parentEmail}
+          parentStatus={parentStatus}
+          lastReportSentAt={lastReportSentAt}
+          lastReportType={lastReportType}
+          lastReportStatus={lastReportStatus}
           currentWeek={currentWeek}
           year={year}
+          timezone={timezone}
+          onReportSent={onReportSent}
         />
 
         <HomeDashboardInsightCard
