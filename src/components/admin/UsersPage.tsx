@@ -60,7 +60,7 @@ type Props = {
 };
 
 const MOBILE_BREAKPOINT = 768;
-const LIMIT_OPTIONS = [10, 25, 50, 100, 0]; // 0 = semua
+const LIMIT_OPTIONS = [5, 10, 25, 50, 100, 0]; // 0 = semua
 
 // ── Hooks & helpers ──────────────────────────────────────────────
 function useIsMobile(breakpoint = MOBILE_BREAKPOINT) {
@@ -284,11 +284,11 @@ function Modal({
   return (
     <>
       <style>{`
-        .tt-um-overlay { display:flex; align-items:flex-end; justify-content:center; }
-        .tt-um-sheet   { border-radius:20px 20px 0 0; max-height:95vh; }
-        @media (min-width:640px) {
-          .tt-um-overlay { align-items:center; padding:16px; }
-          .tt-um-sheet   { border-radius:20px !important; max-height:92vh; }
+        .tt-um-overlay { display:flex; align-items:center; justify-content:center; padding:16px; }
+        .tt-um-sheet   { border-radius:20px; max-height:90vh; }
+        @media (max-width:639px) {
+          .tt-um-overlay { padding:12px; }
+          .tt-um-sheet   { max-height:92vh; }
         }
       `}</style>
       <div
@@ -319,23 +319,6 @@ function Modal({
         >
           <div
             style={{
-              display: "flex",
-              justifyContent: "center",
-              padding: "10px 0 0",
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                width: 36,
-                height: 4,
-                borderRadius: 2,
-                background: "rgba(0,0,0,0.1)",
-              }}
-            />
-          </div>
-          <div
-            style={{
               padding: "14px 20px",
               borderBottom: "1px solid #c8ede9",
               display: "flex",
@@ -346,6 +329,7 @@ function Modal({
               top: 0,
               zIndex: 1,
               flexShrink: 0,
+              borderRadius: "20px 20px 0 0",
             }}
           >
             <p style={{ fontWeight: 700, fontSize: 15, color: "#fff" }}>
@@ -1710,27 +1694,28 @@ function Pagination({
         flexWrap: "wrap",
       }}
     >
-      {page > 1 ? (
-        <a href={hrefFor(page - 1)} style={btnBase}>
-          ← Prev
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+        <a
+          key={p}
+          href={hrefFor(p)}
+          style={{
+            ...btnBase,
+            ...(p === page
+              ? {
+                  background: "#1a9688",
+                  borderColor: "#1a9688",
+                  color: "#fff",
+                  fontWeight: 700,
+                }
+              : {}),
+          }}
+        >
+          {p}
         </a>
-      ) : (
-        <span style={{ ...btnBase, opacity: 0.35, cursor: "default" }}>
-          ← Prev
-        </span>
-      )}
-      <span style={{ fontSize: 12, color: C.text3, textAlign: "center" }}>
-        Hal {page} / {totalPages} · {total.toLocaleString("id-ID")} user
+      ))}
+      <span style={{ fontSize: 12, color: C.text3, marginLeft: 8 }}>
+        · {total.toLocaleString("id-ID")} user
       </span>
-      {page < totalPages ? (
-        <a href={hrefFor(page + 1)} style={btnBase}>
-          Next →
-        </a>
-      ) : (
-        <span style={{ ...btnBase, opacity: 0.35, cursor: "default" }}>
-          Next →
-        </span>
-      )}
     </div>
   );
 }

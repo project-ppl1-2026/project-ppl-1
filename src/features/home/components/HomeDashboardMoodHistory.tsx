@@ -34,7 +34,7 @@ export function HomeDashboardMoodHistory({
       className="mt-3 pb-4"
     >
       <div
-        className="tt-dashboard-card relative overflow-visible rounded-[1.15rem] p-4"
+        className="tt-dashboard-card relative overflow-visible rounded-[1.15rem] p-4 pb-2"
         style={{ isolation: "isolate" }}
       >
         {/* Header row — always inline: title left, filter right */}
@@ -70,8 +70,8 @@ export function HomeDashboardMoodHistory({
 
         {/* Day cards */}
         {currentWeek?.days?.length ? (
-          <div className="relative z-20 overflow-x-auto overflow-y-visible pb-2">
-            <div className="relative pt-2">
+          <div className="relative z-20 -mx-4 overflow-x-auto overflow-y-visible px-4 pb-2 pt-4">
+            <div className="relative">
               <div className="relative grid min-w-[700px] grid-flow-col auto-cols-[88px] gap-2 md:min-w-0 md:grid-flow-row md:auto-cols-auto md:grid-cols-7">
                 {currentWeek.days.map((d, i) => (
                   <motion.div

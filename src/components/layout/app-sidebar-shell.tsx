@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -13,6 +13,8 @@ import {
   X,
   Lock,
   LogOut,
+  User,
+  ChevronDown,
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
@@ -55,7 +57,7 @@ function SidebarNavItem({
     <Link
       href={locked ? "/subscription" : href}
       onClick={onClick}
-      className="flex items-center gap-3 rounded-[0.95rem] px-3.5 py-2.5 transition-all"
+      className="flex cursor-pointer items-center gap-3 rounded-[0.95rem] px-3.5 py-3 transition-all hover:bg-[rgba(26,150,136,0.06)]"
       style={{
         background: active ? "var(--tt-dashboard-active-bg)" : "transparent",
         color: active
@@ -65,10 +67,8 @@ function SidebarNavItem({
       }}
       aria-current={active ? "page" : undefined}
     >
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg">
-        <Icon size={16} />
-      </div>
-      <span className="text-[13px] font-bold">{label}</span>
+      <Icon size={18} />
+      <span className="text-[14px] font-bold">{label}</span>
 
       {locked && (
         <Lock
@@ -135,13 +135,13 @@ function MobileSidebar({
         <div className="mb-4 flex items-center justify-between px-1">
           <div>
             <p
-              className="text-[10px] font-extrabold uppercase tracking-[0.14em]"
+              className="text-[11px] font-extrabold uppercase tracking-[0.14em]"
               style={{ color: "var(--tt-dashboard-text-2)" }}
             >
               TEMANTUMBUH
             </p>
             <h2
-              className="text-[15px] font-extrabold leading-none"
+              className="text-[16px] font-extrabold leading-none"
               style={{ color: "var(--tt-dashboard-text)" }}
             >
               Dashboard
@@ -150,14 +150,13 @@ function MobileSidebar({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center"
             style={{
-              background: "var(--tt-dashboard-chip-bg)",
               color: "var(--tt-dashboard-text)",
             }}
             aria-label="Tutup menu"
           >
-            <X size={16} />
+            <X size={20} />
           </button>
         </div>
 
@@ -167,7 +166,7 @@ function MobileSidebar({
           <Link
             href="/profile"
             onClick={onClose}
-            className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border px-3 py-3 transition-all hover:shadow-md"
+            className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 transition-all hover:shadow-md"
             style={{
               background: "var(--tt-dashboard-card-bg)",
               borderColor: "var(--tt-dashboard-card-border)",
@@ -192,13 +191,13 @@ function MobileSidebar({
             </div>
             <div className="min-w-0 flex-1">
               <p
-                className="truncate text-[13px] font-bold"
+                className="truncate text-[14px] font-bold"
                 style={{ color: "var(--tt-dashboard-text)" }}
               >
                 {user.name ?? "Pengguna"}
               </p>
               <p
-                className="truncate text-[11px]"
+                className="truncate text-[12px]"
                 style={{ color: "var(--tt-dashboard-text-2)" }}
               >
                 {user.email ?? ""}
@@ -211,7 +210,7 @@ function MobileSidebar({
             type="button"
             onClick={onLogout}
             disabled={isLoggingOut}
-            className="flex w-12 shrink-0 items-center justify-center rounded-2xl transition-all disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-12 shrink-0 cursor-pointer items-center justify-center rounded-2xl transition-all disabled:cursor-not-allowed disabled:opacity-60"
             style={{ color: "#DC2626" }}
             aria-label="Keluar"
             title="Keluar"
@@ -348,13 +347,13 @@ export function AppSidebarShell({ user, children }: Props) {
             <Link href="/home" className="flex items-center gap-3">
               <div>
                 <p
-                  className="text-[10px] font-extrabold uppercase tracking-[0.14em]"
+                  className="text-[12px] font-extrabold uppercase tracking-[0.14em]"
                   style={{ color: "var(--tt-dashboard-text-2)" }}
                 >
                   TEMANTUMBUH
                 </p>
                 <h2
-                  className="text-[15px] font-extrabold leading-none"
+                  className="text-[16px] font-extrabold leading-none"
                   style={{ color: "var(--tt-dashboard-text)" }}
                 >
                   Dashboard
@@ -400,59 +399,33 @@ export function AppSidebarShell({ user, children }: Props) {
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center"
               style={{
-                background: "var(--tt-dashboard-chip-bg)",
                 color: "var(--tt-dashboard-text)",
               }}
               aria-label="Buka menu"
             >
-              <Menu size={18} />
+              <Menu size={22} />
             </button>
 
             <div className="min-w-0 flex-1">
               <p
-                className="text-[9px] font-extrabold uppercase tracking-[0.14em]"
+                className="text-[11px] font-extrabold uppercase tracking-[0.14em]"
                 style={{ color: "var(--tt-dashboard-text-2)" }}
               >
                 TEMANTUMBUH
               </p>
             </div>
 
-            {/* Right: avatar (-> /profile) + logout (icon only) */}
+            {/* Right: profile dropdown */}
             <div className="flex items-center gap-2">
-              <Link
-                href="/profile"
-                className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[11px] font-black text-white"
-                style={{ background: "var(--tt-dashboard-brand)" }}
-                aria-label="Profil"
-                title="Profil"
-              >
-                {userImageSrc ? (
-                  <Image
-                    src={userImageSrc}
-                    alt={shellUser.name ?? "avatar"}
-                    width={36}
-                    height={36}
-                    className="h-full w-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  userInitials
-                )}
-              </Link>
-
-              <button
-                type="button"
-                onClick={() => void handleLogout()}
-                disabled={isLoggingOut}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60"
-                style={{ color: "#DC2626" }}
-                aria-label="Keluar"
-                title="Keluar"
-              >
-                <LogOut size={15} />
-              </button>
+              <MobileProfileDropdown
+                userImageSrc={userImageSrc}
+                userInitials={userInitials}
+                userName={shellUser.name}
+                isLoggingOut={isLoggingOut}
+                onLogout={() => void handleLogout()}
+              />
             </div>
           </div>
 
@@ -460,6 +433,116 @@ export function AppSidebarShell({ user, children }: Props) {
           <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Mobile Profile Dropdown ──────────────────────────────────────────────────
+
+function MobileProfileDropdown({
+  userImageSrc,
+  userInitials,
+  userName,
+  isLoggingOut,
+  onLogout,
+}: {
+  userImageSrc: string | null;
+  userInitials: string;
+  userName: string;
+  isLoggingOut: boolean;
+  onLogout: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-9 items-center gap-2 rounded-xl px-2 transition-colors duration-200"
+        style={{ background: "var(--tt-dashboard-chip-bg)" }}
+        aria-label="Menu profil"
+      >
+        <div
+          className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[10px] font-black text-white"
+          style={{ background: "var(--tt-dashboard-brand)" }}
+        >
+          {userImageSrc ? (
+            <Image
+              src={userImageSrc}
+              alt={userName ?? "avatar"}
+              width={28}
+              height={28}
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            userInitials
+          )}
+        </div>
+        <ChevronDown
+          size={13}
+          style={{
+            color: "var(--tt-dashboard-text-2)",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s",
+          }}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border shadow-lg"
+          style={{
+            background: "rgba(255,255,255,0.98)",
+            borderColor: "var(--tt-dashboard-card-border)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <Link
+            href="/profile"
+            onClick={() => setOpen(false)}
+            className="flex cursor-pointer items-center gap-2.5 px-4 py-3 text-[13px] font-semibold transition-colors hover:bg-[rgba(26,150,136,0.06)]"
+            style={{ color: "var(--tt-dashboard-text)" }}
+          >
+            <User size={15} style={{ color: "var(--tt-dashboard-brand)" }} />
+            Lihat Profil
+          </Link>
+
+          <div
+            className="mx-3 h-px"
+            style={{ background: "var(--tt-dashboard-card-border)" }}
+          />
+
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onLogout();
+            }}
+            disabled={isLoggingOut}
+            className="flex w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-[13px] font-semibold transition-colors hover:bg-[rgba(239,68,68,0.06)] disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ color: "#DC2626" }}
+          >
+            <LogOut size={15} />
+            Keluar
+          </button>
+        </div>
+      )}
     </div>
   );
 }

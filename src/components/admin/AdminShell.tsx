@@ -186,7 +186,7 @@ function Sidebar({
                 <p
                   style={{
                     fontWeight: 800,
-                    fontSize: 13,
+                    fontSize: 15,
                     color: "var(--tt-dashboard-text)",
                     whiteSpace: "nowrap",
                     lineHeight: 1.2,
@@ -196,7 +196,8 @@ function Sidebar({
                 </p>
                 <p
                   style={{
-                    fontSize: 10,
+                    fontSize: 12,
+                    fontWeight: 700,
                     color: "var(--tt-dashboard-text-3)",
                     marginTop: 2,
                     whiteSpace: "nowrap",
@@ -214,11 +215,11 @@ function Sidebar({
             onClick={isMobile ? onCloseMobile : onToggleCollapse}
             title={isMobile ? "Tutup" : collapsed ? "Expand" : "Collapse"}
             style={{
-              width: 28,
-              height: 28,
+              width: 32,
+              height: 32,
               borderRadius: 8,
-              border: "1px solid var(--tt-dashboard-card-border)",
-              background: "rgba(255,255,255,0.55)",
+              border: "none",
+              background: "transparent",
               color: "var(--tt-dashboard-text-3)",
               display: "flex",
               alignItems: "center",
@@ -228,11 +229,11 @@ function Sidebar({
             }}
           >
             {isMobile ? (
-              <X size={14} strokeWidth={2} />
+              <X size={16} strokeWidth={2} />
             ) : collapsed ? (
-              <PanelLeftOpen size={13} strokeWidth={2} />
+              <PanelLeftOpen size={16} strokeWidth={2} />
             ) : (
-              <PanelLeftClose size={13} strokeWidth={2} />
+              <PanelLeftClose size={16} strokeWidth={2} />
             )}
           </button>
         </div>
@@ -251,7 +252,7 @@ function Sidebar({
           {(!collapsed || isMobile) && (
             <p
               style={{
-                fontSize: 9,
+                fontSize: 10,
                 fontWeight: 800,
                 letterSpacing: "0.12em",
                 color: "var(--tt-dashboard-text-3)",
@@ -415,7 +416,7 @@ function Topbar({
           <p
             style={{
               fontWeight: 900,
-              fontSize: isMobile ? 15 : 17,
+              fontSize: isMobile ? 18 : 24,
               color: "var(--tt-dashboard-text)",
               lineHeight: 1.15,
               whiteSpace: "nowrap",
@@ -483,8 +484,8 @@ function Topbar({
             width: isMobile ? 32 : 34,
             height: isMobile ? 32 : 34,
             borderRadius: 10,
-            border: "1px solid rgba(239,68,68,0.22)",
-            background: "#FEF2F2",
+            border: "none",
+            background: "transparent",
             color: "#DC2626",
             display: "flex",
             alignItems: "center",

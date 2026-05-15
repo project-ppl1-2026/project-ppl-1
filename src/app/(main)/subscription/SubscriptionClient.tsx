@@ -1,8 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { ChevronDown, LogOut, User } from "lucide-react";
 
+import { authClient } from "@/lib/auth-client";
 import SnapPayButton from "@/components/payment/SnapPayButton";
 
 const PRICE_PER_MONTH = 59000;
@@ -58,6 +62,38 @@ export default function SubscriptionClient({
   const [selectedDuration, setSelectedDuration] = useState(1);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [userName, setUserName] = useState("");
+  const [userImage, setUserImage] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const { data } = await authClient.getSession();
+        if (data?.user?.name) setUserName(data.user.name);
+        if (data?.user?.image) setUserImage(data.user.image);
+      } catch {
+        // ignore
+      }
+    };
+    void fetchSession();
+  }, []);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            window.location.href = "/login";
+          },
+        },
+      });
+    } catch {
+      setIsLoggingOut(false);
+    }
+  };
 
   useEffect(() => {
     if (status !== "success") return;
@@ -102,6 +138,18 @@ export default function SubscriptionClient({
       className="tt-dashboard-scroll-y h-full min-h-0 px-3 py-4 md:px-5 md:py-5"
       style={{ background: "var(--tt-dashboard-page-bg)" }}
     >
+      {/* Desktop profile header */}
+      {userName && (
+        <div className="mx-auto mb-4 hidden w-full max-w-6xl items-center justify-end lg:flex">
+          <SubscriptionProfileDropdown
+            userName={userName}
+            userImage={userImage}
+            isLoggingOut={isLoggingOut}
+            onLogout={() => void handleLogout()}
+          />
+        </div>
+      )}
+
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 pb-4">
         {/* Status message */}
         {status === "success" && (
@@ -272,7 +320,7 @@ export default function SubscriptionClient({
                           }
                         }}
                         disabled={pendingPayment !== null}
-                        className="rounded-[12px] px-2 py-2.5 text-[12px] font-bold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-55"
+                        className="cursor-pointer rounded-[12px] px-2 py-2.5 text-[12px] font-bold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-55"
                         style={{
                           background:
                             checkoutDuration === opt.months
@@ -320,7 +368,7 @@ export default function SubscriptionClient({
                       type="button"
                       onClick={handleCancelPending}
                       disabled={cancelLoading}
-                      className="h-12 w-full rounded-[16px] bg-white text-[14px] font-semibold transition-all duration-200 hover:-translate-y-[1px] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="h-12 w-full cursor-pointer rounded-[16px] bg-white text-[14px] font-semibold transition-all duration-200 hover:-translate-y-[1px] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
                       style={{
                         color: "#B45309",
                         border: "1px solid rgba(245,158,11,0.3)",
@@ -501,6 +549,128 @@ function FeatureRow({
       >
         {text}
       </p>
+    </div>
+  );
+}
+
+// ─── Profile Dropdown for Subscription Page ───────────────────────────────────
+
+function SubscriptionProfileDropdown({
+  userName,
+  userImage,
+  isLoggingOut,
+  onLogout,
+}: {
+  userName: string;
+  userImage: string | null;
+  isLoggingOut: boolean;
+  onLogout: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const userInitials = userName
+    ? userName
+        .split(" ")
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "?";
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 transition-colors duration-200"
+        style={{ background: "var(--tt-dashboard-chip-bg)" }}
+      >
+        <div
+          className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[11px] font-black text-white"
+          style={{ background: "var(--tt-dashboard-brand)" }}
+        >
+          {userImage ? (
+            <Image
+              src={userImage}
+              alt={userName}
+              width={32}
+              height={32}
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            userInitials
+          )}
+        </div>
+        <span
+          className="text-[13px] font-bold"
+          style={{ color: "var(--tt-dashboard-text)" }}
+        >
+          {userName}
+        </span>
+        <ChevronDown
+          size={14}
+          style={{
+            color: "var(--tt-dashboard-text-2)",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s",
+          }}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border shadow-lg"
+          style={{
+            background: "rgba(255,255,255,0.98)",
+            borderColor: "var(--tt-dashboard-card-border)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <Link
+            href="/profile"
+            onClick={() => setOpen(false)}
+            className="flex cursor-pointer items-center gap-2.5 px-4 py-3 text-[13px] font-semibold transition-colors hover:bg-[rgba(26,150,136,0.06)]"
+            style={{ color: "var(--tt-dashboard-text)" }}
+          >
+            <User size={15} style={{ color: "var(--tt-dashboard-brand)" }} />
+            Lihat Profil
+          </Link>
+
+          <div
+            className="mx-3 h-px"
+            style={{ background: "var(--tt-dashboard-card-border)" }}
+          />
+
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onLogout();
+            }}
+            disabled={isLoggingOut}
+            className="flex w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-[13px] font-semibold transition-colors hover:bg-[rgba(239,68,68,0.06)] disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ color: "#DC2626" }}
+          >
+            <LogOut size={15} />
+            Keluar
+          </button>
+        </div>
+      )}
     </div>
   );
 }

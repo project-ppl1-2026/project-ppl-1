@@ -747,7 +747,12 @@ function MobileMenu({
                   href="/login"
                   onClick={onClose}
                   className="flex h-11 items-center justify-center rounded-xl text-sm font-semibold"
-                  style={{ border: `1.5px solid ${C.border}`, color: C.teal }}
+                  style={{
+                    border: `1.5px solid ${pathname === "/login" ? C.teal : C.border}`,
+                    color: C.teal,
+                    background:
+                      pathname === "/login" ? C.tealGhost : "transparent",
+                  }}
                 >
                   Masuk
                 </Link>
@@ -756,7 +761,10 @@ function MobileMenu({
                   onClick={onClose}
                   className="flex h-11 items-center justify-center rounded-xl text-sm font-semibold text-white"
                   style={{
-                    background: C.teal,
+                    background:
+                      pathname === "/register"
+                        ? "linear-gradient(135deg, #0f7a6e 0%, #144949 100%)"
+                        : C.teal,
                     boxShadow: "0 2px 12px rgba(26,150,136,0.28)",
                   }}
                 >
@@ -843,10 +851,12 @@ function DesktopAuthActions({
   loading,
   isLoggedIn,
   session,
+  pathname,
 }: {
   loading: boolean;
   isLoggedIn: boolean;
   session: Session;
+  pathname: string;
 }) {
   if (loading) {
     return (
@@ -858,12 +868,18 @@ function DesktopAuthActions({
   }
 
   if (!isLoggedIn) {
+    const isLoginPage = pathname === "/login";
+    const isRegisterPage = pathname === "/register";
     return (
       <>
         <Link
           href="/login"
           className="relative inline-flex overflow-hidden rounded-xl px-4 py-2 text-sm font-semibold transition-colors duration-150 hover:bg-[#DDF5F2]"
-          style={{ color: C.teal }}
+          style={{
+            color: C.teal,
+            background: isLoginPage ? C.tealGhost : "transparent",
+            boxShadow: isLoginPage ? `inset 0 -2px 0 ${C.teal}` : "none",
+          }}
         >
           Masuk
         </Link>
@@ -871,7 +887,9 @@ function DesktopAuthActions({
           href="/register"
           className="relative inline-flex rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all active:scale-[0.97]"
           style={{
-            background: `linear-gradient(135deg, ${C.teal} 0%, ${C.tealMid} 100%)`,
+            background: isRegisterPage
+              ? `linear-gradient(135deg, #0f7a6e 0%, #144949 100%)`
+              : `linear-gradient(135deg, ${C.teal} 0%, ${C.tealMid} 100%)`,
             boxShadow: "0 2px 14px rgba(26,150,136,0.32)",
           }}
         >
@@ -1012,6 +1030,7 @@ export function Navbar() {
             loading={loading}
             isLoggedIn={isLoggedIn}
             session={session}
+            pathname={pathname}
           />
         </div>
 
