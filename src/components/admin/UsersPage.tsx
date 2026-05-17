@@ -4,7 +4,6 @@
 // Full CRUD: Add, Edit, Delete, Toggle Status, Toggle Premium, View Detail, Link Parent
 
 import {
-  createUserAction,
   updateUserAction,
   deleteUserAction,
   toggleStatusAction,
@@ -20,14 +19,12 @@ import {
   Search,
   Mail,
   Calendar,
-  Plus,
   MoreVertical,
   Eye,
   Pencil,
   Trash2,
   Power,
   Crown,
-  UserPlus,
   Users as UsersIcon,
   X,
   Check,
@@ -542,13 +539,11 @@ function FilterBar({
   currentFilter,
   currentLimit,
   isMobile,
-  onAdd,
 }: {
   currentSearch: string;
   currentFilter: string;
   currentLimit: number;
   isMobile: boolean;
-  onAdd: () => void;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -747,33 +742,6 @@ function FilterBar({
             }}
           />
         </div>
-
-        {/* Tambah User */}
-        <button
-          type="button"
-          onClick={onAdd}
-          style={{
-            height: 42,
-            padding: "0 16px",
-            borderRadius: 12,
-            background: "var(--tt-dashboard-button-bg)",
-            border: "none",
-            color: "#fff",
-            fontSize: 13,
-            fontWeight: 700,
-            fontFamily: "inherit",
-            cursor: "pointer",
-            boxShadow: "0 4px 14px rgba(26,150,136,0.3)",
-            display: "flex",
-            alignItems: "center",
-            gap: 7,
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-        >
-          <Plus size={15} strokeWidth={2.5} />
-          {isMobile ? "Tambah" : "Tambah User"}
-        </button>
       </div>
     </div>
   );
@@ -785,12 +753,6 @@ type UserFormData = {
   email: string;
   isPremium: boolean;
   status: "Aktif" | "Nonaktif";
-};
-const emptyUserForm: UserFormData = {
-  name: "",
-  email: "",
-  isPremium: false,
-  status: "Aktif",
 };
 
 // ── User Form (Add / Edit) ───────────────────────────────────────
@@ -1740,7 +1702,7 @@ export function UsersPage({
   }, [initialUsers]);
 
   const [modal, setModal] = useState<
-    "none" | "add" | "edit" | "detail" | "parent" | "delete"
+    "none" | "edit" | "detail" | "parent" | "delete"
   >("none");
   const [target, setTarget] = useState<User | null>(null);
 
@@ -1757,25 +1719,6 @@ export function UsersPage({
   }, [toast]);
 
   // ── CRUD handlers ────────────────────────────────────────────────
-  async function handleAdd(data: UserFormData) {
-    setSaving(true);
-    setError(null);
-    const result = await createUserAction({
-      name: data.name,
-      email: data.email,
-      isPremium: data.isPremium,
-      status: data.status,
-    });
-    setSaving(false);
-    if (!result.success) {
-      setError(result.error);
-      return;
-    }
-    setModal("none");
-    setToast(result.message ?? "User berhasil dibuat");
-    router.refresh();
-  }
-
   async function handleEdit(data: UserFormData) {
     if (!target) return;
     setSaving(true);
@@ -2013,10 +1956,6 @@ export function UsersPage({
         currentFilter={currentFilter}
         currentLimit={limit}
         isMobile={isMobile}
-        onAdd={() => {
-          setTarget(null);
-          setModal("add");
-        }}
       />
 
       {/* Count info */}
@@ -2058,13 +1997,11 @@ export function UsersPage({
             textAlign: "center",
           }}
         >
-          <UserPlus size={32} strokeWidth={1.3} />
+          <Search size={32} strokeWidth={1.3} />
           <p style={{ fontSize: 14, fontWeight: 600 }}>
             Tidak ada pengguna ditemukan
           </p>
-          <p style={{ fontSize: 12 }}>
-            Coba ubah pencarian atau tambahkan user baru.
-          </p>
+          <p style={{ fontSize: 12 }}>Coba ubah pencarian atau filter.</p>
         </div>
       ) : isMobile ? (
         <>
@@ -2209,20 +2146,6 @@ export function UsersPage({
       )}
 
       {/* ── Modals ── */}
-      <Modal
-        open={modal === "add"}
-        onClose={() => setModal("none")}
-        title="Tambah / Undang User"
-      >
-        <UserForm
-          initial={emptyUserForm}
-          onSubmit={handleAdd}
-          onCancel={() => setModal("none")}
-          loading={saving}
-          isEdit={false}
-        />
-      </Modal>
-
       <Modal
         open={modal === "edit" && !!target}
         onClose={() => {
