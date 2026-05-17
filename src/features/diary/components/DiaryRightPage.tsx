@@ -348,7 +348,7 @@ export function DiaryRightPage({
       <div
         style={{
           flexShrink: 0,
-          padding: isMobile ? "16px 16px 12px" : "16px 22px 12px",
+          padding: isMobile ? "16px 16px 12px 44px" : "16px 22px 12px 56px",
           borderBottom: `1px solid ${C.spine}`,
           background: C.paper,
           display: "flex",

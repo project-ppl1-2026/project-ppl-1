@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 
-import QueryProvider from "@/components/providers/query-providers";
 import { BrandPageBackground } from "@/components/layout/brand-page-background";
 import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/manual/page-loader";
@@ -118,6 +118,7 @@ function buildAnswerTuple(
 
 function BaselinePageContent() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, AnswerValue>>({});
@@ -160,6 +161,7 @@ function BaselinePageContent() {
           : "Baseline berhasil disimpan.",
       );
 
+      void queryClient.invalidateQueries({ queryKey: ["baseline"] });
       setIsRedirecting(true);
       router.replace("/");
       router.refresh();
@@ -199,7 +201,7 @@ function BaselinePageContent() {
     }
   };
 
-  const handleNext = async () => {
+  const handleNext = useCallback(async () => {
     if (!selectedOption) {
       toast.error("Pilih salah satu jawaban terlebih dahulu.");
       return;
@@ -225,7 +227,29 @@ function BaselinePageContent() {
           : "Terjadi kesalahan saat menyiapkan jawaban baseline.",
       );
     }
-  };
+  }, [
+    selectedOption,
+    currentIndex,
+    allQuestionsAnswered,
+    answers,
+    saveBaselineMutation,
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "Enter" &&
+        selectedOption &&
+        !saveBaselineMutation.isPending
+      ) {
+        e.preventDefault();
+        void handleNext();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleNext, selectedOption, saveBaselineMutation.isPending]);
 
   if (isRedirecting || saveBaselineMutation.isPending) {
     return (
@@ -318,9 +342,12 @@ function BaselinePageContent() {
                   disabled={
                     currentIndex === 0 || saveBaselineMutation.isPending
                   }
-                  className="text-slate-400 transition disabled:opacity-50"
+                  aria-label="Kembali ke pertanyaan sebelumnya"
+                  title="Kembali"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-400"
                 >
-                  ← Kembali
+                  <ArrowLeft className="h-5 w-5" strokeWidth={2.2} />
+                  <span className="sr-only">Kembali</span>
                 </button>
               </div>
             </div>
@@ -332,9 +359,5 @@ function BaselinePageContent() {
 }
 
 export default function BaselinePageClient() {
-  return (
-    <QueryProvider>
-      <BaselinePageContent />
-    </QueryProvider>
-  );
+  return <BaselinePageContent />;
 }

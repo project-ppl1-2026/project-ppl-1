@@ -22,6 +22,9 @@ export async function GET(request: Request) {
         status: true,
         expiresAt: true,
         rejectedAt: true,
+        lastSentAt: true,
+        lastReportType: true,
+        lastReportStatus: true,
       },
     });
 
@@ -31,6 +34,9 @@ export async function GET(request: Request) {
         status: null,
         expiresAt: null,
         reason: null,
+        lastSentAt: null,
+        lastReportType: null,
+        lastReportStatus: null,
       });
     }
 
@@ -54,6 +60,9 @@ export async function GET(request: Request) {
         status: "expired",
         expiresAt: parent.expiresAt,
         reason: "expired" as ParentStatusReason,
+        lastSentAt: parent.lastSentAt,
+        lastReportType: parent.lastReportType,
+        lastReportStatus: parent.lastReportStatus,
       });
     }
 
@@ -69,6 +78,9 @@ export async function GET(request: Request) {
       status: parent.status,
       expiresAt: parent.expiresAt,
       reason,
+      lastSentAt: parent.lastSentAt,
+      lastReportType: parent.lastReportType,
+      lastReportStatus: parent.lastReportStatus,
     });
   } catch (error) {
     console.error("Parent status error:", error);

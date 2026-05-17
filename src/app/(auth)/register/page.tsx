@@ -10,7 +10,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, LogIn } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 import {
@@ -43,6 +43,7 @@ import {
   PageLoaderFallback,
 } from "@/components/ui/manual/page-loader";
 import { GoogleIcon } from "@/components/ui/manual/google-icon";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { AuthStepIndicator } from "@/components/auth/auth-step-indicator";
@@ -65,6 +66,18 @@ type ProfileStatus = {
   userName: string;
 };
 
+type RegisterAuthError = {
+  status?: number;
+  statusCode?: number;
+  message?: string;
+  code?: string;
+};
+
+type RegisterError =
+  | { kind: "email_exists"; email: string }
+  | { kind: "generic"; message: string }
+  | null;
+
 const SESSION_QUERY_KEY = ["register", "session"] as const;
 
 async function fetchProfileStatus(): Promise<ProfileStatus> {
@@ -78,42 +91,181 @@ async function fetchProfileStatus(): Promise<ProfileStatus> {
   };
 }
 
-function resolveRegisterErrorMessage(error: {
-  status?: number;
-  message?: string;
-  code?: string;
-}): string {
+async function checkEmailExists(email: string): Promise<boolean> {
+  const res = await fetch("/api/auth/check-email", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  const json = (await res.json()) as {
+    exists?: boolean;
+    error?: string;
+  };
+
+  if (!res.ok) {
+    throw {
+      status: res.status,
+      message: json.error ?? "Gagal memeriksa email",
+    } satisfies RegisterAuthError;
+  }
+
+  return Boolean(json.exists);
+}
+
+function resolveRegisterError(
+  error: RegisterAuthError,
+  email?: string,
+): RegisterError {
   const message = (error.message ?? "").toLowerCase();
   const code = (error.code ?? "").toLowerCase();
+  const status = error.status ?? error.statusCode;
 
-  if (
-    error.status === 400 &&
-    (message.includes("exist") || code.includes("already_exists"))
-  ) {
-    return "Email ini sudah terdaftar. Silakan login.";
+  const isEmailExists =
+    message.includes("exist") ||
+    message.includes("already") ||
+    message.includes("registered") ||
+    message.includes("terdaftar") ||
+    message.includes("user already exists") ||
+    message.includes("email already exists") ||
+    code.includes("already_exists") ||
+    code.includes("user_already_exists") ||
+    code.includes("email_already_exists") ||
+    code.includes("email_exists");
+
+  if (isEmailExists) {
+    return {
+      kind: "email_exists",
+      email: email ?? "",
+    };
   }
 
   if (message.includes("gagal mengirim email")) {
-    return "Gagal mengirim email verifikasi. Akun gagal dibuat. Silakan coba lagi.";
+    return {
+      kind: "generic",
+      message:
+        "Gagal mengirim email verifikasi. Akun gagal dibuat. Silakan coba lagi.",
+    };
   }
 
   if (
-    error.status === 429 ||
+    status === 429 ||
     message.includes("too many") ||
     message.includes("rate")
   ) {
-    return "Terlalu banyak percobaan. Coba lagi beberapa saat.";
+    return {
+      kind: "generic",
+      message: "Terlalu banyak percobaan. Coba lagi beberapa saat.",
+    };
   }
 
   if (message.includes("password") && message.includes("8")) {
-    return "Password minimal 8 karakter.";
+    return {
+      kind: "generic",
+      message: "Password minimal 8 karakter.",
+    };
   }
 
   if (message.includes("email") && message.includes("invalid")) {
-    return "Format email tidak valid.";
+    return {
+      kind: "generic",
+      message: "Format email tidak valid.",
+    };
   }
 
-  return error.message ?? "Gagal mendaftar. Silakan coba lagi.";
+  return {
+    kind: "generic",
+    message: error.message ?? "Gagal mendaftar. Silakan coba lagi.",
+  };
+}
+
+function EmailExistsAlert({ email }: { email: string }) {
+  return (
+    <motion.div
+      key="email-exists"
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.2 }}
+      className="mb-4"
+    >
+      <Alert
+        className="rounded-xl border"
+        style={{
+          background: "#FFF7ED",
+          borderColor: "#FED7AA",
+          color: "#9A3412",
+        }}
+      >
+        <AlertCircle className="h-4 w-4" style={{ color: "#EA580C" }} />
+
+        <AlertTitle style={{ color: "#9A3412", fontWeight: 700 }}>
+          Email sudah terdaftar
+        </AlertTitle>
+
+        <AlertDescription style={{ color: "#7C2D12" }}>
+          <span className="mb-2 block">
+            Akun dengan email <strong className="break-all">{email}</strong>{" "}
+            sudah ada. Silakan login atau gunakan email lain.
+          </span>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-opacity hover:opacity-80"
+              style={{
+                background: "#EA580C",
+                color: "#fff",
+              }}
+            >
+              <LogIn size={12} />
+              Masuk ke akun
+            </Link>
+
+            <Link
+              href="/forgot-password"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+              style={{
+                background: "rgba(234,88,12,0.1)",
+                color: "#C2410C",
+                border: "1px solid rgba(234,88,12,0.25)",
+              }}
+            >
+              Lupa password?
+            </Link>
+          </div>
+        </AlertDescription>
+      </Alert>
+    </motion.div>
+  );
+}
+
+function GenericErrorAlert({ message }: { message: string }) {
+  return (
+    <motion.div
+      key="generic-error"
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.2 }}
+      className="mb-4"
+    >
+      <Alert
+        className="rounded-xl border"
+        style={{
+          background: "#FEF2F2",
+          borderColor: "#FECACA",
+          color: "#B91C1C",
+        }}
+      >
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Pendaftaran gagal</AlertTitle>
+        <AlertDescription>{message}</AlertDescription>
+      </Alert>
+    </motion.div>
+  );
 }
 
 function StepHeading({
@@ -131,6 +283,7 @@ function StepHeading({
       >
         {title}
       </h2>
+
       <p className="text-sm" style={{ color: "var(--color-text-brand-muted)" }}>
         {description}
       </p>
@@ -146,6 +299,8 @@ function Step1Form({
   verificationEmail,
   isCompleteProfileFlow,
   defaultValues,
+  registerError,
+  onClearError,
 }: {
   onNext: (data: Step1) => Promise<void> | void;
   onGoogle: () => void;
@@ -154,6 +309,8 @@ function Step1Form({
   verificationEmail?: string | null;
   isCompleteProfileFlow?: boolean;
   defaultValues: Partial<Step1>;
+  registerError: RegisterError;
+  onClearError: () => void;
 }) {
   const {
     register,
@@ -177,6 +334,14 @@ function Step1Form({
         title="Buat Akun"
         description="Mulai dengan email atau Google"
       />
+
+      <AnimatePresence mode="wait">
+        {registerError?.kind === "email_exists" ? (
+          <EmailExistsAlert key="exists" email={registerError.email} />
+        ) : registerError?.kind === "generic" ? (
+          <GenericErrorAlert key="generic" message={registerError.message} />
+        ) : null}
+      </AnimatePresence>
 
       <Button
         type="button"
@@ -202,12 +367,14 @@ function Step1Form({
           className="h-px flex-1"
           style={{ background: "var(--color-brand-border)" }}
         />
+
         <span
           className="text-sm"
           style={{ color: "var(--color-text-brand-muted)" }}
         >
           atau dengan email
         </span>
+
         <div
           className="h-px flex-1"
           style={{ background: "var(--color-brand-border)" }}
@@ -216,6 +383,7 @@ function Step1Form({
 
       <form
         onSubmit={handleSubmit(async (data) => {
+          onClearError();
           await onNext(data);
         })}
         className="space-y-4"
@@ -324,7 +492,6 @@ function Step2Form({
 
   const {
     register,
-
     handleSubmit,
     control,
     formState: { errors, isSubmitting },
@@ -380,6 +547,7 @@ function Step2Form({
                 >
                   <SelectValue placeholder="Pilih tahun lahir" />
                 </SelectTrigger>
+
                 <SelectContent>
                   {years.map((year) => (
                     <SelectItem key={year} value={String(year)}>
@@ -408,6 +576,7 @@ function Step2Form({
                 >
                   <SelectValue placeholder="Pilih jenis kelamin" />
                 </SelectTrigger>
+
                 <SelectContent>
                   <SelectItem value="male">Laki-laki</SelectItem>
                   <SelectItem value="female">Perempuan</SelectItem>
@@ -419,11 +588,6 @@ function Step2Form({
             )}
           />
         </AuthField>
-
-        {/* <AuthInfoCard>
-          Data ini hanya digunakan untuk menyesuaikan konten sesuai usiamu dan
-          tidak akan dibagikan kepada pihak ketiga.
-        </AuthInfoCard> */}
 
         <div className="mt-1 flex gap-4">
           {canGoBack ? (
@@ -501,6 +665,7 @@ function Step3Form({
           Orang tua akan menerima ringkasan emosi mingguan tanpa isi diary.
         </AuthInfoCard>
       </div>
+
       <form
         onSubmit={handleSubmit(onFinalSubmit)}
         className="space-y-4"
@@ -636,6 +801,7 @@ function RegisterPageContent() {
   const [verificationEmail, setVerificationEmail] = useState<string | null>(
     null,
   );
+  const [registerError, setRegisterError] = useState<RegisterError>(null);
 
   const { data: sessionData, isLoading: isSessionLoading } = useQuery({
     queryKey: SESSION_QUERY_KEY,
@@ -664,6 +830,7 @@ function RegisterPageContent() {
           name: prev.name || sessionData.userName,
         }));
       }
+
       return;
     }
 
@@ -673,16 +840,24 @@ function RegisterPageContent() {
     }
   }, [isCompleteProfileFlow, isSessionLoading, sessionData, router]);
 
-  const signUpMutation = useMutation<
-    unknown,
-    { status?: number; message?: string; code?: string },
-    Step1
-  >({
+  const signUpMutation = useMutation<unknown, RegisterAuthError, Step1>({
     mutationFn: async (data: Step1) => {
-      const defaultName = data.email.split("@")[0] || "Pengguna";
+      const email = data.email.trim().toLowerCase();
+
+      const exists = await checkEmailExists(email);
+
+      if (exists) {
+        throw {
+          status: 400,
+          code: "EMAIL_ALREADY_EXISTS",
+          message: "Email sudah terdaftar",
+        } satisfies RegisterAuthError;
+      }
+
+      const defaultName = email.split("@")[0] || "Pengguna";
 
       const response = await authClient.signUp.email({
-        email: data.email,
+        email,
         password: data.password,
         name: defaultName,
         callbackURL: "/register?completeProfile=1",
@@ -694,13 +869,26 @@ function RegisterPageContent() {
 
       return response;
     },
+
     onSuccess: (_data, variables) => {
-      setVerificationEmail(variables.email);
+      const email = variables.email.trim().toLowerCase();
+
+      setVerificationEmail(email);
+      setRegisterError(null);
       toast.success("Silakan periksa email Anda untuk verifikasi.");
     },
-    onError: (error) => {
+
+    onError: (error, variables) => {
+      const email = variables.email.trim().toLowerCase();
+
       setVerificationEmail(null);
-      toast.error(resolveRegisterErrorMessage(error));
+
+      const parsed = resolveRegisterError(error, email);
+      setRegisterError(parsed);
+
+      if (parsed?.kind === "generic") {
+        toast.error(parsed.message);
+      }
     },
   });
 
@@ -720,8 +908,12 @@ function RegisterPageContent() {
         throw response.error;
       }
 
-      return { response, parentEmail: data.parentEmail };
+      return {
+        response,
+        parentEmail: data.parentEmail,
+      };
     },
+
     onSuccess: ({ parentEmail }: { parentEmail?: string }) => {
       void queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
 
@@ -735,6 +927,7 @@ function RegisterPageContent() {
 
       router.replace("/");
     },
+
     onError: (error: { message?: string }) => {
       toast.error(error.message ?? "Gagal menyimpan data. Silakan coba lagi.");
     },
@@ -742,15 +935,21 @@ function RegisterPageContent() {
 
   const handleStep1 = useCallback(
     async (data: Step1) => {
-      setStep1Data(data);
+      const normalizedData = {
+        ...data,
+        email: data.email.trim().toLowerCase(),
+      };
+
+      setStep1Data(normalizedData);
       setVerificationEmail(null);
+      setRegisterError(null);
 
       if (isCompleteProfileFlow) {
         setStep(1);
         return;
       }
 
-      await signUpMutation.mutateAsync(data);
+      await signUpMutation.mutateAsync(normalizedData);
     },
     [isCompleteProfileFlow, signUpMutation],
   );
@@ -827,6 +1026,8 @@ function RegisterPageContent() {
               verificationEmail={verificationEmail}
               isCompleteProfileFlow={isCompleteProfileFlow}
               defaultValues={step1Data}
+              registerError={registerError}
+              onClearError={() => setRegisterError(null)}
             />
           ) : step === 1 ? (
             <Step2Form

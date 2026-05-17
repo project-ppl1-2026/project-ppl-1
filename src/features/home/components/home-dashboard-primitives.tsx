@@ -10,9 +10,12 @@ export function SkeletonBox({ h = 120 }: { h?: number }) {
       style={{
         minHeight: h,
         background:
-          "linear-gradient(110deg, var(--tt-dashboard-skeleton) 8%, rgba(255,255,255,0.9) 18%, var(--tt-dashboard-skeleton) 33%)",
+          "linear-gradient(110deg, rgba(196,224,220,0.45) 8%, rgba(255,255,255,0.75) 18%, rgba(196,224,220,0.45) 33%)",
         backgroundSize: "200% 100%",
         animation: "tt-skeleton 1.35s linear infinite",
+        border: "1px solid rgba(255,255,255,0.72)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
       }}
     />
   );
@@ -35,7 +38,11 @@ export function MotionCard({
       variants={fadeUp}
       initial="hidden"
       animate="visible"
-      whileHover={hoverCard}
+      whileHover={{
+        ...hoverCard,
+        boxShadow:
+          "0 12px 36px rgba(26,150,136,0.13), 0 1.5px 0px rgba(255,255,255,0.95) inset",
+      }}
       whileTap={tapCard}
       className={className}
       style={style}

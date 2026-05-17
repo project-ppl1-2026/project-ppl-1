@@ -5,6 +5,11 @@ type SendEmailInput = {
   subject: string;
   text: string;
   html?: string;
+  attachments?: Array<{
+    filename: string;
+    content: string | Buffer;
+    contentType?: string;
+  }>;
 };
 
 function toBoolean(value: string | undefined, fallback = false) {
@@ -43,5 +48,6 @@ export async function sendEmail(input: SendEmailInput) {
     subject: input.subject,
     text: input.text,
     html: input.html,
+    attachments: input.attachments,
   });
 }

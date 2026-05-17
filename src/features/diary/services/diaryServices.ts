@@ -2,7 +2,8 @@
 //  src/features/diary/services/diaryServices.ts
 // ============================================================
 
-import type { DiaryEntry, ChatMessage, BraveChoiceQuiz } from "../types";
+import type { BraveChoiceQuiz, ChatMessage, DiaryEntry } from "../types";
+
 type ApiErrorResponse = {
   error?: string;
 };
@@ -24,39 +25,79 @@ type DiaryMessagesApiResponse = {
   };
 };
 
+type BraveChoiceQuizApiResponse = {
+  success?: boolean;
+  error?: string;
+  data?: {
+    quiz?: BraveChoiceQuiz | null;
+    quizUsedToday?: number;
+    isQuotaReached?: boolean;
+  };
+};
+
+type BraveChoiceStatusApiResponse = {
+  success?: boolean;
+  error?: string;
+  data?: {
+    quizUsedToday?: number;
+    isQuotaReached?: boolean;
+    hasAvailableQuestion?: boolean;
+  };
+};
+
+type SubmitQuizAnswerApiResponse = {
+  success?: boolean;
+  error?: string;
+  data?: {
+    questionId?: string;
+    chosenOption?: string;
+    isCorrect?: boolean;
+    explanation?: string;
+    quizUsedToday?: number;
+  };
+};
+
+type ResetBraveChoiceProgressApiResponse = {
+  success?: boolean;
+  error?: string;
+  data?: {
+    resetCount?: number;
+  };
+};
+
 export type SendDiaryChatStreamResult = {
   aiMessage: ChatMessage;
   entry: DiaryEntry;
   diarySessionsUsedThisMonth: number;
 };
 
+export type GetBraveChoiceQuizResult = {
+  quiz: BraveChoiceQuiz | null;
+  quizUsedToday: number;
+  isQuotaReached: boolean;
+};
+
+export type SubmitQuizAnswerResult = {
+  questionId: string;
+  chosenOption: string;
+  isCorrect: boolean;
+  explanation: string;
+  quizUsedToday: number;
+};
+
+export type BraveChoiceStatusResult = {
+  quizUsedToday: number;
+  isQuotaReached: boolean;
+  hasAvailableQuestion: boolean;
+};
+
+export type ResetBraveChoiceProgressResult = {
+  resetCount: number;
+};
+
 type SendDiaryChatStreamOptions = {
   onChunk?: (textChunk: string) => void;
 };
-
-const MOCK_QUIZ_POOL: BraveChoiceQuiz[] = [
-  {
-    id: "quiz-1",
-    scenario:
-      "Temanmu disudutkan di grup chat — meme memalukan disebarkan. Kamu yang pertama melihatnya. Semua diam.",
-    options: [
-      {
-        label: "A",
-        text: "Diam saja agar tidak jadi target berikutnya.",
-        isBrave: false,
-      },
-      {
-        label: "B",
-        text: "Kirim pesan pribadi: 'Aku lihat itu. Aku di sini untukmu.'",
-        isBrave: true,
-      },
-    ],
-    explanationWrong:
-      "Diam saat seseorang disakiti bukan netral — itu persetujuan pasif.",
-    explanationRight:
-      "Mendukung teman secara privat adalah tindakan keberanian yang nyata.",
-  },
-];
 
 export async function getDiaryEntries(month: string): Promise<{
   entries: DiaryEntry[];
@@ -254,25 +295,164 @@ export async function sendChatMessageStream(
   return doneResult;
 }
 
-export async function getBraveChoiceQuiz(): Promise<BraveChoiceQuiz> {
-  await delay(700);
-  return MOCK_QUIZ_POOL[Math.floor(Math.random() * MOCK_QUIZ_POOL.length)];
+export async function getBraveChoiceQuiz(): Promise<GetBraveChoiceQuizResult> {
+  const timezone = getTimezone();
+  const query = new URLSearchParams({
+    timezone,
+  }).toString();
+
+  const response = await fetch(`/api/diary/brave-choice?${query}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await extractResponseError(
+        response,
+        "Gagal memuat soal BraveChoice. Silakan coba lagi.",
+      ),
+    );
+  }
+
+  const payload = (await response.json()) as BraveChoiceQuizApiResponse;
+
+  if (!payload.success || !payload.data) {
+    throw new Error(payload.error || "Data soal BraveChoice tidak valid.");
+  }
+
+  const quizValue = payload.data.quiz;
+
+  if (
+    quizValue !== null &&
+    quizValue !== undefined &&
+    !isBraveChoiceQuiz(quizValue)
+  ) {
+    throw new Error("Format soal BraveChoice tidak valid.");
+  }
+
+  return {
+    quiz: quizValue ?? null,
+    quizUsedToday:
+      typeof payload.data.quizUsedToday === "number"
+        ? payload.data.quizUsedToday
+        : 0,
+    isQuotaReached: payload.data.isQuotaReached === true,
+  };
+}
+
+export async function getBraveChoiceStatus(): Promise<BraveChoiceStatusResult> {
+  const timezone = getTimezone();
+  const query = new URLSearchParams({
+    timezone,
+  }).toString();
+
+  const response = await fetch(`/api/diary/brave-choice/status?${query}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await extractResponseError(
+        response,
+        "Gagal memuat status BraveChoice. Silakan coba lagi.",
+      ),
+    );
+  }
+
+  const payload = (await response.json()) as BraveChoiceStatusApiResponse;
+
+  if (!payload.success || !payload.data) {
+    throw new Error(payload.error || "Data status BraveChoice tidak valid.");
+  }
+
+  return {
+    quizUsedToday:
+      typeof payload.data.quizUsedToday === "number"
+        ? payload.data.quizUsedToday
+        : 0,
+    isQuotaReached: payload.data.isQuotaReached === true,
+    hasAvailableQuestion: payload.data.hasAvailableQuestion === true,
+  };
 }
 
 export async function submitQuizAnswer(
   quizId: string,
   selectedLabel: string,
-  isBrave: boolean,
-): Promise<void> {
-  void quizId;
-  void selectedLabel;
-  void isBrave;
+): Promise<SubmitQuizAnswerResult> {
+  const timezone = getTimezone();
+  const response = await fetch("/api/diary/brave-choice", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      questionId: quizId,
+      chosenOption: selectedLabel,
+      timezone,
+    }),
+  });
 
-  await delay(200);
+  if (!response.ok) {
+    throw new Error(
+      await extractResponseError(
+        response,
+        "Gagal menyimpan jawaban BraveChoice. Silakan coba lagi.",
+      ),
+    );
+  }
+
+  const payload = (await response.json()) as SubmitQuizAnswerApiResponse;
+
+  if (
+    !payload.success ||
+    !payload.data ||
+    typeof payload.data.questionId !== "string" ||
+    typeof payload.data.chosenOption !== "string" ||
+    typeof payload.data.isCorrect !== "boolean" ||
+    typeof payload.data.explanation !== "string"
+  ) {
+    throw new Error(payload.error || "Respons submit BraveChoice tidak valid.");
+  }
+
+  return {
+    questionId: payload.data.questionId,
+    chosenOption: payload.data.chosenOption,
+    isCorrect: payload.data.isCorrect,
+    explanation: payload.data.explanation,
+    quizUsedToday:
+      typeof payload.data.quizUsedToday === "number"
+        ? payload.data.quizUsedToday
+        : 0,
+  };
 }
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+export async function resetBraveChoiceProgress(): Promise<ResetBraveChoiceProgressResult> {
+  const response = await fetch("/api/diary/brave-choice/reset", {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await extractResponseError(
+        response,
+        "Gagal mereset progres BraveChoice. Silakan coba lagi.",
+      ),
+    );
+  }
+
+  const payload =
+    (await response.json()) as ResetBraveChoiceProgressApiResponse;
+
+  if (!payload.success || !payload.data) {
+    throw new Error(payload.error || "Respons reset BraveChoice tidak valid.");
+  }
+
+  return {
+    resetCount:
+      typeof payload.data.resetCount === "number" ? payload.data.resetCount : 0,
+  };
 }
 
 function getTimezone() {
@@ -400,5 +580,37 @@ function isSendDiaryChatStreamResult(
     isChatMessage(record.aiMessage) &&
     isDiaryEntry(record.entry) &&
     typeof record.diarySessionsUsedThisMonth === "number"
+  );
+}
+
+function isBraveChoiceOption(
+  value: unknown,
+): value is BraveChoiceQuiz["options"][number] {
+  const record = asRecord(value);
+
+  if (!record) {
+    return false;
+  }
+
+  return (
+    typeof record.label === "string" &&
+    typeof record.text === "string" &&
+    typeof record.isBrave === "boolean"
+  );
+}
+
+function isBraveChoiceQuiz(value: unknown): value is BraveChoiceQuiz {
+  const record = asRecord(value);
+
+  if (!record || !Array.isArray(record.options)) {
+    return false;
+  }
+
+  return (
+    typeof record.id === "string" &&
+    typeof record.scenario === "string" &&
+    typeof record.explanationWrong === "string" &&
+    typeof record.explanationRight === "string" &&
+    record.options.every((option) => isBraveChoiceOption(option))
   );
 }

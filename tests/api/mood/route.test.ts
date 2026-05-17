@@ -19,6 +19,10 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    diary: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -30,6 +34,7 @@ const mockFindMany = vi.mocked(prisma.moodLog.findMany);
 const mockFindFirst = vi.mocked(prisma.moodLog.findFirst);
 const mockFindUnique = vi.mocked(prisma.user.findUnique);
 const mockTransaction = vi.mocked(prisma.$transaction);
+const mockDiaryCreate = vi.mocked(prisma.diary.create);
 
 type MockMoodLog = Awaited<ReturnType<typeof prisma.moodLog.findFirst>>;
 type MockUser = Awaited<ReturnType<typeof prisma.user.findUnique>>;
@@ -37,6 +42,7 @@ type MockUser = Awaited<ReturnType<typeof prisma.user.findUnique>>;
 describe("Mood API Routes (/api/mood)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDiaryCreate.mockResolvedValue({ id: "d1" } as never);
   });
 
   describe("GET /api/mood", () => {

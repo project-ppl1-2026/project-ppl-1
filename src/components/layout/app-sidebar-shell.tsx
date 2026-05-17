@@ -1,21 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import Image from "next/image";
 import {
   CreditCard,
   LayoutDashboard,
   LineChart,
-  LogOut,
   Menu,
   NotebookPen,
   X,
   Lock,
+  LogOut,
+  User,
+  ChevronDown,
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
-import Image from "next/image";
 
 type ShellUser = {
   name: string;
@@ -36,56 +38,6 @@ const navItems = [
   { label: "Subscription", href: "/subscription", icon: CreditCard },
 ];
 
-function UserAvatar({
-  user,
-  size = 44,
-  roundedClass = "rounded-full",
-}: {
-  user: ShellUser;
-  size?: number;
-  roundedClass?: string;
-}) {
-  const initial = user.name?.trim()?.charAt(0)?.toUpperCase() || "U";
-  const imageSrc =
-    typeof user.image === "string" && user.image.trim() !== ""
-      ? user.image
-      : null;
-
-  return (
-    <div
-      className={`overflow-hidden border ${roundedClass}`}
-      style={{
-        width: size,
-        height: size,
-        borderColor: "var(--tt-dashboard-card-border)",
-        background: "var(--tt-dashboard-card-bg)",
-        flexShrink: 0,
-      }}
-    >
-      {imageSrc ? (
-        <Image
-          src={imageSrc}
-          alt={user.name}
-          className="h-full w-full object-cover"
-          referrerPolicy="no-referrer"
-          width={size}
-          height={size}
-        />
-      ) : (
-        <div
-          className="flex h-full w-full items-center justify-center text-sm font-extrabold"
-          style={{
-            background: "var(--tt-dashboard-brand-soft)",
-            color: "var(--tt-dashboard-text)",
-          }}
-        >
-          {initial}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function SidebarNavItem({
   href,
   label,
@@ -105,7 +57,7 @@ function SidebarNavItem({
     <Link
       href={locked ? "/subscription" : href}
       onClick={onClick}
-      className="flex items-center gap-3 rounded-[0.95rem] px-3.5 py-2.5 transition-all"
+      className="flex cursor-pointer items-center gap-3 rounded-[0.95rem] px-3.5 py-3 transition-all hover:bg-[rgba(26,150,136,0.06)]"
       style={{
         background: active ? "var(--tt-dashboard-active-bg)" : "transparent",
         color: active
@@ -115,15 +67,8 @@ function SidebarNavItem({
       }}
       aria-current={active ? "page" : undefined}
     >
-      <div
-        className="flex h-8 w-8 items-center justify-center rounded-lg"
-        style={{
-          background: active ? "rgba(255,255,255,0.14)" : "transparent",
-        }}
-      >
-        <Icon size={16} />
-      </div>
-      <span className="text-[13px] font-bold">{label}</span>
+      <Icon size={18} />
+      <span className="text-[14px] font-bold">{label}</span>
 
       {locked && (
         <Lock
@@ -133,68 +78,6 @@ function SidebarNavItem({
         />
       )}
     </Link>
-  );
-}
-
-function SidebarProfileCard({
-  user,
-  onLogout,
-  isLoggingOut,
-}: {
-  user: ShellUser;
-  onLogout: () => Promise<void>;
-  isLoggingOut: boolean;
-}) {
-  return (
-    <div
-      className="flex items-center gap-3 rounded-[1.1rem] border bg-white/92 p-3.5"
-      style={{
-        borderColor: "var(--tt-dashboard-card-border)",
-        boxShadow: "0 8px 18px rgba(26,150,136,0.08)",
-      }}
-    >
-      <Link href="/profile" className="flex min-w-0 flex-1 items-center gap-3">
-        <UserAvatar user={user} size={46} />
-
-        <div className="min-w-0 flex-1">
-          <p
-            className="truncate text-[13px] font-extrabold"
-            style={{ color: "var(--tt-dashboard-text)" }}
-          >
-            {user.name}
-          </p>
-          <p
-            className="mt-0.5 truncate text-[11px]"
-            style={{ color: "var(--tt-dashboard-text-2)" }}
-          >
-            {user.email}
-          </p>
-        </div>
-      </Link>
-
-      <button
-        type="button"
-        onClick={() => {
-          void onLogout();
-        }}
-        disabled={isLoggingOut}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition disabled:cursor-not-allowed disabled:opacity-70"
-        style={{
-          color: "#FF4D4F",
-          background: "transparent",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "#FFF1F0";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "transparent";
-        }}
-        aria-label="Logout"
-        title="Logout"
-      >
-        <LogOut size={18} />
-      </button>
-    </div>
   );
 }
 
@@ -210,11 +93,26 @@ function MobileSidebar({
   onClose: () => void;
   user: ShellUser;
   pathname: string;
-  onLogout: () => Promise<void>;
+  onLogout: () => void;
   isLoggingOut: boolean;
 }) {
+  const userImageSrc =
+    typeof user.image === "string" && user.image.trim() !== ""
+      ? user.image
+      : null;
+
+  const userInitials = user.name
+    ? user.name
+        .split(" ")
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "?";
+
   return (
     <>
+      {/* Backdrop */}
       <div
         className={`fixed inset-0 z-[80] bg-black/25 transition-opacity lg:hidden ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
@@ -222,8 +120,9 @@ function MobileSidebar({
         onClick={onClose}
       />
 
+      {/* Drawer */}
       <aside
-        className={`fixed inset-y-0 left-0 z-[90] flex w-[88px] flex-col border-r px-3 py-4 shadow-xl backdrop-blur-md transition-transform duration-300 lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-[90] flex w-[260px] flex-col border-r px-3 py-4 shadow-xl backdrop-blur-md transition-transform duration-300 lg:hidden ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{
@@ -232,97 +131,118 @@ function MobileSidebar({
             "linear-gradient(180deg, rgba(246,250,249,0.98) 0%, rgba(241,247,246,0.98) 100%)",
         }}
       >
-        <div className="mb-4 flex items-center justify-between">
+        {/* Header: brand + close */}
+        <div className="mb-4 flex items-center justify-between px-1">
+          <div>
+            <p
+              className="text-[11px] font-extrabold uppercase tracking-[0.14em]"
+              style={{ color: "var(--tt-dashboard-text-2)" }}
+            >
+              TEMANTUMBUH
+            </p>
+            <h2
+              className="text-[16px] font-extrabold leading-none"
+              style={{ color: "var(--tt-dashboard-text)" }}
+            >
+              Dashboard
+            </h2>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center"
             style={{
-              background: "var(--tt-dashboard-chip-bg)",
               color: "var(--tt-dashboard-text)",
             }}
             aria-label="Tutup menu"
           >
-            <X size={16} />
+            <X size={20} />
           </button>
         </div>
 
-        <nav className="mt-2 flex flex-col gap-2">
-          {navItems.map((item) => {
-            const active =
-              pathname === item.href ||
-              (item.href !== "/home" && pathname.startsWith(item.href));
-
-            const isLocked = item.href === "/insight" && !user.isPremium;
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className="flex h-12 w-12 items-center justify-center rounded-xl transition-all"
-                style={{
-                  background: active
-                    ? "var(--tt-dashboard-active-bg)"
-                    : "transparent",
-                  color: active
-                    ? "var(--tt-dashboard-active-text)"
-                    : "var(--tt-dashboard-text)",
-                  boxShadow: active
-                    ? "0 8px 18px rgba(26,150,136,0.14)"
-                    : "none",
-                  opacity: isLocked ? 0.8 : 1,
-                }}
-                title={item.label}
-                aria-label={item.label}
-                aria-current={active ? "page" : undefined}
-              >
-                <item.icon size={18} />
-                {isLocked && (
-                  <Lock
-                    size={10}
-                    className="absolute right-1 top-1 opacity-70"
-                  />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div
-          className="mt-auto border-t pt-4"
-          style={{ borderColor: "var(--tt-dashboard-shell-border)" }}
-        >
+        {/* Profile card + Logout button (side by side) */}
+        <div className="mb-3 flex items-stretch gap-2">
+          {/* Profile card — clickable, navigates straight to /profile */}
           <Link
             href="/profile"
             onClick={onClose}
-            className="mb-2 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl transition-all"
+            className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 transition-all hover:shadow-md"
             style={{
-              background: "var(--tt-dashboard-chip-bg)",
+              background: "var(--tt-dashboard-card-bg)",
+              borderColor: "var(--tt-dashboard-card-border)",
             }}
-            title="Profile"
-            aria-label="Profile"
           >
-            <UserAvatar user={user} size={48} roundedClass="rounded-xl" />
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[12px] font-black text-white"
+              style={{ background: "var(--tt-dashboard-brand)" }}
+            >
+              {userImageSrc ? (
+                <Image
+                  src={userImageSrc}
+                  alt={user.name ?? "avatar"}
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                userInitials
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p
+                className="truncate text-[14px] font-bold"
+                style={{ color: "var(--tt-dashboard-text)" }}
+              >
+                {user.name ?? "Pengguna"}
+              </p>
+              <p
+                className="truncate text-[12px]"
+                style={{ color: "var(--tt-dashboard-text-2)" }}
+              >
+                {user.email ?? ""}
+              </p>
+            </div>
           </Link>
 
+          {/* Logout — icon only, beside profile */}
           <button
             type="button"
-            onClick={() => {
-              void onLogout();
-            }}
+            onClick={onLogout}
             disabled={isLoggingOut}
-            className="flex h-12 w-12 items-center justify-center rounded-xl transition-all disabled:cursor-not-allowed disabled:opacity-70"
-            style={{
-              background: "#FEE2E2",
-              color: "#DC2626",
-            }}
-            title="Logout"
-            aria-label="Logout"
+            className="flex w-12 shrink-0 cursor-pointer items-center justify-center rounded-2xl transition-all disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ color: "#DC2626" }}
+            aria-label="Keluar"
+            title="Keluar"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
           </button>
         </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto">
+          <div className="space-y-1.5">
+            {navItems.map((item) => {
+              const active =
+                pathname === item.href ||
+                (item.href !== "/home" && pathname.startsWith(item.href));
+
+              const isLocked = item.href === "/insight" && !user.isPremium;
+
+              return (
+                <SidebarNavItem
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  active={active}
+                  locked={isLocked}
+                  onClick={onClose}
+                />
+              );
+            })}
+          </div>
+        </nav>
       </aside>
     </>
   );
@@ -330,197 +250,299 @@ function MobileSidebar({
 
 export function AppSidebarShell({ user, children }: Props) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isPremium, setIsPremium] = useState(Boolean(user.isPremium));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const activeLabel = useMemo(() => {
-    const active = navItems.find(
-      (item) =>
-        pathname === item.href ||
-        (item.href !== "/home" && pathname.startsWith(item.href)),
-    );
-    return active?.label ?? "Dashboard";
-  }, [pathname]);
+  const shellUser = useMemo(() => ({ ...user, isPremium }), [isPremium, user]);
+
+  const refreshPremiumStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/subscription/status", {
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { isPremium?: boolean };
+      setIsPremium(Boolean(data.isPremium));
+    } catch (error) {
+      console.error("Premium status refresh failed:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    setIsPremium(Boolean(user.isPremium));
+  }, [user.isPremium]);
+
+  useEffect(() => {
+    void refreshPremiumStatus();
+  }, [pathname, refreshPremiumStatus]);
+
+  useEffect(() => {
+    if (!pathname.startsWith("/subscription")) return;
+    const intervalId = window.setInterval(() => {
+      void refreshPremiumStatus();
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [pathname, refreshPremiumStatus]);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
-
     try {
       setIsLoggingOut(true);
-      await authClient.signOut();
       setMobileOpen(false);
-      router.push("/login");
-      router.refresh();
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            window.location.href = "/login";
+          },
+        },
+      });
     } catch (error) {
       console.error("Logout failed:", error);
-    } finally {
       setIsLoggingOut(false);
     }
   };
 
+  // For mobile collapsed bar avatar
+  const userImageSrc =
+    typeof shellUser.image === "string" && shellUser.image.trim() !== ""
+      ? shellUser.image
+      : null;
+
+  const userInitials = shellUser.name
+    ? shellUser.name
+        .split(" ")
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "?";
+
   return (
-    <div className="min-h-screen bg-[var(--tt-dashboard-page-bg)] p-2 lg:h-[100dvh] lg:overflow-hidden">
+    /* Fullscreen — zero padding, no wrapper card */
+    <div className="h-[100dvh] w-full overflow-hidden bg-[var(--tt-dashboard-page-bg)]">
+      {/* Mobile slide-out nav */}
       <MobileSidebar
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        user={user}
+        user={shellUser}
         pathname={pathname}
-        onLogout={handleLogout}
+        onLogout={() => void handleLogout()}
         isLoggingOut={isLoggingOut}
       />
 
-      <div
-        className="mx-auto min-h-[calc(100vh-16px)] max-w-[1360px] overflow-hidden rounded-[1.5rem] border lg:h-[calc(100dvh-16px)] lg:min-h-0"
-        style={{
-          background: "var(--tt-dashboard-page-bg)",
-          borderColor: "var(--tt-dashboard-shell-border)",
-          boxShadow: "var(--tt-dashboard-shell-shadow)",
-        }}
-      >
-        <div className="grid min-h-[calc(100vh-16px)] lg:grid-cols-[232px_minmax(0,1fr)] lg:h-full lg:min-h-0">
-          <aside
-            className="hidden border-r lg:flex lg:flex-col"
+      <div className="flex h-full w-full">
+        {/* ── Desktop Sidebar ── */}
+        <aside
+          className="hidden shrink-0 border-r lg:flex lg:flex-col"
+          style={{
+            width: 232,
+            background: "var(--tt-dashboard-sidebar-bg)",
+            borderColor: "var(--tt-dashboard-shell-border)",
+          }}
+        >
+          {/* Brand */}
+          <div className="px-4 pb-3 pt-5">
+            <Link href="/home" className="flex items-center gap-3">
+              <div>
+                <p
+                  className="text-[12px] font-extrabold uppercase tracking-[0.14em]"
+                  style={{ color: "var(--tt-dashboard-text-2)" }}
+                >
+                  TEMANTUMBUH
+                </p>
+                <h2
+                  className="text-[16px] font-extrabold leading-none"
+                  style={{ color: "var(--tt-dashboard-text)" }}
+                >
+                  Dashboard
+                </h2>
+              </div>
+            </Link>
+          </div>
+
+          {/* Nav */}
+          <nav className="mt-2 flex-1 px-3">
+            <div className="space-y-1.5">
+              {navItems.map((item) => {
+                const active =
+                  pathname === item.href ||
+                  (item.href !== "/home" && pathname.startsWith(item.href));
+                const isLocked = item.href === "/insight" && !isPremium;
+
+                return (
+                  <SidebarNavItem
+                    key={item.href}
+                    href={item.href}
+                    label={item.label}
+                    icon={item.icon}
+                    active={active}
+                    locked={isLocked}
+                  />
+                );
+              })}
+            </div>
+          </nav>
+        </aside>
+
+        {/* ── Content area ── */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Mobile hamburger bar — left: hamburger + brand, right: avatar + logout */}
+          <div
+            className="flex shrink-0 items-center gap-3 border-b px-4 py-3 lg:hidden"
             style={{
-              background: "var(--tt-dashboard-sidebar-bg)",
               borderColor: "var(--tt-dashboard-shell-border)",
+              background: "var(--tt-dashboard-page-bg)",
             }}
           >
-            <div className="px-4 pb-3 pt-4">
-              <Link href="/home" className="flex items-center gap-3">
-                <div>
-                  <p
-                    className="text-[10px] font-extrabold uppercase tracking-[0.14em]"
-                    style={{ color: "var(--tt-dashboard-text-2)" }}
-                  >
-                    TEMANTUMBUH
-                  </p>
-                  <h2
-                    className="text-[15px] font-extrabold leading-none"
-                    style={{ color: "var(--tt-dashboard-text)" }}
-                  >
-                    Dashboard
-                  </h2>
-                </div>
-              </Link>
-            </div>
-
-            <div className="flex flex-1 flex-col justify-between">
-              <nav className="px-3">
-                <div className="space-y-1.5">
-                  {navItems.map((item) => {
-                    const active =
-                      pathname === item.href ||
-                      (item.href !== "/home" && pathname.startsWith(item.href));
-
-                    const isLocked =
-                      item.href === "/insight" && !user.isPremium;
-
-                    return (
-                      <SidebarNavItem
-                        key={item.href}
-                        href={item.href}
-                        label={item.label}
-                        icon={item.icon}
-                        active={active}
-                        locked={isLocked}
-                      />
-                    );
-                  })}
-                </div>
-              </nav>
-
-              <div
-                className="mt-3 border-t px-3 pb-3 pt-3"
-                style={{ borderColor: "var(--tt-dashboard-shell-border)" }}
-              >
-                <SidebarProfileCard
-                  user={user}
-                  onLogout={handleLogout}
-                  isLoggingOut={isLoggingOut}
-                />
-              </div>
-            </div>
-          </aside>
-
-          <div className="flex min-w-0 flex-col bg-[var(--tt-dashboard-page-bg)] lg:h-full lg:min-h-0">
-            <div
-              className="relative z-[60] border-b bg-white/80 px-4 py-3 backdrop-blur-sm lg:hidden"
-              style={{ borderColor: "var(--tt-dashboard-shell-border)" }}
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center"
+              style={{
+                color: "var(--tt-dashboard-text)",
+              }}
+              aria-label="Buka menu"
             >
-              <div className="flex min-h-[56px] items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setMobileOpen(true)}
-                    className="relative z-[70] flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                    style={{
-                      background: "var(--tt-dashboard-chip-bg)",
-                      color: "var(--tt-dashboard-text)",
-                    }}
-                    aria-label="Buka menu"
-                  >
-                    <Menu size={18} />
-                  </button>
+              <Menu size={22} />
+            </button>
 
-                  <div className="min-w-0">
-                    <p
-                      className="text-[10px] font-bold uppercase tracking-[0.14em] leading-none"
-                      style={{ color: "var(--tt-dashboard-text-3)" }}
-                    >
-                      TEMANTUMBUH
-                    </p>
-                    <h2
-                      className="mt-1 truncate text-base font-extrabold leading-tight"
-                      style={{ color: "var(--tt-dashboard-text)" }}
-                    >
-                      Hai, {user.name}
-                    </h2>
-                    <p
-                      className="mt-0.5 text-[11px] leading-none"
-                      style={{ color: "var(--tt-dashboard-text-2)" }}
-                    >
-                      {activeLabel}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-2">
-                  <Link
-                    href="/profile"
-                    className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full"
-                    aria-label="Profile"
-                    title="Profile"
-                  >
-                    <UserAvatar user={user} size={44} />
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleLogout();
-                    }}
-                    disabled={isLoggingOut}
-                    className="flex h-11 w-11 items-center justify-center rounded-full border transition disabled:cursor-not-allowed disabled:opacity-70"
-                    style={{
-                      borderColor: "var(--tt-dashboard-card-border)",
-                      background: "#FEE2E2",
-                      color: "#DC2626",
-                    }}
-                    aria-label="Logout"
-                    title="Logout"
-                  >
-                    <LogOut size={16} />
-                  </button>
-                </div>
-              </div>
+            <div className="min-w-0 flex-1">
+              <p
+                className="text-[11px] font-extrabold uppercase tracking-[0.14em]"
+                style={{ color: "var(--tt-dashboard-text-2)" }}
+              >
+                TEMANTUMBUH
+              </p>
             </div>
 
-            <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
+            {/* Right: profile dropdown */}
+            <div className="flex items-center gap-2">
+              <MobileProfileDropdown
+                userImageSrc={userImageSrc}
+                userInitials={userInitials}
+                userName={shellUser.name}
+                isLoggingOut={isLoggingOut}
+                onLogout={() => void handleLogout()}
+              />
+            </div>
           </div>
+
+          {/* Page content */}
+          <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Mobile Profile Dropdown ──────────────────────────────────────────────────
+
+function MobileProfileDropdown({
+  userImageSrc,
+  userInitials,
+  userName,
+  isLoggingOut,
+  onLogout,
+}: {
+  userImageSrc: string | null;
+  userInitials: string;
+  userName: string;
+  isLoggingOut: boolean;
+  onLogout: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-9 items-center gap-2 rounded-xl px-2 transition-colors duration-200"
+        style={{ background: "var(--tt-dashboard-chip-bg)" }}
+        aria-label="Menu profil"
+      >
+        <div
+          className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[10px] font-black text-white"
+          style={{ background: "var(--tt-dashboard-brand)" }}
+        >
+          {userImageSrc ? (
+            <Image
+              src={userImageSrc}
+              alt={userName ?? "avatar"}
+              width={28}
+              height={28}
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            userInitials
+          )}
+        </div>
+        <ChevronDown
+          size={13}
+          style={{
+            color: "var(--tt-dashboard-text-2)",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s",
+          }}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border shadow-lg"
+          style={{
+            background: "rgba(255,255,255,0.98)",
+            borderColor: "var(--tt-dashboard-card-border)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <Link
+            href="/profile"
+            onClick={() => setOpen(false)}
+            className="flex cursor-pointer items-center gap-2.5 px-4 py-3 text-[13px] font-semibold transition-colors hover:bg-[rgba(26,150,136,0.06)]"
+            style={{ color: "var(--tt-dashboard-text)" }}
+          >
+            <User size={15} style={{ color: "var(--tt-dashboard-brand)" }} />
+            Lihat Profil
+          </Link>
+
+          <div
+            className="mx-3 h-px"
+            style={{ background: "var(--tt-dashboard-card-border)" }}
+          />
+
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onLogout();
+            }}
+            disabled={isLoggingOut}
+            className="flex w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-[13px] font-semibold transition-colors hover:bg-[rgba(239,68,68,0.06)] disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ color: "#DC2626" }}
+          >
+            <LogOut size={15} />
+            Keluar
+          </button>
+        </div>
+      )}
     </div>
   );
 }

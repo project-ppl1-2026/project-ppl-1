@@ -98,37 +98,53 @@
 
   /* =========================
      TEMANTUMBUH DASHBOARD TOKENS
+     — Glass morphism edition —
+     Palette unchanged; only
+     surface & shadow values
+     updated for glass effect.
      ========================= */
-  --tt-dashboard-page-bg: linear-gradient(
-    160deg,
-    #e8f5f3 0%,
-    #f3fbfa 45%,
-    #eef6fb 100%
-  );
-  --tt-dashboard-shell-bg: rgba(255, 255, 255, 0.78);
-  --tt-dashboard-shell-border: #dcebea;
-  --tt-dashboard-shell-shadow: 0 24px 70px rgba(23, 42, 52, 0.08);
 
+  /* Page background: richer layered gradient for glass to sit on */
+  --tt-dashboard-page-bg: linear-gradient(
+    145deg,
+    #daf0ec 0%,
+    #eaf6f4 28%,
+    #f0f8fb 56%,
+    #e6f2f8 100%
+  );
+
+  /* Shell (outer wrapper panel) */
+  --tt-dashboard-shell-bg: rgba(255, 255, 255, 0.62);
+  --tt-dashboard-shell-border: rgba(255, 255, 255, 0.72);
+  --tt-dashboard-shell-shadow: 0 24px 70px rgba(23, 42, 52, 0.1);
+
+  /* Sidebar */
   --tt-dashboard-sidebar-bg: linear-gradient(
     180deg,
-    rgba(244, 250, 249, 0.97) 0%,
-    rgba(239, 247, 246, 0.97) 100%
+    rgba(240, 250, 249, 0.82) 0%,
+    rgba(232, 246, 244, 0.82) 100%
   );
 
-  --tt-dashboard-card-bg: rgba(255, 255, 255, 0.92);
-  --tt-dashboard-card-border: #e2edeb;
-  --tt-dashboard-card-shadow: 0 10px 28px rgba(26, 40, 64, 0.05);
+  /* Cards — frosted glass surface */
+  --tt-dashboard-card-bg: rgba(255, 255, 255, 0.68);
+  --tt-dashboard-card-border: rgba(255, 255, 255, 0.82);
+  --tt-dashboard-card-shadow:
+    0 4px 24px rgba(26, 150, 136, 0.07),
+    0 1.5px 0px rgba(255, 255, 255, 0.9) inset;
 
+  /* Brand colours — unchanged */
   --tt-dashboard-brand: #1a9688;
   --tt-dashboard-brand-2: #15907d;
   --tt-dashboard-brand-deep: #103f40;
-  --tt-dashboard-brand-soft: #edf9f7;
-  --tt-dashboard-brand-soft-2: #f4fbfa;
+  --tt-dashboard-brand-soft: rgba(237, 249, 247, 0.72);
+  --tt-dashboard-brand-soft-2: rgba(244, 251, 250, 0.72);
 
+  /* Text — unchanged */
   --tt-dashboard-text: #19272c;
   --tt-dashboard-text-2: #54676d;
   --tt-dashboard-text-3: #89a0a6;
 
+  /* Active nav item */
   --tt-dashboard-active-bg: linear-gradient(
     135deg,
     #1a8f82 0%,
@@ -137,28 +153,35 @@
   );
   --tt-dashboard-active-text: #ffffff;
 
-  --tt-dashboard-chip-bg: #f1f7f6;
+  /* Chips */
+  --tt-dashboard-chip-bg: rgba(241, 247, 246, 0.8);
   --tt-dashboard-chip-text: #64787f;
 
+  /* Status */
   --tt-dashboard-success: #0f8a5f;
   --tt-dashboard-success-soft: #d8f5e8;
 
   --tt-dashboard-warning: #d6a11b;
-  --tt-dashboard-warning-soft: #fff4cf;
+  --tt-dashboard-warning-soft: rgba(255, 244, 207, 0.82);
 
   --tt-dashboard-danger: #ef4444;
   --tt-dashboard-orange: #f97316;
 
-  --tt-dashboard-skeleton: #e6f1ef;
+  /* Skeleton shimmer */
+  --tt-dashboard-skeleton: rgba(196, 224, 220, 0.6);
 
+  /* Hero card — unchanged gradient, glass-friendly shadow */
   --tt-dashboard-hero-bg: linear-gradient(
     145deg,
     #144949 0%,
     #1b6b6b 55%,
     #1a9688 100%
   );
-  --tt-dashboard-hero-shadow: 0 18px 40px rgba(20, 73, 73, 0.18);
+  --tt-dashboard-hero-shadow:
+    0 18px 48px rgba(20, 73, 73, 0.22),
+    0 1.5px 0px rgba(255, 255, 255, 0.1) inset;
 
+  /* Button */
   --tt-dashboard-button-bg: linear-gradient(
     135deg,
     #14786d 0%,
@@ -239,18 +262,21 @@
 }
 
 @layer components {
+  /* ── Glass card ── */
   .tt-dashboard-card {
     background: var(--tt-dashboard-card-bg);
     border: 1px solid var(--tt-dashboard-card-border);
     box-shadow: var(--tt-dashboard-card-shadow);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
   }
 
+  /* ── Scrollable area ── */
   .tt-dashboard-scroll-y {
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
-    scrollbar-color: #d8e8e5 transparent;
+    scrollbar-color: rgba(167, 210, 205, 0.6) transparent;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -263,21 +289,34 @@
   }
 
   .tt-dashboard-scroll-y::-webkit-scrollbar-thumb {
-    background: #d8e8e5;
+    background: rgba(167, 210, 205, 0.6);
     border-radius: 999px;
   }
 
+  /* ── Shell (outer wrapper) ── */
   .tt-dashboard-shell {
     background: var(--tt-dashboard-shell-bg);
     border: 1px solid var(--tt-dashboard-shell-border);
     box-shadow: var(--tt-dashboard-shell-shadow);
-    backdrop-filter: blur(14px);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
   }
 
+  /* ── Sticky panel ── */
   .tt-dashboard-fixed-panel {
     position: sticky;
     top: 0;
     align-self: start;
+  }
+
+  /* ── Skeleton shimmer ── */
+  @keyframes tt-skeleton {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
   }
 }
 

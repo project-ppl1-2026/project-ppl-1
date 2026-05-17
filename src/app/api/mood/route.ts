@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import { createMoodLog, getMoodLogs } from "@/lib/mood/service";
+import { initiateDiaryFromMood } from "@/lib/diary/service";
 import {
   moodHistoryQuerySchema,
   moodSubmitSchema,
@@ -89,6 +90,14 @@ export async function POST(request: Request) {
       userId,
       moodScore: parsedPayload.data.moodScore,
       note: parsedPayload.data.note,
+      timezone: parsedPayload.data.timezone,
+    });
+
+    // Panggil initiateDiaryFromMood asinkron tanpa menahan response
+    void initiateDiaryFromMood({
+      userId,
+      moodScore: parsedPayload.data.moodScore,
+      notes: parsedPayload.data.note || "",
       timezone: parsedPayload.data.timezone,
     });
 
