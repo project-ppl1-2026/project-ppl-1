@@ -4,10 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "generate": "prisma generate",
+    "postinstall": "prisma generate",
     "build": "next build",
+    "prebuild": "prisma generate",
     "start": "next start",
     "lint": "eslint",
     "prepare": "husky",
+    "pretest": "prisma generate",
     "test": "vitest run",
     "test:watch": "vitest",
     "format:write": "prettier --write \"**/*.{js,jsx,ts,tsx,mjs,json,yml,yaml,css,scss}\"",
@@ -77,7 +81,6 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
-    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.2"
   }
 }
