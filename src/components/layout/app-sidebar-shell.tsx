@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
-import { RouteLoadingShell } from "@/components/ui/manual/route-loading";
 
 type ShellUser = {
   name: string;
@@ -39,13 +38,14 @@ const navItems = [
   { label: "Subscription", href: "/subscription", icon: CreditCard },
 ];
 
+const PREMIUM_STATUS_SYNC_EVENT = "temantumbuh:premium-status-sync";
+
 function SidebarNavItem({
   href,
   label,
   icon: Icon,
   active,
   onClick,
-  onNavigateStart,
   locked,
 }: {
   href: string;
@@ -54,7 +54,6 @@ function SidebarNavItem({
   active: boolean;
   locked?: boolean;
   onClick?: () => void;
-  onNavigateStart?: (href: string) => void;
 }) {
   const targetHref = locked ? "/subscription" : href;
 
@@ -62,13 +61,7 @@ function SidebarNavItem({
     <Link
       href={targetHref}
       prefetch
-      onClick={() => {
-        if (!active) {
-          onNavigateStart?.(targetHref);
-        }
-
-        onClick?.();
-      }}
+      onClick={onClick}
       className="flex cursor-pointer items-center gap-3 rounded-[0.95rem] px-3.5 py-3 transition-all hover:bg-[rgba(26,150,136,0.06)]"
       style={{
         background: active ? "var(--tt-dashboard-active-bg)" : "transparent",
@@ -100,7 +93,6 @@ function MobileSidebar({
   pathname,
   onLogout,
   isLoggingOut,
-  onNavigateStart,
 }: {
   open: boolean;
   onClose: () => void;
@@ -108,7 +100,6 @@ function MobileSidebar({
   pathname: string;
   onLogout: () => void;
   isLoggingOut: boolean;
-  onNavigateStart: (href: string) => void;
 }) {
   const userImageSrc =
     typeof user.image === "string" && user.image.trim() !== ""
@@ -180,10 +171,7 @@ function MobileSidebar({
           <Link
             href="/profile"
             prefetch
-            onClick={() => {
-              onNavigateStart("/profile");
-              onClose();
-            }}
+            onClick={onClose}
             className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 transition-all hover:shadow-md"
             style={{
               background: "var(--tt-dashboard-card-bg)",
@@ -255,7 +243,6 @@ function MobileSidebar({
                   icon={item.icon}
                   active={active}
                   locked={isLocked}
-                  onNavigateStart={onNavigateStart}
                   onClick={onClose}
                 />
               );
@@ -273,52 +260,30 @@ export function AppSidebarShell({ user, children }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isPremium, setIsPremium] = useState(Boolean(user.isPremium));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
   const shellUser = useMemo(() => ({ ...user, isPremium }), [isPremium, user]);
-
-  const refreshPremiumStatus = useCallback(async () => {
-    try {
-      const res = await fetch("/api/subscription/status", {
-        cache: "no-store",
-      });
-      if (!res.ok) return;
-      const data = (await res.json()) as { isPremium?: boolean };
-      setIsPremium(Boolean(data.isPremium));
-    } catch (error) {
-      console.error("Premium status refresh failed:", error);
-    }
-  }, []);
 
   useEffect(() => {
     setIsPremium(Boolean(user.isPremium));
   }, [user.isPremium]);
 
   useEffect(() => {
-    setPendingHref(null);
-  }, [pathname]);
+    const handlePremiumStatusSync = (event: Event) => {
+      const detail = (event as CustomEvent<{ isPremium?: boolean }>).detail;
+      if (typeof detail?.isPremium === "boolean") {
+        setIsPremium(detail.isPremium);
+      }
+    };
 
-  useEffect(() => {
-    if (!pendingHref) return;
+    window.addEventListener(PREMIUM_STATUS_SYNC_EVENT, handlePremiumStatusSync);
 
-    const timeoutId = window.setTimeout(() => {
-      setPendingHref(null);
-    }, 12_000);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [pendingHref]);
-
-  useEffect(() => {
-    void refreshPremiumStatus();
-  }, [pathname, refreshPremiumStatus]);
-
-  useEffect(() => {
-    if (!pathname.startsWith("/subscription")) return;
-    const intervalId = window.setInterval(() => {
-      void refreshPremiumStatus();
-    }, 5000);
-    return () => window.clearInterval(intervalId);
-  }, [pathname, refreshPremiumStatus]);
+    return () => {
+      window.removeEventListener(
+        PREMIUM_STATUS_SYNC_EVENT,
+        handlePremiumStatusSync,
+      );
+    };
+  }, []);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -337,17 +302,6 @@ export function AppSidebarShell({ user, children }: Props) {
       setIsLoggingOut(false);
     }
   };
-
-  const handleNavigateStart = useCallback(
-    (href: string) => {
-      if (href === pathname) {
-        return;
-      }
-
-      setPendingHref(href);
-    },
-    [pathname],
-  );
 
   // For mobile collapsed bar avatar
   const userImageSrc =
@@ -375,7 +329,6 @@ export function AppSidebarShell({ user, children }: Props) {
         pathname={pathname}
         onLogout={() => void handleLogout()}
         isLoggingOut={isLoggingOut}
-        onNavigateStart={handleNavigateStart}
       />
 
       <div className="flex h-full w-full">
@@ -425,7 +378,6 @@ export function AppSidebarShell({ user, children }: Props) {
                     icon={item.icon}
                     active={active}
                     locked={isLocked}
-                    onNavigateStart={handleNavigateStart}
                   />
                 );
               })}
@@ -477,42 +429,11 @@ export function AppSidebarShell({ user, children }: Props) {
           </div>
 
           {/* Page content */}
-          <main className="relative min-h-0 flex-1 overflow-hidden">
-            {children}
-
-            {pendingHref ? (
-              <div className="absolute inset-0 z-40 bg-[var(--tt-dashboard-page-bg)]">
-                <RouteLoadingShell
-                  label={getPendingLoadingLabel(pendingHref)}
-                  variant={getPendingLoadingVariant(pendingHref)}
-                />
-              </div>
-            ) : null}
-          </main>
+          <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
         </div>
       </div>
     </div>
   );
-}
-
-function getPendingLoadingVariant(
-  href: string,
-): "dashboard" | "diary" | "insight" | "profile" | "subscription" {
-  if (href.startsWith("/diary")) return "diary";
-  if (href.startsWith("/insight")) return "insight";
-  if (href.startsWith("/profile")) return "profile";
-  if (href.startsWith("/subscription")) return "subscription";
-  return "dashboard";
-}
-
-function getPendingLoadingLabel(href: string) {
-  const variant = getPendingLoadingVariant(href);
-
-  if (variant === "diary") return "Memuat diary...";
-  if (variant === "insight") return "Memuat insight...";
-  if (variant === "profile") return "Memuat profil...";
-  if (variant === "subscription") return "Memuat subscription...";
-  return "Memuat dashboard...";
 }
 
 // ─── Mobile Profile Dropdown ──────────────────────────────────────────────────
