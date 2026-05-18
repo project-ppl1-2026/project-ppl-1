@@ -25,6 +25,7 @@ import {
 } from "../utils";
 import { getMoodColor } from "@/components/mood/mood-face-icons";
 import { PageLoader } from "@/components/ui/manual/page-loader";
+import { LogoutConfirmDialog } from "@/components/ui/manual/logout-confirm-dialog";
 import { fadeUp } from "./home-dashboard-motion";
 import { HomeDashboardTopSection } from "./HomeDashboardTopSection";
 import { HomeDashboardMoodHistory } from "./HomeDashboardMoodHistory";
@@ -34,6 +35,7 @@ export function HomeDashboardContent() {
   const queryClient = useQueryClient();
   const [timezone] = useState(() => getTimezone());
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const now = useMemo(() => new Date(), []);
 
@@ -318,7 +320,7 @@ export function HomeDashboardContent() {
               userImageSrc={userImageSrc}
               userInitials={userInitials}
               isLoggingOut={isLoggingOut}
-              onLogout={() => void handleLogout()}
+              onLogout={() => setShowLogoutConfirm(true)}
             />
           </div>
         </motion.header>
@@ -429,6 +431,13 @@ export function HomeDashboardContent() {
           />
         </div>
       </div>
+
+      <LogoutConfirmDialog
+        open={showLogoutConfirm}
+        onConfirm={() => void handleLogout()}
+        onCancel={() => setShowLogoutConfirm(false)}
+        loading={isLoggingOut}
+      />
     </div>
   );
 }

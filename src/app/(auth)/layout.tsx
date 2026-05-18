@@ -1,27 +1,46 @@
 // src/app/(auth)/layout.tsx
-//
-// FIX: Navbar & Footer hanya di-render SEKALI di sini.
-// Pastikan (main)/layout.tsx TIDAK ikut render Navbar/Footer
-// agar tidak ada double render.
-//
-// Cara cek: buka src/app/(main)/layout.tsx
-//   — jika ada <Navbar /> atau <Footer /> di sana, hapus.
-//   — biarkan (main)/layout.tsx hanya berisi children saja.
 
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { auth } from "@/lib/auth";
+import { getPostLoginRedirect } from "@/lib/get-post-login-redirect";
 import Navbar from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    // font-family di sini agar sama persis dengan landing page
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
+  // Jika user sudah login, langsung redirect ke halaman yang sesuai.
+  // Ini mencegah flash Navbar+Footer kosong saat proses redirect.
+  if (session?.user?.id) {
+    const nextRoute = await getPostLoginRedirect(session.user.id);
+    // Jika nextRoute bukan halaman auth (login/register), redirect langsung
+    if (nextRoute !== "/login" && !nextRoute.startsWith("/register")) {
+      redirect(nextRoute);
+    }
+
+    // User authenticated tapi perlu complete profile → render tanpa Navbar/Footer
+    return (
+      <div
+        className="min-h-screen flex flex-col"
+        style={{ fontFamily: "var(--font-plus-jakarta)" }}
+      >
+        <main className="flex-1">{children}</main>
+      </div>
+    );
+  }
+
+  return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ fontFamily: "var(--font-plus-jakarta )" }}
+      style={{ fontFamily: "var(--font-plus-jakarta)" }}
     >
       <Navbar />
       <main className="flex-1">{children}</main>

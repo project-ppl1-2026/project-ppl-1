@@ -1,5 +1,5 @@
-import { RouteLoadingByPath } from "@/components/ui/manual/route-loading";
+import { PageLoader } from "@/components/ui/manual/page-loader";
 
 export default function ProtectedRouteLoading() {
-  return <RouteLoadingByPath />;
+  return <PageLoader message="Memuat..." />;
 }

@@ -99,22 +99,28 @@ export default function SnapPayButton({
         return;
       }
 
+      document.body.classList.add("snap-open");
+
       window.snap.pay(tokenToUse as string, {
         onSuccess: () => {
+          document.body.classList.remove("snap-open");
           setLoading(false);
           router.refresh();
           router.push("/subscription?status=success");
         },
         onPending: () => {
+          document.body.classList.remove("snap-open");
           setLoading(false);
           router.refresh();
           router.push("/subscription?status=pending");
         },
         onError: () => {
+          document.body.classList.remove("snap-open");
           setError("Pembayaran gagal. Silakan coba lagi.");
           setLoading(false);
         },
         onClose: () => {
+          document.body.classList.remove("snap-open");
           setLoading(false);
         },
       });

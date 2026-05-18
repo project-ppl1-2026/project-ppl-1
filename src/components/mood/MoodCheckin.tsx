@@ -112,6 +112,7 @@ export function MoodCheckin({
 
   const [userName, setUserName] = useState(initialUserName);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [moodScore, setMoodScore] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [lastSubmittedStreak, setLastSubmittedStreak] = useState<number | null>(
@@ -243,9 +244,10 @@ export function MoodCheckin({
 
       setMoodScore(null);
       setNote("");
+      setIsRedirecting(true);
 
       setTimeout(() => {
-        router.push("/home");
+        window.location.href = "/home";
       }, 800);
     },
 
@@ -286,6 +288,10 @@ export function MoodCheckin({
 
   if (isLoadingUser) {
     return <PageLoader message="Memuat..." fullscreen />;
+  }
+
+  if (isRedirecting) {
+    return <PageLoader message="Menuju dashboard..." fullscreen />;
   }
 
   return (

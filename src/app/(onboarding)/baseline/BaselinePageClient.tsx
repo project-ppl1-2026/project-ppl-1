@@ -163,8 +163,7 @@ function BaselinePageContent() {
 
       void queryClient.invalidateQueries({ queryKey: ["baseline"] });
       setIsRedirecting(true);
-      router.replace("/");
-      router.refresh();
+      window.location.href = "/home";
     },
     onError: (error) => {
       if (error instanceof Error && error.message === "UNAUTHORIZED") {
