@@ -51,9 +51,9 @@ export function HomeDashboardContent() {
   const { data: sessionData, isLoading: sessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: () => authClient.getSession().then((r) => r.data),
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    staleTime: 60_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
   });
 
@@ -81,7 +81,7 @@ export function HomeDashboardContent() {
     void syncStreak();
   }, [sessionUser?.id, timezone, queryClient]);
 
-  const { data: moodLogs = [], isLoading: moodLoading } = useQuery<MoodLog[]>({
+  const { data: moodLogs = [] } = useQuery<MoodLog[]>({
     queryKey: ["mood-logs"],
     queryFn: async () => {
       const res = await fetch("/api/mood", { cache: "no-store" });
@@ -90,13 +90,13 @@ export function HomeDashboardContent() {
       return json.data ?? [];
     },
     enabled: !!sessionUser?.id,
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
   });
 
-  const { data: totalDiaries = 0, isLoading: countLoading } = useQuery({
+  const { data: totalDiaries = 0 } = useQuery({
     queryKey: ["total-diaries"],
     queryFn: async () => {
       const res = await fetch("/api/diary/count", { cache: "no-store" });
@@ -107,52 +107,47 @@ export function HomeDashboardContent() {
     enabled: !!sessionUser?.id,
   });
 
-  const { data: baseline = null, isLoading: baselineLoading } =
-    useQuery<BaselineResponse>({
-      queryKey: ["baseline"],
-      queryFn: async () => {
-        const res = await fetch("/api/baseline", { cache: "no-store" });
-        if (!res.ok) return null;
-        const json = (await res.json()) as {
-          success: boolean;
-          baseline: BaselineResponse;
-        };
-        return json.baseline ?? null;
-      },
-      enabled: !!sessionUser?.id,
-      staleTime: 300_000,
-    });
-
-  const {
-    data: parentStatusData = null,
-    isLoading: parentStatusLoading,
-    refetch: refetchParentStatus,
-  } = useQuery<ParentStatusResponse>({
-    queryKey: ["parent-status"],
+  const { data: baseline = null } = useQuery<BaselineResponse>({
+    queryKey: ["baseline"],
     queryFn: async () => {
-      const res = await fetch("/api/parent/status", { cache: "no-store" });
+      const res = await fetch("/api/baseline", { cache: "no-store" });
       if (!res.ok) return null;
-      return (await res.json()) as ParentStatusResponse;
+      const json = (await res.json()) as {
+        success: boolean;
+        baseline: BaselineResponse;
+      };
+      return json.baseline ?? null;
     },
     enabled: !!sessionUser?.id,
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 300_000,
   });
 
-  const { data: braveChoiceStats = null, isLoading: braveChoiceLoading } =
-    useQuery({
-      queryKey: ["brave-choice-stats"],
+  const { data: parentStatusData = null, refetch: refetchParentStatus } =
+    useQuery<ParentStatusResponse>({
+      queryKey: ["parent-status"],
       queryFn: async () => {
-        const res = await fetch(
-          `/api/diary/brave-choice/stats?timezone=${timezone}`,
-          { cache: "no-store" },
-        );
+        const res = await fetch("/api/parent/status", { cache: "no-store" });
         if (!res.ok) return null;
-        const json = await res.json();
-        return json.data ?? null;
+        return (await res.json()) as ParentStatusResponse;
       },
       enabled: !!sessionUser?.id,
+      staleTime: 30_000,
+      refetchOnMount: true,
     });
+
+  const { data: braveChoiceStats = null } = useQuery({
+    queryKey: ["brave-choice-stats"],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/diary/brave-choice/stats?timezone=${timezone}`,
+        { cache: "no-store" },
+      );
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.data ?? null;
+    },
+    enabled: !!sessionUser?.id,
+  });
 
   const weeks = useMemo(
     () => buildWeeksFromLogs(moodLogs, timezone, 24),
@@ -193,13 +188,7 @@ export function HomeDashboardContent() {
       : (sessionUser?.parentEmail ?? null);
   const braveChoice = braveChoiceStats ?? { pct: 0, correct: 0, total: 0 };
 
-  const isLoading =
-    sessionLoading ||
-    moodLoading ||
-    baselineLoading ||
-    countLoading ||
-    braveChoiceLoading ||
-    parentStatusLoading;
+  const isLoading = sessionLoading;
 
   const handleInsightClick = () => {
     router.push(isPremium ? "/insight" : "/subscription");

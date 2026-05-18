@@ -35,38 +35,37 @@ export default async function MainLayout({
     redirect("/login");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      name: true,
-      email: true,
-      image: true,
-      profileFilled: true,
-      isPremium: true,
-    },
-  });
+  const timezone = "Asia/Jakarta";
+  const todayLocal = getLocalDateString(new Date(), timezone);
+
+  const [user, baseline, lastMoodLog] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        name: true,
+        email: true,
+        image: true,
+        profileFilled: true,
+        isPremium: true,
+      },
+    }),
+    getBaselineByUserId(userId),
+    prisma.moodLog.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        createdAt: true,
+      },
+    }),
+  ]);
 
   if (!user?.profileFilled) {
     redirect("/register?completeProfile=1");
   }
 
-  const baseline = await getBaselineByUserId(userId);
-
   if (!baseline) {
     redirect("/baseline");
   }
-
-  // cek apakah hari ini user sudah isi mood atau belum
-  const timezone = "Asia/Jakarta";
-  const todayLocal = getLocalDateString(new Date(), timezone);
-
-  const lastMoodLog = await prisma.moodLog.findFirst({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    select: {
-      createdAt: true,
-    },
-  });
 
   const hasFilledMoodToday =
     lastMoodLog &&
