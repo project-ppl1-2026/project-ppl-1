@@ -24,7 +24,7 @@ export default function AdminLoading() {
         />
       </svg>
       <p
-        className="text-[13px] font-semibold tracking-wide uppercase"
+        className="text-[13px] font-semibold tracking-wide"
         style={{ color: "var(--tt-dashboard-text-2, #6B7C93)" }}
       >
         Mengambil Data...
