@@ -344,7 +344,7 @@ function BaselinePageContent() {
                   }
                   aria-label="Kembali ke pertanyaan sebelumnya"
                   title="Kembali"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-400"
+                  className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-400"
                 >
                   <ArrowLeft className="h-5 w-5" strokeWidth={2.2} />
                   <span className="sr-only">Kembali</span>

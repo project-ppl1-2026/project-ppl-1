@@ -1,8 +1,11 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+
 import { auth } from "@/lib/auth";
-import { syncUserPremiumStatus } from "@/lib/subscription/service";
-import { SubscriptionPageClient } from "./SubscriptionPageClient";
+import prisma from "@/lib/prisma";
+import { getSubscriptionStatus } from "@/lib/subscription/service";
+
+import SubscriptionClient from "./SubscriptionClient";
 
 export default async function SubscriptionPage() {
   const session = await auth.api.getSession({
@@ -15,13 +18,49 @@ export default async function SubscriptionPage() {
     redirect("/login");
   }
 
-  // Sync subscription status (auto-downgrade if expired)
-  await syncUserPremiumStatus(userId);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      isPremium: true,
+    },
+  });
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const subStatus = await getSubscriptionStatus(userId);
+  const activeSubscription = subStatus.subscription;
+  const pendingPayment = subStatus.pendingPayment;
 
   return (
-    <SubscriptionPageClient
+    <SubscriptionClient
+      isPremium={subStatus.isPremium}
+      pendingPayment={
+        pendingPayment
+          ? {
+              id: pendingPayment.id,
+              orderId: pendingPayment.orderId,
+              token: pendingPayment.snapToken || "",
+              durationMonths: pendingPayment.durationMonths,
+              grossAmount: pendingPayment.grossAmount.toString(),
+              status: pendingPayment.status,
+              createdAt: pendingPayment.createdAt.toISOString(),
+            }
+          : null
+      }
       midtransClientKey={process.env.MIDTRANS_CLIENT_KEY || ""}
       midtransIsProduction={process.env.MIDTRANS_IS_PRODUCTION === "true"}
+      subscription={
+        activeSubscription
+          ? {
+              startedAt: activeSubscription.startedAt.toISOString(),
+              expiresAt: activeSubscription.expiresAt.toISOString(),
+              isActive: activeSubscription.isActive,
+            }
+          : null
+      }
     />
   );
 }
