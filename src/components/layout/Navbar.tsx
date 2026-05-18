@@ -612,6 +612,7 @@ function MobileMenu({
   const isLoggedIn = session.role !== "guest";
   const isUserHomepage = isLoggedIn;
   const items = session.role === "admin" ? adminMenuItems : userMenuItems;
+  const [berandaOpen, setBerandaOpen] = useState(false);
 
   const handleSection = (sectionId: string | null, href: string) => {
     onClose();
@@ -668,23 +669,55 @@ function MobileMenu({
                 Home
               </button>
             ) : (
-              homeSections.map((item, index) => (
+              <>
                 <button
-                  key={item.label}
-                  onClick={() => handleSection(item.sectionId, item.href)}
-                  className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors duration-150 hover:bg-[#DDF5F2]"
-                  style={{ color: C.textSecondary }}
+                  onClick={() => setBerandaOpen((v) => !v)}
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors duration-150 hover:bg-[#DDF5F2]"
+                  style={{
+                    color: pathname === "/" ? C.teal : C.textSecondary,
+                    background: pathname === "/" ? C.tealGhost : "transparent",
+                  }}
                   type="button"
                 >
-                  <span
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
-                    style={{ background: C.tealGhost, color: C.teal }}
-                  >
-                    {index === 0 ? <Home size={12} /> : <List size={12} />}
-                  </span>
-                  {item.label}
+                  <span className="flex-1">Beranda</span>
+                  <ChevronDown
+                    size={14}
+                    style={{
+                      color: C.textMuted,
+                      transform: berandaOpen
+                        ? "rotate(180deg)"
+                        : "rotate(0deg)",
+                      transition: "transform 0.2s",
+                    }}
+                  />
                 </button>
-              ))
+
+                <AnimatePresence>
+                  {berandaOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden pl-4"
+                    >
+                      {homeSections.slice(1).map((item) => (
+                        <button
+                          key={item.label}
+                          onClick={() =>
+                            handleSection(item.sectionId, item.href)
+                          }
+                          className="flex w-full cursor-pointer items-center rounded-xl px-3 py-2 text-left text-[13px] font-medium transition-colors duration-150 hover:bg-[#DDF5F2]"
+                          style={{ color: C.textSecondary }}
+                          type="button"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
             )}
 
             <div className="my-2 h-px" style={{ background: C.border }} />
