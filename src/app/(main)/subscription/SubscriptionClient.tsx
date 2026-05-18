@@ -27,6 +27,8 @@ const premiumFeatures = [
   "Akses premium",
 ];
 
+const PREMIUM_STATUS_SYNC_EVENT = "temantumbuh:premium-status-sync";
+
 type SubscriptionInfo = {
   startedAt: string;
   expiresAt: string;
@@ -78,6 +80,14 @@ export default function SubscriptionClient({
     };
     void fetchSession();
   }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent(PREMIUM_STATUS_SYNC_EVENT, {
+        detail: { isPremium },
+      }),
+    );
+  }, [isPremium]);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;

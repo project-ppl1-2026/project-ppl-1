@@ -26,11 +26,13 @@ export function MotionCard({
   className = "",
   style,
   custom = 0,
+  liftOnHover = false,
 }: {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
   custom?: number;
+  liftOnHover?: boolean;
 }) {
   return (
     <motion.div
@@ -39,11 +41,11 @@ export function MotionCard({
       initial="hidden"
       animate="visible"
       whileHover={{
-        ...hoverCard,
+        ...(liftOnHover ? hoverCard : {}),
         boxShadow:
           "0 12px 36px rgba(26,150,136,0.13), 0 1.5px 0px rgba(255,255,255,0.95) inset",
       }}
-      whileTap={tapCard}
+      whileTap={liftOnHover ? tapCard : undefined}
       className={className}
       style={style}
     >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -38,6 +38,8 @@ const navItems = [
   { label: "Subscription", href: "/subscription", icon: CreditCard },
 ];
 
+const PREMIUM_STATUS_SYNC_EVENT = "temantumbuh:premium-status-sync";
+
 function SidebarNavItem({
   href,
   label,
@@ -53,9 +55,12 @@ function SidebarNavItem({
   locked?: boolean;
   onClick?: () => void;
 }) {
+  const targetHref = locked ? "/subscription" : href;
+
   return (
     <Link
-      href={locked ? "/subscription" : href}
+      href={targetHref}
+      prefetch
       onClick={onClick}
       className="flex cursor-pointer items-center gap-3 rounded-[0.95rem] px-3.5 py-3 transition-all hover:bg-[rgba(26,150,136,0.06)]"
       style={{
@@ -165,6 +170,7 @@ function MobileSidebar({
           {/* Profile card — clickable, navigates straight to /profile */}
           <Link
             href="/profile"
+            prefetch
             onClick={onClose}
             className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 transition-all hover:shadow-md"
             style={{
@@ -257,34 +263,27 @@ export function AppSidebarShell({ user, children }: Props) {
 
   const shellUser = useMemo(() => ({ ...user, isPremium }), [isPremium, user]);
 
-  const refreshPremiumStatus = useCallback(async () => {
-    try {
-      const res = await fetch("/api/subscription/status", {
-        cache: "no-store",
-      });
-      if (!res.ok) return;
-      const data = (await res.json()) as { isPremium?: boolean };
-      setIsPremium(Boolean(data.isPremium));
-    } catch (error) {
-      console.error("Premium status refresh failed:", error);
-    }
-  }, []);
-
   useEffect(() => {
     setIsPremium(Boolean(user.isPremium));
   }, [user.isPremium]);
 
   useEffect(() => {
-    void refreshPremiumStatus();
-  }, [pathname, refreshPremiumStatus]);
+    const handlePremiumStatusSync = (event: Event) => {
+      const detail = (event as CustomEvent<{ isPremium?: boolean }>).detail;
+      if (typeof detail?.isPremium === "boolean") {
+        setIsPremium(detail.isPremium);
+      }
+    };
 
-  useEffect(() => {
-    if (!pathname.startsWith("/subscription")) return;
-    const intervalId = window.setInterval(() => {
-      void refreshPremiumStatus();
-    }, 5000);
-    return () => window.clearInterval(intervalId);
-  }, [pathname, refreshPremiumStatus]);
+    window.addEventListener(PREMIUM_STATUS_SYNC_EVENT, handlePremiumStatusSync);
+
+    return () => {
+      window.removeEventListener(
+        PREMIUM_STATUS_SYNC_EVENT,
+        handlePremiumStatusSync,
+      );
+    };
+  }, []);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;

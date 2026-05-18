@@ -143,68 +143,69 @@ export function HomeDashboardParentReportCard({
           )}
         </div>
 
-        <div className="flex flex-1 flex-col justify-center">
-          <p
-            className="text-[11px] font-bold leading-tight sm:text-[12px]"
-            style={{ color: "var(--tt-dashboard-text)" }}
-          >
-            {parentEmail ?? "Belum ada email orang tua"}
-          </p>
+        <div className="flex flex-1 flex-col justify-between">
+          <div>
+            <p
+              className="truncate text-[13px] font-bold leading-tight sm:text-[14px]"
+              style={{ color: "var(--tt-dashboard-text)" }}
+            >
+              {parentEmail ?? "Belum ada email orang tua"}
+            </p>
 
-          <p
-            className="hidden text-[10px] sm:block"
-            style={{ color: "var(--tt-dashboard-text-2)" }}
-          >
-            {isVerified
-              ? reportMetaLabel
-              : "Tambahkan email untuk laporan mingguan"}
-          </p>
+            <p
+              className="mt-1 text-[11px] sm:text-[12px]"
+              style={{ color: "var(--tt-dashboard-text-2)" }}
+            >
+              {isVerified
+                ? reportMetaLabel
+                : "Tambahkan email untuk laporan mingguan"}
+            </p>
+          </div>
 
           {isVerified && currentWeek ? (
-            <div className="mt-4 space-y-2">
-              <motion.div
-                whileHover={{ x: 1 }}
-                className="flex items-center gap-2 text-[11px]"
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div
+                className="text-[11px] sm:text-[12px]"
                 style={{ color: "var(--tt-dashboard-text)" }}
               >
-                <span>
-                  Periode: {currentWeek.days[0]?.date ?? "-"} -{" "}
+                <div className="font-medium opacity-75">Periode</div>
+                <div className="font-bold">
+                  {currentWeek.days[0]?.date ?? "-"} -{" "}
                   {currentWeek.days[6]?.date ?? "-"}{" "}
                   {currentWeek.days[6]?.month ?? ""} {year}
-                </span>
-              </motion.div>
+                </div>
+              </div>
 
               <motion.button
                 type="button"
-                whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => void handleSendReport()}
                 disabled={isSending}
-                className="inline-flex h-8 items-center gap-2 rounded-xl px-3 text-[10px] font-bold text-white transition-shadow duration-300 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-xl px-4 text-[11px] font-bold text-white transition-shadow duration-300 disabled:cursor-not-allowed disabled:opacity-70 sm:text-[12px]"
                 style={{
                   background: "var(--tt-dashboard-button-bg)",
                   boxShadow: "0 8px 18px rgba(26,150,136,0.14)",
                 }}
               >
                 {isSending ? (
-                  <Loader2 size={11} className="animate-spin" />
+                  <Loader2 size={13} className="animate-spin" />
                 ) : (
-                  <Send size={11} />
+                  <Send size={13} />
                 )}
                 {isSending ? "Mengirim..." : "Kirim Sekarang"}
               </motion.button>
             </div>
           ) : (
-            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+            <motion.div whileTap={{ scale: 0.97 }}>
               <Link
                 href="/profile/parent-report"
-                className="mt-4 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-bold text-white transition-shadow duration-300"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[11px] font-bold text-white transition-shadow duration-300 sm:text-[12px]"
                 style={{
                   background: "var(--tt-dashboard-button-bg)",
                   boxShadow: "0 8px 18px rgba(26,150,136,0.14)",
                 }}
               >
-                Tambah Email <ArrowRight size={11} />
+                Tambah Email <ArrowRight size={13} />
               </Link>
             </motion.div>
           )}

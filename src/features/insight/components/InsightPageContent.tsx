@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
 
@@ -23,37 +24,41 @@ import {
   getPeakMood,
 } from "../lib/insight-utils";
 
+const EMPTY_INSIGHT_MAP: Record<string, Omit<DayInsight, "date">> = {};
+const EMPTY_MOOD_MAP: Record<string, number> = {};
+
 export default function InsightPageContent() {
   const [timezone] = useState(() => getUserTimeZone());
   const [todayDate] = useState(() => getTodayDateString(timezone));
   const [selectedDate, setSelectedDate] = useState(() =>
     getTodayDateString(timezone),
   );
-  const [insightMap, setInsightMap] = useState<
-    Record<string, Omit<DayInsight, "date">>
-  >({});
-  const [moodMap, setMoodMap] = useState<Record<string, number>>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const dateInputRef = useRef<HTMLInputElement | null>(null);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setIsLoading(true);
+  const {
+    data: insightData,
+    isLoading,
+    refetch: refetchInsightData,
+  } = useQuery({
+    queryKey: ["insight-page-data", timezone],
+    queryFn: async () => {
       const [insightRes, moodRes] = await Promise.all([
         fetch("/api/insight"),
         fetch(`/api/mood?timezone=${encodeURIComponent(timezone)}`),
       ]);
 
+      const nextInsightMap: Record<string, Omit<DayInsight, "date">> = {};
+      const nextMoodMap: Record<string, number> = {};
+
       if (insightRes.ok) {
         const { data } = await insightRes.json();
-        setInsightMap(data || {});
+        Object.assign(nextInsightMap, data || {});
       }
 
       if (moodRes.ok) {
         const { data } = await moodRes.json();
-        const mappedMoods: Record<string, number> = {};
         if (Array.isArray(data)) {
           data.forEach(
             (mood: { createdAt: string | Date; moodScore: number }) => {
@@ -61,22 +66,23 @@ export default function InsightPageContent() {
                 new Date(mood.createdAt),
                 timezone,
               );
-              mappedMoods[dateStr] = mood.moodScore;
+              nextMoodMap[dateStr] = mood.moodScore;
             },
           );
         }
-        setMoodMap(mappedMoods);
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [timezone]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+      return {
+        insightMap: nextInsightMap,
+        moodMap: nextMoodMap,
+      };
+    },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const insightMap = insightData?.insightMap ?? EMPTY_INSIGHT_MAP;
+  const moodMap = insightData?.moodMap ?? EMPTY_MOOD_MAP;
 
   const availableDates = useMemo(() => {
     const dateSet = new Set<string>([
@@ -150,7 +156,7 @@ export default function InsightPageContent() {
       }
 
       toast.success("Insight berhasil dihasilkan untuk hari ini!");
-      await fetchData();
+      await refetchInsightData();
     } catch {
       toast.error("Terjadi kesalahan.");
     } finally {
