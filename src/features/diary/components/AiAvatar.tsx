@@ -8,9 +8,9 @@ export function AiAvatar() {
   return (
     <div
       style={{
-        width: 28,
-        height: 28,
-        borderRadius: 9,
+        width: 32,
+        height: 32,
+        borderRadius: "25%",
         background: `linear-gradient(135deg,${C.inkD},${C.inkM})`,
         display: "flex",
         alignItems: "center",
@@ -20,13 +20,13 @@ export function AiAvatar() {
     >
       <span
         style={{
-          fontSize: 9,
+          fontSize: 12,
           fontWeight: 900,
           color: C.white,
           fontFamily: fonts.sans,
         }}
       >
-        TT
+        B
       </span>
     </div>
   );
