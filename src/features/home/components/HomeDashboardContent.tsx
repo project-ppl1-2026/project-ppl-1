@@ -392,7 +392,6 @@ export function HomeDashboardContent() {
             custom={6}
             className="mt-3"
             whileHover={{
-              y: -3,
               boxShadow: "0 14px 32px rgba(26,150,136,0.16)",
             }}
             whileTap={{ scale: 0.985 }}
