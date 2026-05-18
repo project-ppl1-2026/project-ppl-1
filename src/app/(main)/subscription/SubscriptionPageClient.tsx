@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import SubscriptionClient from "./SubscriptionClient";
-import { RouteLoadingShell } from "@/components/ui/manual/route-loading";
+import { PageLoader } from "@/components/ui/manual/page-loader";
 
 export function SubscriptionPageClient({
   midtransClientKey,
@@ -23,12 +23,7 @@ export function SubscriptionPageClient({
   });
 
   if (isLoading) {
-    return (
-      <RouteLoadingShell
-        variant="subscription"
-        label="Memuat subscription..."
-      />
-    );
+    return <PageLoader message="Memuat subscription..." />;
   }
 
   if (error || !data) {

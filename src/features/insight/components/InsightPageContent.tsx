@@ -10,6 +10,7 @@ import { InsightRecommendationSection } from "./InsightRecommendationSection";
 import { InsightReflectionSection } from "./InsightReflectionSection";
 import { InsightTrendSection } from "./InsightTrendSection";
 import { SurfaceCard } from "./insight-primitives";
+import { PageLoader } from "@/components/ui/manual/page-loader";
 import {
   getDateKeyInTimeZone,
   getTodayDateString,
@@ -164,6 +165,10 @@ export default function InsightPageContent() {
     }
   }
 
+  if (isLoading) {
+    return <PageLoader message="Memuat insight..." />;
+  }
+
   return (
     <main
       className="h-full min-h-0 overflow-hidden"
@@ -188,61 +193,47 @@ export default function InsightPageContent() {
             onDateChange={handleDateChange}
           />
 
-          {isLoading ? (
-            <div className="flex flex-col gap-5 mt-4 w-full">
-              <div className="h-[300px] w-full rounded-[28px] bg-slate-200/40 animate-pulse" />
-              <div
-                className="h-[260px] w-full rounded-[28px] bg-slate-200/40 animate-pulse"
-                style={{ animationDelay: "200ms" }}
+          <div className="flex flex-col gap-5 mt-4">
+            <InsightTrendSection
+              selectedMonth={selectedMonth}
+              hasTrendData={hasTrendData}
+              trendData={trendData}
+              peakMood={peakMood}
+              lowMood={lowMood}
+              avgMood={avgMood}
+              stableDays={stableDays}
+            />
+
+            {/* Secondary "Tampilkan Insight" button — visible and prominent */}
+            {isToday && !hasInsight && !isGenerating && (
+              <button
+                type="button"
+                onClick={handleGenerateTodayInsight}
+                className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl text-[14px] font-semibold text-white transition-all hover:translate-y-[-1px] sm:h-14 sm:text-[15px]"
+                style={{
+                  background: "var(--gradient-brand-btn)",
+                  boxShadow: "0 12px 28px rgba(26,150,136,0.20)",
+                }}
+              >
+                <Sparkles size={18} />
+                Tampilkan Insight Hari Ini
+              </button>
+            )}
+
+            {isGenerating ? (
+              <InsightSkeletonTyping />
+            ) : (
+              <InsightReflectionSection
+                effectiveDate={effectiveDate}
+                availableDates={availableDates}
+                isToday={isToday}
+                selectedInsight={selectedInsight}
               />
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-col gap-5 mt-4">
-                <InsightTrendSection
-                  selectedMonth={selectedMonth}
-                  hasTrendData={hasTrendData}
-                  trendData={trendData}
-                  peakMood={peakMood}
-                  lowMood={lowMood}
-                  avgMood={avgMood}
-                  stableDays={stableDays}
-                />
+            )}
+          </div>
 
-                {/* Secondary "Tampilkan Insight" button — visible and prominent */}
-                {isToday && !hasInsight && !isGenerating && (
-                  <button
-                    type="button"
-                    onClick={handleGenerateTodayInsight}
-                    className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl text-[14px] font-semibold text-white transition-all hover:translate-y-[-1px] sm:h-14 sm:text-[15px]"
-                    style={{
-                      background: "var(--gradient-brand-btn)",
-                      boxShadow: "0 12px 28px rgba(26,150,136,0.20)",
-                    }}
-                  >
-                    <Sparkles size={18} />
-                    Tampilkan Insight Hari Ini
-                  </button>
-                )}
-
-                {isGenerating ? (
-                  <InsightSkeletonTyping />
-                ) : (
-                  <InsightReflectionSection
-                    effectiveDate={effectiveDate}
-                    availableDates={availableDates}
-                    isToday={isToday}
-                    selectedInsight={selectedInsight}
-                  />
-                )}
-              </div>
-
-              {isGenerating ? null : (
-                <InsightRecommendationSection
-                  selectedInsight={selectedInsight}
-                />
-              )}
-            </>
+          {isGenerating ? null : (
+            <InsightRecommendationSection selectedInsight={selectedInsight} />
           )}
         </div>
       </div>

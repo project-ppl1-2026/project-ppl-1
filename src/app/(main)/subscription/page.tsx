@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { syncUserPremiumStatus } from "@/lib/subscription/service";
 import { SubscriptionPageClient } from "./SubscriptionPageClient";
 
 export default async function SubscriptionPage() {
@@ -15,17 +15,8 @@ export default async function SubscriptionPage() {
     redirect("/login");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      isPremium: true,
-    },
-  });
-
-  if (!user) {
-    redirect("/login");
-  }
+  // Sync subscription status (auto-downgrade if expired)
+  await syncUserPremiumStatus(userId);
 
   return (
     <SubscriptionPageClient

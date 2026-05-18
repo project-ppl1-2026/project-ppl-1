@@ -154,7 +154,7 @@ export function SettingsShell({ children }: SettingsShellProps) {
         <button
           type="button"
           onClick={() => router.push("/home")}
-          className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-brand-teal)] transition hover:opacity-80"
+          className="mb-4 inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-[var(--color-brand-teal)] transition hover:opacity-80"
         >
           <ArrowLeft className="h-4 w-4" />
           Kembali

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { syncUserPremiumStatus } from "@/lib/subscription/service";
 
 import InsightPageContent from "@/features/insight/components/InsightPageContent";
 
@@ -21,7 +22,6 @@ export default async function InsightPage() {
     where: { id: userId },
     select: {
       profileFilled: true,
-      isPremium: true,
     },
   });
 
@@ -29,7 +29,10 @@ export default async function InsightPage() {
     redirect("/register?completeProfile=1");
   }
 
-  if (!user?.isPremium) {
+  // Sync subscription status (auto-downgrade if expired)
+  const { isPremium } = await syncUserPremiumStatus(userId);
+
+  if (!isPremium) {
     redirect("/subscription");
   }
 

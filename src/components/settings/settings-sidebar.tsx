@@ -78,7 +78,7 @@ export function SettingsSidebar({ profile }: SettingsSidebarProps) {
         <button
           type="button"
           onClick={() => router.push("/profile")}
-          className={`flex w-full items-center gap-3 border-l-[3px] px-5 py-3 text-left text-sm transition-all sm:px-6 ${
+          className={`flex w-full cursor-pointer items-center gap-3 border-l-[3px] px-5 py-3 text-left text-sm transition-all sm:px-6 ${
             isProfileTab
               ? "border-[var(--color-brand-teal)] bg-[var(--color-brand-teal-ghost)] font-bold text-[var(--color-brand-teal)]"
               : "border-transparent font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-900"
@@ -91,7 +91,7 @@ export function SettingsSidebar({ profile }: SettingsSidebarProps) {
         <button
           type="button"
           onClick={() => router.push("/profile/parent-report")}
-          className={`flex w-full items-center gap-3 border-l-[3px] px-5 py-3 text-left text-sm transition-all sm:px-6 ${
+          className={`flex w-full cursor-pointer items-center gap-3 border-l-[3px] px-5 py-3 text-left text-sm transition-all sm:px-6 ${
             isParentReportTab
               ? "border-[var(--color-brand-teal)] bg-[var(--color-brand-teal-ghost)] font-bold text-[var(--color-brand-teal)]"
               : "border-transparent font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-900"
@@ -106,7 +106,7 @@ export function SettingsSidebar({ profile }: SettingsSidebarProps) {
         <button
           type="button"
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-red-50"
+          className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-red-50"
         >
           <LogOut className="h-4 w-4 shrink-0" />
           Keluar

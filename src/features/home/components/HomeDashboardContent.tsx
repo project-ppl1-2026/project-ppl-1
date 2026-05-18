@@ -24,8 +24,8 @@ import {
   getTimezone,
 } from "../utils";
 import { getMoodColor } from "@/components/mood/mood-face-icons";
+import { PageLoader } from "@/components/ui/manual/page-loader";
 import { fadeUp } from "./home-dashboard-motion";
-import { SkeletonBox } from "./home-dashboard-primitives";
 import { HomeDashboardTopSection } from "./HomeDashboardTopSection";
 import { HomeDashboardMoodHistory } from "./HomeDashboardMoodHistory";
 
@@ -81,7 +81,9 @@ export function HomeDashboardContent() {
     void syncStreak();
   }, [sessionUser?.id, timezone, queryClient]);
 
-  const { data: moodLogs = [] } = useQuery<MoodLog[]>({
+  const { data: moodLogs = [], isLoading: moodLogsLoading } = useQuery<
+    MoodLog[]
+  >({
     queryKey: ["mood-logs"],
     queryFn: async () => {
       const res = await fetch("/api/mood", { cache: "no-store" });
@@ -96,7 +98,7 @@ export function HomeDashboardContent() {
     refetchOnReconnect: true,
   });
 
-  const { data: totalDiaries = 0 } = useQuery({
+  const { data: totalDiaries = 0, isLoading: diariesLoading } = useQuery({
     queryKey: ["total-diaries"],
     queryFn: async () => {
       const res = await fetch("/api/diary/count", { cache: "no-store" });
@@ -107,47 +109,52 @@ export function HomeDashboardContent() {
     enabled: !!sessionUser?.id,
   });
 
-  const { data: baseline = null } = useQuery<BaselineResponse>({
-    queryKey: ["baseline"],
-    queryFn: async () => {
-      const res = await fetch("/api/baseline", { cache: "no-store" });
-      if (!res.ok) return null;
-      const json = (await res.json()) as {
-        success: boolean;
-        baseline: BaselineResponse;
-      };
-      return json.baseline ?? null;
-    },
-    enabled: !!sessionUser?.id,
-    staleTime: 300_000,
-  });
-
-  const { data: parentStatusData = null, refetch: refetchParentStatus } =
-    useQuery<ParentStatusResponse>({
-      queryKey: ["parent-status"],
+  const { data: baseline = null, isLoading: baselineLoading } =
+    useQuery<BaselineResponse>({
+      queryKey: ["baseline"],
       queryFn: async () => {
-        const res = await fetch("/api/parent/status", { cache: "no-store" });
+        const res = await fetch("/api/baseline", { cache: "no-store" });
         if (!res.ok) return null;
-        return (await res.json()) as ParentStatusResponse;
+        const json = (await res.json()) as {
+          success: boolean;
+          baseline: BaselineResponse;
+        };
+        return json.baseline ?? null;
       },
       enabled: !!sessionUser?.id,
-      staleTime: 30_000,
-      refetchOnMount: true,
+      staleTime: 300_000,
     });
 
-  const { data: braveChoiceStats = null } = useQuery({
-    queryKey: ["brave-choice-stats"],
+  const {
+    data: parentStatusData = null,
+    isLoading: parentLoading,
+    refetch: refetchParentStatus,
+  } = useQuery<ParentStatusResponse>({
+    queryKey: ["parent-status"],
     queryFn: async () => {
-      const res = await fetch(
-        `/api/diary/brave-choice/stats?timezone=${timezone}`,
-        { cache: "no-store" },
-      );
+      const res = await fetch("/api/parent/status", { cache: "no-store" });
       if (!res.ok) return null;
-      const json = await res.json();
-      return json.data ?? null;
+      return (await res.json()) as ParentStatusResponse;
     },
     enabled: !!sessionUser?.id,
+    staleTime: 30_000,
+    refetchOnMount: true,
   });
+
+  const { data: braveChoiceStats = null, isLoading: braveChoiceLoading } =
+    useQuery({
+      queryKey: ["brave-choice-stats"],
+      queryFn: async () => {
+        const res = await fetch(
+          `/api/diary/brave-choice/stats?timezone=${timezone}`,
+          { cache: "no-store" },
+        );
+        if (!res.ok) return null;
+        const json = await res.json();
+        return json.data ?? null;
+      },
+      enabled: !!sessionUser?.id,
+    });
 
   const weeks = useMemo(
     () => buildWeeksFromLogs(moodLogs, timezone, 24),
@@ -188,7 +195,13 @@ export function HomeDashboardContent() {
       : (sessionUser?.parentEmail ?? null);
   const braveChoice = braveChoiceStats ?? { pct: 0, correct: 0, total: 0 };
 
-  const isLoading = sessionLoading;
+  const isLoading =
+    sessionLoading ||
+    moodLogsLoading ||
+    diariesLoading ||
+    baselineLoading ||
+    parentLoading ||
+    braveChoiceLoading;
 
   const handleInsightClick = () => {
     router.push(isPremium ? "/insight" : "/subscription");
@@ -263,45 +276,7 @@ export function HomeDashboardContent() {
     : "?";
 
   if (isLoading) {
-    return (
-      <div className="flex h-full flex-col bg-[var(--tt-dashboard-page-bg)]">
-        <style jsx global>{`
-          @keyframes tt-skeleton {
-            0% {
-              background-position: 200% 0;
-            }
-            100% {
-              background-position: -200% 0;
-            }
-          }
-        `}</style>
-        <div
-          className="flex shrink-0 items-center justify-between border-b px-6 py-4"
-          style={{ borderColor: "var(--tt-dashboard-card-border)" }}
-        >
-          <div className="w-48 space-y-2">
-            <SkeletonBox h={12} />
-            <SkeletonBox h={26} />
-          </div>
-          <SkeletonBox h={36} />
-        </div>
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          <div className="space-y-4">
-            <div className="grid gap-3 xl:grid-cols-[280px_1fr]">
-              <SkeletonBox h={220} />
-              <div className="grid grid-cols-2 gap-3">
-                <SkeletonBox h={110} />
-                <SkeletonBox h={110} />
-                <SkeletonBox h={88} />
-                <SkeletonBox h={88} />
-              </div>
-            </div>
-            <SkeletonBox h={72} />
-            <SkeletonBox h={330} />
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoader message="Memuat dashboard..." />;
   }
 
   return (
