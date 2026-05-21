@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { LogoutConfirmDialog } from "@/components/ui/manual/logout-confirm-dialog";
 
 export type AdminPage = "overview" | "users" | "quiz";
 
@@ -336,32 +337,18 @@ function Topbar({
   adminEmail,
   isMobile,
   onOpenMenu,
+  isLoggingOut,
+  onLogout,
 }: {
   activePage: AdminPage;
   adminName: string;
   adminEmail: string;
   isMobile: boolean;
   onOpenMenu: () => void;
+  isLoggingOut: boolean;
+  onLogout: () => void;
 }) {
   const { title, sub } = PAGE_META[activePage];
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-    try {
-      setIsLoggingOut(true);
-      await authClient.signOut({
-        fetchOptions: {
-          onSuccess: () => {
-            window.location.href = "/login";
-          },
-        },
-      });
-    } catch (e) {
-      console.error(e);
-      setIsLoggingOut(false);
-    }
-  };
 
   return (
     <div
@@ -475,9 +462,7 @@ function Topbar({
         <Initials name={adminName} size={isMobile ? 32 : 34} />
         <button
           type="button"
-          onClick={() => {
-            void handleLogout();
-          }}
+          onClick={onLogout}
           disabled={isLoggingOut}
           title={isLoggingOut ? "Keluar…" : "Keluar"}
           style={{
@@ -518,6 +503,25 @@ export function AdminShell({
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    try {
+      setIsLoggingOut(true);
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            window.location.href = "/login";
+          },
+        },
+      });
+    } catch (e) {
+      console.error(e);
+      setIsLoggingOut(false);
+    }
+  };
 
   // Close mobile drawer when route changes
   useEffect(() => {
@@ -568,6 +572,8 @@ export function AdminShell({
           adminEmail={adminEmail}
           isMobile={isMobile}
           onOpenMenu={() => setMobileOpen(true)}
+          isLoggingOut={isLoggingOut}
+          onLogout={() => setShowLogoutConfirm(true)}
         />
         <div
           style={{
@@ -580,6 +586,13 @@ export function AdminShell({
           {children}
         </div>
       </div>
+
+      <LogoutConfirmDialog
+        open={showLogoutConfirm}
+        onConfirm={() => void handleLogout()}
+        onCancel={() => setShowLogoutConfirm(false)}
+        loading={isLoggingOut}
+      />
     </div>
   );
 }

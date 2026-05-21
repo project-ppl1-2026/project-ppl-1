@@ -36,7 +36,10 @@ export type QuizQuestion = {
   createdAt: Date;
 };
 
-type Props = { initialQuestions: QuizQuestion[] };
+type Props = {
+  initialQuestions: QuizQuestion[];
+  onMutationSuccess?: () => void;
+};
 
 const SEGMENTS = [
   { value: "ANAK", label: "Anak (10–12 thn)", color: "#3b82f6" },
@@ -1099,7 +1102,10 @@ function PaginationBar({
 }
 
 // ── Main ──────────────────────────────────────────────────────────
-export function BraveChoicePage({ initialQuestions }: Props) {
+export function BraveChoicePage({
+  initialQuestions,
+  onMutationSuccess,
+}: Props) {
   const isMobile = useIsMobile();
   const [, startTransition] = useTransition();
 
@@ -1171,6 +1177,7 @@ export function BraveChoicePage({ initialQuestions }: Props) {
         setError(result.error);
       } else {
         setModalState("none");
+        onMutationSuccess?.();
       }
     } catch {
       setError("Gagal menyimpan soal. Silakan coba lagi.");
@@ -1193,6 +1200,7 @@ export function BraveChoicePage({ initialQuestions }: Props) {
       } else {
         setModalState("none");
         setEditTarget(null);
+        onMutationSuccess?.();
       }
     } catch {
       setError("Gagal mengubah soal. Silakan coba lagi.");
@@ -1211,6 +1219,7 @@ export function BraveChoicePage({ initialQuestions }: Props) {
         setError(result.error);
       } else {
         setDeleteTarget(null);
+        onMutationSuccess?.();
       }
     } catch {
       setError("Gagal menghapus soal. Silakan coba lagi.");

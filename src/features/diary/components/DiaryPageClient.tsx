@@ -163,7 +163,7 @@ export function DiaryPageClient({
               >
                 <button
                   type="button"
-                  onClick={() => router.push("/home")}
+                  onClick={() => router.back()}
                   style={floatingButtonStyle()}
                 >
                   <ArrowLeft size={15} />

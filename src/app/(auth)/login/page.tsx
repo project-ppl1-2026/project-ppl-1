@@ -3,7 +3,6 @@
 import QueryProvider from "@/components/providers/query-providers";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -97,7 +96,6 @@ function resolveLoginErrorMessage(error: {
 }
 
 function LoginPageContent() {
-  const router = useRouter();
   const shouldReduce = useReducedMotion();
 
   const [serverError, setServerError] = useState("");
@@ -129,8 +127,8 @@ function LoginPageContent() {
       return;
     }
 
-    router.replace(sessionData.nextRoute);
-  }, [isSessionLoading, isSessionError, sessionData, router]);
+    window.location.href = sessionData.nextRoute;
+  }, [isSessionLoading, isSessionError, sessionData]);
 
   const loginMutation = useMutation<
     unknown,
@@ -184,7 +182,11 @@ function LoginPageContent() {
   );
 
   if (isSessionLoading) {
-    return <PageLoader message="Memeriksa sesi..." />;
+    return <PageLoader message="Memeriksa sesi..." fullscreen />;
+  }
+
+  if (sessionData?.isAuthenticated) {
+    return <PageLoader message="Memuat dashboard..." fullscreen />;
   }
 
   return (

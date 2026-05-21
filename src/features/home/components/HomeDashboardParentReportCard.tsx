@@ -2,7 +2,13 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Loader2, Send } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  Loader2,
+  Send,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -35,6 +41,7 @@ export function HomeDashboardParentReportCard({
   onReportSent?: () => Promise<void> | void;
 }) {
   const [isSending, setIsSending] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
   const isVerified = parentStatus === "verified" && Boolean(parentEmail);
 
   const lastSentLabel =
@@ -144,16 +151,17 @@ export function HomeDashboardParentReportCard({
         </div>
 
         <div className="flex flex-1 flex-col justify-between">
-          <div>
+          {/* Desktop: always show details */}
+          <div className="hidden sm:block">
             <p
-              className="truncate text-[13px] font-bold leading-tight sm:text-[14px]"
+              className="truncate text-[14px] font-bold leading-tight"
               style={{ color: "var(--tt-dashboard-text)" }}
             >
               {parentEmail ?? "Belum ada email orang tua"}
             </p>
 
             <p
-              className="mt-1 text-[11px] sm:text-[12px]"
+              className="mt-1 text-[12px]"
               style={{ color: "var(--tt-dashboard-text-2)" }}
             >
               {isVerified
@@ -162,10 +170,61 @@ export function HomeDashboardParentReportCard({
             </p>
           </div>
 
+          {/* Mobile: show toggle button */}
+          <div className="sm:hidden">
+            <button
+              type="button"
+              onClick={() => setShowDetail((v) => !v)}
+              className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-1 py-1 text-left"
+            >
+              <p
+                className="truncate text-[12px] font-bold leading-tight"
+                style={{ color: "var(--tt-dashboard-text)" }}
+              >
+                {isVerified ? "Tersambung" : "Belum tersambung"}
+              </p>
+              <ChevronDown
+                size={14}
+                style={{
+                  color: "var(--tt-dashboard-text-3)",
+                  transform: showDetail ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s",
+                  flexShrink: 0,
+                }}
+              />
+            </button>
+
+            {showDetail && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="mt-2"
+              >
+                <p
+                  className="truncate text-[12px] font-bold leading-tight"
+                  style={{ color: "var(--tt-dashboard-text)" }}
+                >
+                  {parentEmail ?? "Belum ada email"}
+                </p>
+                <p
+                  className="mt-1 text-[10px]"
+                  style={{ color: "var(--tt-dashboard-text-2)" }}
+                >
+                  {isVerified
+                    ? reportMetaLabel
+                    : "Tambahkan email untuk laporan mingguan"}
+                </p>
+              </motion.div>
+            )}
+          </div>
+
           {isVerified && currentWeek ? (
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              {/* Period info: hidden on mobile unless detail is open */}
               <div
-                className="text-[11px] sm:text-[12px]"
+                className={`text-[11px] sm:block sm:text-[12px] ${showDetail ? "block" : "hidden"}`}
                 style={{ color: "var(--tt-dashboard-text)" }}
               >
                 <div className="font-medium opacity-75">Periode</div>

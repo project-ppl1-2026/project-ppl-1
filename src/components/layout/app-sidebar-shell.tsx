@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
+import { LogoutConfirmDialog } from "@/components/ui/manual/logout-confirm-dialog";
 
 type ShellUser = {
   name: string;
@@ -260,12 +261,26 @@ export function AppSidebarShell({ user, children }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isPremium, setIsPremium] = useState(Boolean(user.isPremium));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [snapOpen, setSnapOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const shellUser = useMemo(() => ({ ...user, isPremium }), [isPremium, user]);
 
   useEffect(() => {
     setIsPremium(Boolean(user.isPremium));
   }, [user.isPremium]);
+
+  // Watch for snap-open class on body to neutralize overflow
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setSnapOpen(document.body.classList.contains("snap-open"));
+    });
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const handlePremiumStatusSync = (event: Event) => {
@@ -320,18 +335,25 @@ export function AppSidebarShell({ user, children }: Props) {
 
   return (
     /* Fullscreen — zero padding, no wrapper card */
-    <div className="h-[100dvh] w-full overflow-hidden bg-[var(--tt-dashboard-page-bg)]">
+    <div
+      className={`h-[100dvh] w-full bg-[var(--tt-dashboard-page-bg)] ${snapOpen ? "overflow-visible" : "overflow-hidden"}`}
+    >
       {/* Mobile slide-out nav */}
       <MobileSidebar
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
         user={shellUser}
         pathname={pathname}
-        onLogout={() => void handleLogout()}
+        onLogout={() => {
+          setMobileOpen(false);
+          setShowLogoutConfirm(true);
+        }}
         isLoggingOut={isLoggingOut}
       />
 
-      <div className="flex h-full w-full">
+      <div
+        className={`flex h-full w-full ${snapOpen ? "overflow-visible" : ""}`}
+      >
         {/* ── Desktop Sidebar ── */}
         <aside
           className="hidden shrink-0 border-r lg:flex lg:flex-col"
@@ -386,7 +408,9 @@ export function AppSidebarShell({ user, children }: Props) {
         </aside>
 
         {/* ── Content area ── */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div
+          className={`flex min-w-0 flex-1 flex-col ${snapOpen ? "overflow-visible" : ""}`}
+        >
           {/* Mobile hamburger bar — left: hamburger + brand, right: avatar + logout */}
           <div
             className="flex shrink-0 items-center gap-3 border-b px-4 py-3 lg:hidden"
@@ -423,15 +447,26 @@ export function AppSidebarShell({ user, children }: Props) {
                 userInitials={userInitials}
                 userName={shellUser.name}
                 isLoggingOut={isLoggingOut}
-                onLogout={() => void handleLogout()}
+                onLogout={() => setShowLogoutConfirm(true)}
               />
             </div>
           </div>
 
           {/* Page content */}
-          <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
+          <main
+            className={`min-h-0 flex-1 ${snapOpen ? "overflow-visible" : "overflow-hidden"}`}
+          >
+            {children}
+          </main>
         </div>
       </div>
+
+      <LogoutConfirmDialog
+        open={showLogoutConfirm}
+        onConfirm={() => void handleLogout()}
+        onCancel={() => setShowLogoutConfirm(false)}
+        loading={isLoggingOut}
+      />
     </div>
   );
 }

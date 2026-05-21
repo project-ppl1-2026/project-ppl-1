@@ -1,10 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BraveChoicePage } from "@/components/admin/BraveChoicePage";
 import AdminLoading from "@/app/(admin)/admin/loading";
 
 export function AdminQuizClient() {
+  const queryClient = useQueryClient();
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-quiz"],
     queryFn: async () => {
@@ -28,5 +30,12 @@ export function AdminQuizClient() {
     );
   }
 
-  return <BraveChoicePage initialQuestions={data} />;
+  return (
+    <BraveChoicePage
+      initialQuestions={data}
+      onMutationSuccess={() => {
+        void queryClient.invalidateQueries({ queryKey: ["admin-quiz"] });
+      }}
+    />
+  );
 }
