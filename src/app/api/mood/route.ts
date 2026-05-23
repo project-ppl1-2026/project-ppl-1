@@ -1,8 +1,11 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import { createMoodLog, getMoodLogs } from "@/lib/mood/service";
-import { initiateDiaryFromMood } from "@/lib/diary/service";
+import {
+  ensureDiaryShellFromMood,
+  generateDiaryGreetingFromMood,
+} from "@/lib/diary/service";
 import {
   moodHistoryQuerySchema,
   moodSubmitSchema,
@@ -93,13 +96,23 @@ export async function POST(request: Request) {
       timezone: parsedPayload.data.timezone,
     });
 
-    // Panggil initiateDiaryFromMood asinkron tanpa menahan response
-    void initiateDiaryFromMood({
+    const diaryShell = await ensureDiaryShellFromMood({
       userId,
-      moodScore: parsedPayload.data.moodScore,
-      notes: parsedPayload.data.note || "",
       timezone: parsedPayload.data.timezone,
     });
+
+    if (diaryShell.shouldGenerateGreeting) {
+      scheduleAfterResponse(async () => {
+        await generateDiaryGreetingFromMood({
+          userId,
+          moodScore: parsedPayload.data.moodScore,
+          notes: parsedPayload.data.note || "",
+          diaryId: diaryShell.diaryId,
+          todayDate: diaryShell.todayDate,
+          timezone: diaryShell.timezone,
+        });
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -107,6 +120,12 @@ export async function POST(request: Request) {
       data: {
         mood: newLog,
         currentStreak: updatedUser.currentStreak,
+        diary: {
+          id: diaryShell.diaryId,
+          greetingStatus: diaryShell.shouldGenerateGreeting
+            ? "scheduled"
+            : "ready",
+        },
       },
     });
   } catch (error: unknown) {
@@ -127,5 +146,26 @@ export async function POST(request: Request) {
             : 500,
       },
     );
+  }
+}
+
+function scheduleAfterResponse(task: () => Promise<void>) {
+  const runTask = async () => {
+    try {
+      await task();
+    } catch (error) {
+      console.error("Mood diary background task error:", error);
+    }
+  };
+
+  try {
+    after(runTask);
+  } catch (error) {
+    if (process.env.NODE_ENV === "test") {
+      return;
+    }
+
+    console.warn("Falling back to in-process diary task scheduling:", error);
+    void runTask();
   }
 }

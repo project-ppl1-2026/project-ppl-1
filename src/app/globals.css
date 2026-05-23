@@ -353,3 +353,22 @@
   --sidebar-border: rgba(255, 255, 255, 0.1);
   --sidebar-ring: #71717a;
 }
+
+/* ── Midtrans Snap popup responsive fix ── */
+/* When Snap is open, neutralize ALL overflow constraints in the ancestor chain */
+body.snap-open,
+body.snap-open > *,
+body.snap-open > * > *,
+body.snap-open > * > * > *,
+body.snap-open > * > * > * > *,
+body.snap-open > * > * > * > * > * {
+  overflow: visible !important;
+}
+
+/* Force all app-level fixed/sticky elements below Snap when open */
+body.snap-open header,
+body.snap-open aside,
+body.snap-open nav {
+  z-index: 0 !important;
+  pointer-events: none !important;
+}

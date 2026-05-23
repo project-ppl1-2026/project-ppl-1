@@ -817,7 +817,7 @@ function RegisterPageContent() {
     if (!isCompleteProfileFlow || isSessionLoading || !sessionData) return;
 
     if (sessionData.isAuthenticated && sessionData.isComplete) {
-      router.replace("/");
+      window.location.href = "/baseline";
       return;
     }
 
@@ -925,7 +925,7 @@ function RegisterPageContent() {
           : "Data diri berhasil dilengkapi.",
       );
 
-      router.replace("/");
+      window.location.href = "/baseline";
     },
 
     onError: (error: { message?: string }) => {
@@ -978,7 +978,11 @@ function RegisterPageContent() {
   }, []);
 
   if (isCompleteProfileFlow && isSessionLoading) {
-    return <PageLoader message="Memeriksa sesi..." />;
+    return <PageLoader message="Memeriksa sesi..." fullscreen />;
+  }
+
+  if (done) {
+    return <PageLoader message="Memuat baseline..." fullscreen />;
   }
 
   return (

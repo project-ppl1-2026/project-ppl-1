@@ -2,7 +2,13 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Loader2, Send } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  Loader2,
+  Send,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -35,6 +41,7 @@ export function HomeDashboardParentReportCard({
   onReportSent?: () => Promise<void> | void;
 }) {
   const [isSending, setIsSending] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
   const isVerified = parentStatus === "verified" && Boolean(parentEmail);
 
   const lastSentLabel =
@@ -143,68 +150,121 @@ export function HomeDashboardParentReportCard({
           )}
         </div>
 
-        <div className="flex flex-1 flex-col justify-center">
-          <p
-            className="text-[11px] font-bold leading-tight sm:text-[12px]"
-            style={{ color: "var(--tt-dashboard-text)" }}
-          >
-            {parentEmail ?? "Belum ada email orang tua"}
-          </p>
+        <div className="flex flex-1 flex-col justify-between">
+          {/* Desktop: always show details */}
+          <div className="hidden sm:block">
+            <p
+              className="truncate text-[14px] font-bold leading-tight"
+              style={{ color: "var(--tt-dashboard-text)" }}
+            >
+              {parentEmail ?? "Belum ada email orang tua"}
+            </p>
 
-          <p
-            className="hidden text-[10px] sm:block"
-            style={{ color: "var(--tt-dashboard-text-2)" }}
-          >
-            {isVerified
-              ? reportMetaLabel
-              : "Tambahkan email untuk laporan mingguan"}
-          </p>
+            <p
+              className="mt-1 text-[12px]"
+              style={{ color: "var(--tt-dashboard-text-2)" }}
+            >
+              {isVerified
+                ? reportMetaLabel
+                : "Tambahkan email untuk laporan mingguan"}
+            </p>
+          </div>
 
-          {isVerified && currentWeek ? (
-            <div className="mt-4 space-y-2">
-              <motion.div
-                whileHover={{ x: 1 }}
-                className="flex items-center gap-2 text-[11px]"
+          {/* Mobile: show toggle button */}
+          <div className="sm:hidden">
+            <button
+              type="button"
+              onClick={() => setShowDetail((v) => !v)}
+              className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-1 py-1 text-left"
+            >
+              <p
+                className="truncate text-[12px] font-bold leading-tight"
                 style={{ color: "var(--tt-dashboard-text)" }}
               >
-                <span>
-                  Periode: {currentWeek.days[0]?.date ?? "-"} -{" "}
+                {isVerified ? "Tersambung" : "Belum tersambung"}
+              </p>
+              <ChevronDown
+                size={14}
+                style={{
+                  color: "var(--tt-dashboard-text-3)",
+                  transform: showDetail ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s",
+                  flexShrink: 0,
+                }}
+              />
+            </button>
+
+            {showDetail && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="mt-2"
+              >
+                <p
+                  className="truncate text-[12px] font-bold leading-tight"
+                  style={{ color: "var(--tt-dashboard-text)" }}
+                >
+                  {parentEmail ?? "Belum ada email"}
+                </p>
+                <p
+                  className="mt-1 text-[10px]"
+                  style={{ color: "var(--tt-dashboard-text-2)" }}
+                >
+                  {isVerified
+                    ? reportMetaLabel
+                    : "Tambahkan email untuk laporan mingguan"}
+                </p>
+              </motion.div>
+            )}
+          </div>
+
+          {isVerified && currentWeek ? (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              {/* Period info: hidden on mobile unless detail is open */}
+              <div
+                className={`text-[11px] sm:block sm:text-[12px] ${showDetail ? "block" : "hidden"}`}
+                style={{ color: "var(--tt-dashboard-text)" }}
+              >
+                <div className="font-medium opacity-75">Periode</div>
+                <div className="font-bold">
+                  {currentWeek.days[0]?.date ?? "-"} -{" "}
                   {currentWeek.days[6]?.date ?? "-"}{" "}
                   {currentWeek.days[6]?.month ?? ""} {year}
-                </span>
-              </motion.div>
+                </div>
+              </div>
 
               <motion.button
                 type="button"
-                whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => void handleSendReport()}
                 disabled={isSending}
-                className="inline-flex h-8 items-center gap-2 rounded-xl px-3 text-[10px] font-bold text-white transition-shadow duration-300 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-xl px-4 text-[11px] font-bold text-white transition-shadow duration-300 disabled:cursor-not-allowed disabled:opacity-70 sm:text-[12px]"
                 style={{
                   background: "var(--tt-dashboard-button-bg)",
                   boxShadow: "0 8px 18px rgba(26,150,136,0.14)",
                 }}
               >
                 {isSending ? (
-                  <Loader2 size={11} className="animate-spin" />
+                  <Loader2 size={13} className="animate-spin" />
                 ) : (
-                  <Send size={11} />
+                  <Send size={13} />
                 )}
                 {isSending ? "Mengirim..." : "Kirim Sekarang"}
               </motion.button>
             </div>
           ) : (
-            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+            <motion.div whileTap={{ scale: 0.97 }}>
               <Link
                 href="/profile/parent-report"
-                className="mt-4 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-bold text-white transition-shadow duration-300"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[11px] font-bold text-white transition-shadow duration-300 sm:text-[12px]"
                 style={{
                   background: "var(--tt-dashboard-button-bg)",
                   boxShadow: "0 8px 18px rgba(26,150,136,0.14)",
                 }}
               >
-                Tambah Email <ArrowRight size={11} />
+                Tambah Email <ArrowRight size={13} />
               </Link>
             </motion.div>
           )}

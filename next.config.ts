@@ -2,7 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
-    "/api/baseline": ["./src/models/**/*.onnx"],
+    "/api/baseline": [
+      "./src/models/**/*.onnx",
+      "./node_modules/onnxruntime-node/bin/napi-v6/linux/**/*",
+    ],
   },
   serverExternalPackages: ["onnxruntime-node"],
   images: {

@@ -12,6 +12,8 @@ This document provides a comprehensive overview of the available API endpoints f
 7. Payment API
 8. Subscription API
 9. Insight API
+10. Admin API
+11. Cron API
 
 ---
 
@@ -127,6 +129,62 @@ Authentication is handled by the `better-auth` library via the `/api/auth/*` rou
 **Response (401 Unauthorized - Not Logged In):**
 ```json
 null
+```
+
+---
+
+### 1.5 Check Email
+- **Endpoint**: `POST /api/auth/check-email`
+- **Description**: Checks whether a given email address is already registered in the system. Used on the registration form to show inline feedback before submission.
+- **Authentication**: Not required
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "exists": true
+}
+```
+
+**Response (400 Bad Request):**
+```json
+{
+  "error": "Email diperlukan."
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "Terjadi kesalahan."
+}
+```
+
+### 1.6 Get Post-Login Status
+- **Endpoint**: `GET /api/auth/post-login-status`
+- **Description**: Determines where to redirect the user after login based on their profile completion state. Returns `isAuthenticated` and `nextRoute`.
+- **Authentication**: Optional
+
+**Response (200 OK - Authenticated):**
+```json
+{
+  "isAuthenticated": true,
+  "nextRoute": "/diary"
+}
+```
+
+**Response (200 OK - Not Authenticated):**
+```json
+{
+  "isAuthenticated": false,
+  "nextRoute": "/login"
+}
 ```
 
 ---
@@ -927,9 +985,57 @@ These endpoints handle parental consent flows and account linking.
 }
 ```
 
+### 5.4 Send Weekly Parent Report (Manual)
+- **Endpoint**: `POST /api/parent-report/send`
+- **Description**: Manually triggers a weekly parent report for the logged-in user. If there is no mood data for the current period or the report was already sent, the endpoint still returns 200 with a descriptive message.
+- **Authentication**: Required
+
+**Request Body:**
+```json
+{
+  "timezone": "Asia/Jakarta"
+}
+```
+
+**Response (200 OK - Report Sent):**
+```json
+{
+  "success": true,
+  "message": "Laporan mingguan berhasil dikirim.",
+  "data": {
+    "skipped": false
+  }
+}
+```
+
+**Response (200 OK - No Data / Already Sent):**
+```json
+{
+  "success": true,
+  "message": "Belum ada data mood untuk periode ini, jadi laporan tidak dikirim.",
+  "data": {
+    "skipped": true,
+    "reason": "no_data"
+  }
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "Terjadi kesalahan saat mengirim laporan mingguan."
+}
+```
+
 ---
 
-## 6. Profile API
 
 ### 6.1 Get Security State
 - **Endpoint**: `GET /api/profile/security-state`
@@ -1274,4 +1380,178 @@ These endpoints handle premium daily insight summaries. Insight generation uses 
 {
   "error": "Terjadi kesalahan saat menghasilkan insight."
 }
+```
+
+
+---
+
+## 10. Admin API
+
+All Admin API endpoints require the authenticated user to have the `admin` role. Regular users will receive a `403 Forbidden` response.
+
+### 10.1 Get Admin Overview
+- **Endpoint**: `GET /api/admin/overview`
+- **Description**: Returns aggregated platform statistics for the admin dashboard, including user counts, premium status, quiz engagement, and age segment distribution.
+- **Authentication**: Required (Admin only)
+
+**Response (200 OK):**
+```json
+{
+  "data": {
+    "totalUsers": 1240,
+    "premiumUsers": 312,
+    "activeUsers": 980,
+    "nonActiveUsers": 260,
+    "totalQuestionsActive": 45,
+    "newUsersThisMonth": 88,
+    "quizLogCount": 5620,
+    "segmentCounts": [
+      { "segment": "10-14", "count": 18 },
+      { "segment": "15-18", "count": 15 },
+      { "segment": "19-24", "count": 12 }
+    ]
+  }
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{ "error": "Unauthorized" }
+```
+
+**Response (403 Forbidden):**
+```json
+{ "error": "Forbidden" }
+```
+
+**Response (500 Internal Server Error):**
+```json
+{ "error": "Internal Server Error" }
+```
+
+### 10.2 Get All Quiz Questions
+- **Endpoint**: `GET /api/admin/quiz`
+- **Description**: Returns all BraveChoice quiz questions (active and inactive), ordered by creation date descending.
+- **Authentication**: Required (Admin only)
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "question-uuid",
+      "scenario": "Temanmu diejek di grup kelas.",
+      "category": "Bullying",
+      "optionA": "Membela teman",
+      "optionB": "Diam saja",
+      "correctOption": "A",
+      "explanationCorrect": "Membela teman adalah pilihan yang tepat.",
+      "explanationIncorrect": "Diam memperkuat perilaku pelaku.",
+      "ageSegment": "10-14",
+      "isActive": true,
+      "createdAt": "2026-04-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{ "error": "Unauthorized" }
+```
+
+**Response (403 Forbidden):**
+```json
+{ "error": "Forbidden" }
+```
+
+**Response (500 Internal Server Error):**
+```json
+{ "error": "Internal Server Error" }
+```
+
+### 10.3 Get Users (Admin)
+- **Endpoint**: `GET /api/admin/users`
+- **Description**: Returns a paginated, filterable, and searchable list of all non-admin users.
+- **Authentication**: Required (Admin only)
+- **Query Parameters**:
+  - `search` (Optional): Search by name or email (case-insensitive)
+  - `filter` (Optional): `all` (default) | `premium` | `basic` | `nonaktif`
+  - `page` (Optional): Page number, default `1`
+  - `limit` (Optional): Items per page, default `10`. Set to `0` to return all.
+
+**Response (200 OK):**
+```json
+{
+  "data": {
+    "users": [
+      {
+        "id": "user-uuid",
+        "name": "Budi Santoso",
+        "email": "budi@example.com",
+        "isPremium": false,
+        "status": "Aktif",
+        "createdAt": "2026-03-10T08:00:00.000Z",
+        "birthYear": 2008,
+        "gender": "Laki-laki",
+        "profileFilled": true,
+        "currentStreak": 7,
+        "parentEmail": "ibu.budi@example.com"
+      }
+    ],
+    "total": 1240,
+    "page": 1,
+    "limit": 10,
+    "currentSearch": "",
+    "currentFilter": "all"
+  }
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{ "error": "Unauthorized" }
+```
+
+**Response (403 Forbidden):**
+```json
+{ "error": "Forbidden" }
+```
+
+**Response (500 Internal Server Error):**
+```json
+{ "error": "Internal Server Error" }
+```
+
+---
+
+## 11. Cron API
+
+Cron endpoints are designed to be called by a scheduler (e.g., Vercel Cron). They require a secret token for authorization, **not** a user session.
+
+### 11.1 Send Weekly Parent Reports (Cron)
+- **Endpoint**: `GET /api/cron/weekly-parent-reports` or `POST /api/cron/weekly-parent-reports`
+- **Description**: Triggered automatically each week to send digest emails to parents. Requires `CRON_SECRET` in the `Authorization: Bearer <secret>` header or `x-cron-secret` header.
+- **Authentication**: `CRON_SECRET` bearer token
+- **Query Parameters**:
+  - `limit` (Optional): Max number of users to process per run, default `200`
+  - `timezone` (Optional): Timezone override, e.g., `Asia/Jakarta`
+
+**Response (200 OK):**
+```json
+{
+  "sent": 42,
+  "skipped": 8,
+  "errors": 0
+}
+```
+
+**Response (401 Unauthorized - Invalid or Missing Secret):**
+```json
+{ "error": "Unauthorized" }
+```
+
+**Response (500 Internal Server Error):**
+```json
+{ "error": "Terjadi kesalahan saat menjalankan cron laporan." }
 ```

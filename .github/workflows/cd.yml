@@ -1,0 +1,35 @@
+name: CD
+run-name: CD by @${{ github.actor }} for [${{ github.sha }}] commit
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.18"
+          cache: "pnpm"
+
+      - name: Install deps
+        run: pnpm install
+
+      - name: Build Project
+        run: pnpm build

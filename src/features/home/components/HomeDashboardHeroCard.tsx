@@ -62,7 +62,7 @@ export function HomeDashboardHeroCard({
       {/* Stats row */}
       <div className="mb-4 grid grid-cols-2 gap-2 mt-8">
         <motion.div
-          whileHover={{ y: -2, backgroundColor: "rgba(255,255,255,0.16)" }}
+          whileHover={{ backgroundColor: "rgba(255,255,255,0.16)" }}
           className="rounded-xl bg-white/10 px-3 py-2.5 text-center transition-colors duration-200"
         >
           <p className="text-[16px] font-black text-white">{longestStreak}</p>
@@ -70,7 +70,7 @@ export function HomeDashboardHeroCard({
         </motion.div>
 
         <motion.div
-          whileHover={{ y: -2, backgroundColor: "rgba(255,255,255,0.16)" }}
+          whileHover={{ backgroundColor: "rgba(255,255,255,0.16)" }}
           className="rounded-xl bg-white/10 px-3 py-2.5 text-center transition-colors duration-200"
         >
           <p className="text-[16px] font-black text-white">{totalDiaries}</p>
@@ -83,7 +83,6 @@ export function HomeDashboardHeroCard({
         {streakWeek.map((d, i) => (
           <motion.div
             key={`${d.day}-${i}`}
-            whileHover={{ y: -1 }}
             className="flex flex-col items-center gap-1"
           >
             <div

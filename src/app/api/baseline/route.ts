@@ -7,6 +7,9 @@ import {
 } from "@/lib/baseline/service";
 import { baselineAnswersSchema } from "@/lib/baseline/validation";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 async function saveBaselineResult(request: Request) {
   const userId = await getAuthenticatedUserIdFromRequest(request);
 

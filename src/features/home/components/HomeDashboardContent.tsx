@@ -24,8 +24,9 @@ import {
   getTimezone,
 } from "../utils";
 import { getMoodColor } from "@/components/mood/mood-face-icons";
+import { PageLoader } from "@/components/ui/manual/page-loader";
+import { LogoutConfirmDialog } from "@/components/ui/manual/logout-confirm-dialog";
 import { fadeUp } from "./home-dashboard-motion";
-import { SkeletonBox } from "./home-dashboard-primitives";
 import { HomeDashboardTopSection } from "./HomeDashboardTopSection";
 import { HomeDashboardMoodHistory } from "./HomeDashboardMoodHistory";
 
@@ -34,6 +35,7 @@ export function HomeDashboardContent() {
   const queryClient = useQueryClient();
   const [timezone] = useState(() => getTimezone());
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const now = useMemo(() => new Date(), []);
 
@@ -51,9 +53,9 @@ export function HomeDashboardContent() {
   const { data: sessionData, isLoading: sessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: () => authClient.getSession().then((r) => r.data),
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    staleTime: 60_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
   });
 
@@ -81,7 +83,9 @@ export function HomeDashboardContent() {
     void syncStreak();
   }, [sessionUser?.id, timezone, queryClient]);
 
-  const { data: moodLogs = [], isLoading: moodLoading } = useQuery<MoodLog[]>({
+  const { data: moodLogs = [], isLoading: moodLogsLoading } = useQuery<
+    MoodLog[]
+  >({
     queryKey: ["mood-logs"],
     queryFn: async () => {
       const res = await fetch("/api/mood", { cache: "no-store" });
@@ -90,13 +94,13 @@ export function HomeDashboardContent() {
       return json.data ?? [];
     },
     enabled: !!sessionUser?.id,
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
   });
 
-  const { data: totalDiaries = 0, isLoading: countLoading } = useQuery({
+  const { data: totalDiaries = 0, isLoading: diariesLoading } = useQuery({
     queryKey: ["total-diaries"],
     queryFn: async () => {
       const res = await fetch("/api/diary/count", { cache: "no-store" });
@@ -125,7 +129,7 @@ export function HomeDashboardContent() {
 
   const {
     data: parentStatusData = null,
-    isLoading: parentStatusLoading,
+    isLoading: parentLoading,
     refetch: refetchParentStatus,
   } = useQuery<ParentStatusResponse>({
     queryKey: ["parent-status"],
@@ -135,8 +139,8 @@ export function HomeDashboardContent() {
       return (await res.json()) as ParentStatusResponse;
     },
     enabled: !!sessionUser?.id,
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 30_000,
+    refetchOnMount: true,
   });
 
   const { data: braveChoiceStats = null, isLoading: braveChoiceLoading } =
@@ -195,11 +199,11 @@ export function HomeDashboardContent() {
 
   const isLoading =
     sessionLoading ||
-    moodLoading ||
+    moodLogsLoading ||
+    diariesLoading ||
     baselineLoading ||
-    countLoading ||
-    braveChoiceLoading ||
-    parentStatusLoading;
+    parentLoading ||
+    braveChoiceLoading;
 
   const handleInsightClick = () => {
     router.push(isPremium ? "/insight" : "/subscription");
@@ -274,45 +278,7 @@ export function HomeDashboardContent() {
     : "?";
 
   if (isLoading) {
-    return (
-      <div className="flex h-full flex-col bg-[var(--tt-dashboard-page-bg)]">
-        <style jsx global>{`
-          @keyframes tt-skeleton {
-            0% {
-              background-position: 200% 0;
-            }
-            100% {
-              background-position: -200% 0;
-            }
-          }
-        `}</style>
-        <div
-          className="flex shrink-0 items-center justify-between border-b px-6 py-4"
-          style={{ borderColor: "var(--tt-dashboard-card-border)" }}
-        >
-          <div className="w-48 space-y-2">
-            <SkeletonBox h={12} />
-            <SkeletonBox h={26} />
-          </div>
-          <SkeletonBox h={36} />
-        </div>
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          <div className="space-y-4">
-            <div className="grid gap-3 xl:grid-cols-[280px_1fr]">
-              <SkeletonBox h={220} />
-              <div className="grid grid-cols-2 gap-3">
-                <SkeletonBox h={110} />
-                <SkeletonBox h={110} />
-                <SkeletonBox h={88} />
-                <SkeletonBox h={88} />
-              </div>
-            </div>
-            <SkeletonBox h={72} />
-            <SkeletonBox h={330} />
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoader message="Memuat dashboard..." />;
   }
 
   return (
@@ -354,7 +320,7 @@ export function HomeDashboardContent() {
               userImageSrc={userImageSrc}
               userInitials={userInitials}
               isLoggingOut={isLoggingOut}
-              onLogout={() => void handleLogout()}
+              onLogout={() => setShowLogoutConfirm(true)}
             />
           </div>
         </motion.header>
@@ -403,7 +369,6 @@ export function HomeDashboardContent() {
             custom={6}
             className="mt-3"
             whileHover={{
-              y: -3,
               boxShadow: "0 14px 32px rgba(26,150,136,0.16)",
             }}
             whileTap={{ scale: 0.985 }}
@@ -466,6 +431,13 @@ export function HomeDashboardContent() {
           />
         </div>
       </div>
+
+      <LogoutConfirmDialog
+        open={showLogoutConfirm}
+        onConfirm={() => void handleLogout()}
+        onCancel={() => setShowLogoutConfirm(false)}
+        loading={isLoggingOut}
+      />
     </div>
   );
 }

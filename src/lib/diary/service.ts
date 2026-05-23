@@ -33,6 +33,13 @@ type SendDiaryChatInput = {
   timezone?: string;
 };
 
+type DiaryMoodInitiationInput = {
+  userId: string;
+  moodScore: number;
+  notes: string;
+  timezone?: string;
+};
+
 type DiaryMessageRecord = {
   id: string;
   senderType: Sender;
@@ -426,22 +433,17 @@ export async function persistDiaryChatSession({
   };
 }
 
-export async function initiateDiaryFromMood({
+export async function ensureDiaryShellFromMood({
   userId,
-  moodScore,
-  notes,
   timezone,
 }: {
   userId: string;
-  moodScore: number;
-  notes: string;
   timezone?: string;
 }) {
   const tz = normalizeTimezone(timezone);
   const todayKey = getDateKeyInTimeZone(new Date(), tz);
   const todayDate = parseDateKeyToUTCDate(todayKey);
 
-  // Periksa apakah diary untuk hari ini sudah ada
   const existingDiary = await prisma.diary.findFirst({
     where: {
       userId,
@@ -455,8 +457,49 @@ export async function initiateDiaryFromMood({
     },
   });
 
-  // Jika sudah ada dan sudah punya pesan, jangan timpa
-  if (existingDiary && existingDiary.messages.length > 0) {
+  if (existingDiary) {
+    return {
+      diaryId: existingDiary.id,
+      shouldGenerateGreeting: existingDiary.messages.length === 0,
+      timezone: tz,
+      todayDate,
+    };
+  }
+
+  const diary = await prisma.diary.create({
+    data: {
+      userId,
+      date: todayDate,
+      isActive: true,
+    },
+    select: { id: true },
+  });
+
+  return {
+    diaryId: diary.id,
+    shouldGenerateGreeting: true,
+    timezone: tz,
+    todayDate,
+  };
+}
+
+export async function generateDiaryGreetingFromMood({
+  userId,
+  moodScore,
+  notes,
+  timezone,
+  diaryId,
+  todayDate,
+}: DiaryMoodInitiationInput & {
+  diaryId: string;
+  todayDate: Date;
+  timezone: string;
+}) {
+  const existingMessageCount = await prisma.diaryMessage.count({
+    where: { diaryId },
+  });
+
+  if (existingMessageCount > 0) {
     return;
   }
 
@@ -465,26 +508,12 @@ export async function initiateDiaryFromMood({
     select: { name: true },
   });
 
-  const diaryId =
-    existingDiary?.id ??
-    (
-      await prisma.diary.create({
-        data: {
-          userId,
-          date: todayDate,
-          isActive: true,
-        },
-        select: { id: true },
-      })
-    ).id;
-
-  // Buat pesan pengantar berdasarkan mood & notes menggunakan identitas AI utama
   const moodDesc = getMoodDescription(moodScore);
   const aiPrompt = `(Sistem: User baru saja melakukan check-in hari ini. Ia merasa ${moodDesc}.${
     notes ? ` Catatan yang ia tulis: "${notes}".` : ""
   } Berikan sapaan pertama yang ramah, berempati dengan perasaannya sekarang, dan pancing ia untuk mulai bercerita di diary. Berbicaralah sesuai dengan persona sistemmu tanpa menyebutkan secara eksplisit bahwa instruksi ini berasal dari sistem.)`;
 
-  const todayLabel = formatDateLabel(todayDate, tz);
+  const todayLabel = formatDateLabel(todayDate, timezone);
   const promptMessages = buildDiaryPromptMessages({
     userName: user?.name || "Teman",
     todayLabel,
@@ -502,6 +531,14 @@ export async function initiateDiaryFromMood({
     });
 
     if (assistantText.trim()) {
+      const latestMessageCount = await prisma.diaryMessage.count({
+        where: { diaryId },
+      });
+
+      if (latestMessageCount > 0) {
+        return;
+      }
+
       await prisma.diaryMessage.create({
         data: {
           diaryId: diaryId,
@@ -513,6 +550,24 @@ export async function initiateDiaryFromMood({
   } catch (error) {
     console.error("Gagal menginisiasi diary dari mood:", error);
   }
+}
+
+export async function initiateDiaryFromMood(input: DiaryMoodInitiationInput) {
+  const diaryShell = await ensureDiaryShellFromMood({
+    userId: input.userId,
+    timezone: input.timezone,
+  });
+
+  if (!diaryShell.shouldGenerateGreeting) {
+    return;
+  }
+
+  await generateDiaryGreetingFromMood({
+    ...input,
+    diaryId: diaryShell.diaryId,
+    todayDate: diaryShell.todayDate,
+    timezone: diaryShell.timezone,
+  });
 }
 
 function getMoodDescription(score: number): string {

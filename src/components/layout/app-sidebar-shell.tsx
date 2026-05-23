@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
+import { LogoutConfirmDialog } from "@/components/ui/manual/logout-confirm-dialog";
 
 type ShellUser = {
   name: string;
@@ -38,6 +39,8 @@ const navItems = [
   { label: "Subscription", href: "/subscription", icon: CreditCard },
 ];
 
+const PREMIUM_STATUS_SYNC_EVENT = "temantumbuh:premium-status-sync";
+
 function SidebarNavItem({
   href,
   label,
@@ -53,9 +56,12 @@ function SidebarNavItem({
   locked?: boolean;
   onClick?: () => void;
 }) {
+  const targetHref = locked ? "/subscription" : href;
+
   return (
     <Link
-      href={locked ? "/subscription" : href}
+      href={targetHref}
+      prefetch
       onClick={onClick}
       className="flex cursor-pointer items-center gap-3 rounded-[0.95rem] px-3.5 py-3 transition-all hover:bg-[rgba(26,150,136,0.06)]"
       style={{
@@ -165,6 +171,7 @@ function MobileSidebar({
           {/* Profile card — clickable, navigates straight to /profile */}
           <Link
             href="/profile"
+            prefetch
             onClick={onClose}
             className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 transition-all hover:shadow-md"
             style={{
@@ -254,37 +261,44 @@ export function AppSidebarShell({ user, children }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isPremium, setIsPremium] = useState(Boolean(user.isPremium));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [snapOpen, setSnapOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const shellUser = useMemo(() => ({ ...user, isPremium }), [isPremium, user]);
-
-  const refreshPremiumStatus = useCallback(async () => {
-    try {
-      const res = await fetch("/api/subscription/status", {
-        cache: "no-store",
-      });
-      if (!res.ok) return;
-      const data = (await res.json()) as { isPremium?: boolean };
-      setIsPremium(Boolean(data.isPremium));
-    } catch (error) {
-      console.error("Premium status refresh failed:", error);
-    }
-  }, []);
 
   useEffect(() => {
     setIsPremium(Boolean(user.isPremium));
   }, [user.isPremium]);
 
+  // Watch for snap-open class on body to neutralize overflow
   useEffect(() => {
-    void refreshPremiumStatus();
-  }, [pathname, refreshPremiumStatus]);
+    const observer = new MutationObserver(() => {
+      setSnapOpen(document.body.classList.contains("snap-open"));
+    });
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (!pathname.startsWith("/subscription")) return;
-    const intervalId = window.setInterval(() => {
-      void refreshPremiumStatus();
-    }, 5000);
-    return () => window.clearInterval(intervalId);
-  }, [pathname, refreshPremiumStatus]);
+    const handlePremiumStatusSync = (event: Event) => {
+      const detail = (event as CustomEvent<{ isPremium?: boolean }>).detail;
+      if (typeof detail?.isPremium === "boolean") {
+        setIsPremium(detail.isPremium);
+      }
+    };
+
+    window.addEventListener(PREMIUM_STATUS_SYNC_EVENT, handlePremiumStatusSync);
+
+    return () => {
+      window.removeEventListener(
+        PREMIUM_STATUS_SYNC_EVENT,
+        handlePremiumStatusSync,
+      );
+    };
+  }, []);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -321,18 +335,25 @@ export function AppSidebarShell({ user, children }: Props) {
 
   return (
     /* Fullscreen — zero padding, no wrapper card */
-    <div className="h-[100dvh] w-full overflow-hidden bg-[var(--tt-dashboard-page-bg)]">
+    <div
+      className={`h-[100dvh] w-full bg-[var(--tt-dashboard-page-bg)] ${snapOpen ? "overflow-visible" : "overflow-hidden"}`}
+    >
       {/* Mobile slide-out nav */}
       <MobileSidebar
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
         user={shellUser}
         pathname={pathname}
-        onLogout={() => void handleLogout()}
+        onLogout={() => {
+          setMobileOpen(false);
+          setShowLogoutConfirm(true);
+        }}
         isLoggingOut={isLoggingOut}
       />
 
-      <div className="flex h-full w-full">
+      <div
+        className={`flex h-full w-full ${snapOpen ? "overflow-visible" : ""}`}
+      >
         {/* ── Desktop Sidebar ── */}
         <aside
           className="hidden shrink-0 border-r lg:flex lg:flex-col"
@@ -387,7 +408,9 @@ export function AppSidebarShell({ user, children }: Props) {
         </aside>
 
         {/* ── Content area ── */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div
+          className={`flex min-w-0 flex-1 flex-col ${snapOpen ? "overflow-visible" : ""}`}
+        >
           {/* Mobile hamburger bar — left: hamburger + brand, right: avatar + logout */}
           <div
             className="flex shrink-0 items-center gap-3 border-b px-4 py-3 lg:hidden"
@@ -424,15 +447,26 @@ export function AppSidebarShell({ user, children }: Props) {
                 userInitials={userInitials}
                 userName={shellUser.name}
                 isLoggingOut={isLoggingOut}
-                onLogout={() => void handleLogout()}
+                onLogout={() => setShowLogoutConfirm(true)}
               />
             </div>
           </div>
 
           {/* Page content */}
-          <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
+          <main
+            className={`min-h-0 flex-1 ${snapOpen ? "overflow-visible" : "overflow-hidden"}`}
+          >
+            {children}
+          </main>
         </div>
       </div>
+
+      <LogoutConfirmDialog
+        open={showLogoutConfirm}
+        onConfirm={() => void handleLogout()}
+        onCancel={() => setShowLogoutConfirm(false)}
+        loading={isLoggingOut}
+      />
     </div>
   );
 }
