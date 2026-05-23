@@ -1,7 +1,5 @@
-// Mock untuk @/lib/baseline/service
-// File ini ada karena src/lib/baseline/service.ts tidak ada di project.
-// Kalau suatu saat service.ts dibuat, file ini bisa dihapus
-// dan alias di vitest.config.mts bisa dihapus juga.
+// Fallback mock untuk test yang perlu menghindari import server-only
+// dari @/lib/baseline/service.
 
 export const getBaselineByUserId = async (_userId: string) => null;
 

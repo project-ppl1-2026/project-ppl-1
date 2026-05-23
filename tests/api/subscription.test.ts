@@ -77,5 +77,47 @@ describe("Subscription API Routes (/api/subscription/status)", () => {
       expect(json.isPremium).toBe(true);
       expect(json.subscription).not.toBeNull();
     });
+
+    it("Harus serialize pendingPayment grossAmount ke string", async () => {
+      mockGetAuthId.mockResolvedValue("user1");
+      mockGetSubscriptionStatus.mockResolvedValue({
+        isPremium: false,
+        subscription: null,
+        activeSubscriptionCount: 0,
+        premiumUntil: null,
+        canRenew: false,
+        pendingPayment: {
+          id: "pay1",
+          orderId: "TT-user1-001",
+          grossAmount: { toString: () => "50000" },
+          status: "pending",
+          snapToken: "snap-token",
+          durationMonths: 1,
+          createdAt: new Date("2026-05-23T00:00:00.000Z"),
+        },
+      } as never);
+
+      const req = new Request("http://localhost/api/subscription/status");
+      const res = await GET(req);
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.pendingPayment.grossAmount).toBe("50000");
+      expect(json.pendingPayment.orderId).toBe("TT-user1-001");
+    });
+
+    it("Harus return 500 jika subscription status gagal", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      mockGetAuthId.mockResolvedValue("user1");
+      mockGetSubscriptionStatus.mockRejectedValue(new Error("DB down"));
+
+      const req = new Request("http://localhost/api/subscription/status");
+      const res = await GET(req);
+
+      expect(res.status).toBe(500);
+      consoleSpy.mockRestore();
+    });
   });
 });

@@ -1,18 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET as GET_STATUS } from "@/app/api/parent/status/route";
-import {
-  GET as GET_CONSENT,
-  POST as POST_CONSENT,
-} from "@/app/api/parent-consent/route";
-import {
-  getAuthenticatedUserIdFromRequest,
-  setUserParentEmail,
-} from "@/lib/auth";
+import { getAuthenticatedUserIdFromRequest } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 vi.mock("@/lib/auth", () => ({
   getAuthenticatedUserIdFromRequest: vi.fn(),
-  setUserParentEmail: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -25,7 +17,6 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 const mockGetAuthId = vi.mocked(getAuthenticatedUserIdFromRequest);
-const mockSetUserParentEmail = vi.mocked(setUserParentEmail);
 const mockFindFirst = vi.mocked(prisma.parent.findFirst);
 const mockUpdate = vi.mocked(prisma.parent.update);
 
@@ -62,72 +53,94 @@ describe("Parent API Routes", () => {
       expect(json.email).toBe("test@example.com");
       expect(json.status).toBe("pending");
     });
-  });
 
-  describe("GET /api/parent-consent", () => {
-    it("Harus return 400 jika token tidak ada", async () => {
-      const req = new Request("http://localhost/api/parent-consent");
-      const res = await GET_CONSENT(req);
-      expect(res.status).toBe(400);
-    });
+    it("Harus return status kosong jika parent belum ada", async () => {
+      mockGetAuthId.mockResolvedValue("user1");
+      mockFindFirst.mockResolvedValue(null);
 
-    it("Harus sukses verifikasi dengan decision accept", async () => {
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 1);
-
-      mockFindFirst.mockResolvedValue({
-        id: "p1",
-        userId: "user1",
-        email: "parent@test.com",
-        status: "pending",
-        expiresAt: futureDate,
-      } as never);
-
-      mockSetUserParentEmail.mockResolvedValue({} as never);
-      mockUpdate.mockResolvedValue({} as never);
-
-      const req = new Request(
-        "http://localhost/api/parent-consent?token=valid-token-with-at-least-20-chars&decision=accept",
-      );
-      const res = await GET_CONSENT(req);
+      const req = new Request("http://localhost/api/parent/status");
+      const res = await GET_STATUS(req);
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.success).toBe(true);
-      expect(json.decision).toBe("accept");
+      expect(json.email).toBeNull();
+      expect(json.status).toBeNull();
+      expect(json.reason).toBeNull();
     });
-  });
 
-  describe("POST /api/parent-consent", () => {
-    it("Harus sukses submit dari POST payload", async () => {
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 1);
+    it("Harus menandai pending yang sudah expired", async () => {
+      mockGetAuthId.mockResolvedValue("user1");
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 1);
 
       mockFindFirst.mockResolvedValue({
-        id: "p1",
-        userId: "user1",
-        email: "parent@test.com",
+        email: "test@example.com",
         status: "pending",
-        expiresAt: futureDate,
+        expiresAt: pastDate,
+        rejectedAt: null,
+        lastSentAt: null,
+        lastReportType: null,
+        lastReportStatus: null,
       } as never);
 
-      mockSetUserParentEmail.mockResolvedValue({} as never);
-      mockUpdate.mockResolvedValue({} as never);
+      const req = new Request("http://localhost/api/parent/status");
+      const res = await GET_STATUS(req);
 
-      const req = new Request("http://localhost/api/parent-consent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: "valid-token-with-at-least-20-chars",
-          decision: "accept",
-        }),
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.status).toBe("expired");
+      expect(json.reason).toBe("expired");
+      expect(mockUpdate).toHaveBeenCalledWith({
+        where: { userId: "user1" },
+        data: { status: "expired", token: null },
       });
-      const res = await POST_CONSENT(req);
+    });
 
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.success).toBe(true);
-      expect(json.decision).toBe("accept");
+    it("Harus membedakan reason rejected dan expired", async () => {
+      mockGetAuthId.mockResolvedValue("user1");
+      mockFindFirst.mockResolvedValueOnce({
+        email: "test@example.com",
+        status: "expired",
+        expiresAt: null,
+        rejectedAt: new Date(),
+        lastSentAt: null,
+        lastReportType: null,
+        lastReportStatus: null,
+      } as never);
+
+      let req = new Request("http://localhost/api/parent/status");
+      let res = await GET_STATUS(req);
+      let json = await res.json();
+      expect(json.reason).toBe("rejected");
+
+      mockFindFirst.mockResolvedValueOnce({
+        email: "test@example.com",
+        status: "expired",
+        expiresAt: null,
+        rejectedAt: null,
+        lastSentAt: null,
+        lastReportType: null,
+        lastReportStatus: null,
+      } as never);
+
+      req = new Request("http://localhost/api/parent/status");
+      res = await GET_STATUS(req);
+      json = await res.json();
+      expect(json.reason).toBe("expired");
+    });
+
+    it("Harus return 500 jika parent status gagal", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      mockGetAuthId.mockResolvedValue("user1");
+      mockFindFirst.mockRejectedValue(new Error("DB down"));
+
+      const req = new Request("http://localhost/api/parent/status");
+      const res = await GET_STATUS(req);
+
+      expect(res.status).toBe(500);
+      consoleSpy.mockRestore();
     });
   });
 });

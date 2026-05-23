@@ -52,6 +52,22 @@ describe("Baseline API Routes (/api/baseline)", () => {
       expect(json.success).toBe(true);
       expect(json.baseline).toEqual(mockBaseline);
     });
+
+    it("Harus return 500 jika get baseline gagal", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+      mockGetBaselineByUserId.mockRejectedValue(new Error("DB down"));
+
+      const req = new Request("http://localhost/api/baseline", {
+        method: "GET",
+      });
+      const res = await GET(req);
+
+      expect(res.status).toBe(500);
+      consoleSpy.mockRestore();
+    });
   });
 
   describe("POST /api/baseline", () => {
@@ -116,6 +132,34 @@ describe("Baseline API Routes (/api/baseline)", () => {
       expect(json.baseline).toEqual(mockResult.baseline);
       expect(json.prediction.label).toBe("Normal");
     });
+
+    it("Harus return 500 jika analyze baseline gagal saat POST", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+      mockAnalyzeAndSaveBaseline.mockRejectedValue(new Error("Model down"));
+
+      const req = new Request("http://localhost/api/baseline", {
+        method: "POST",
+        body: JSON.stringify({
+          answers: [
+            "Agree",
+            "Agree",
+            "Agree",
+            "Agree",
+            "Yes",
+            "Yes",
+            "Yes",
+            "Yes",
+          ],
+        }),
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(500);
+      consoleSpy.mockRestore();
+    });
   });
 
   describe("PATCH /api/baseline", () => {
@@ -156,6 +200,34 @@ describe("Baseline API Routes (/api/baseline)", () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.prediction.label).toBe("Moderate");
+    });
+
+    it("Harus return 500 jika analyze baseline gagal saat PATCH", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+      mockAnalyzeAndSaveBaseline.mockRejectedValue(new Error("Model down"));
+
+      const req = new Request("http://localhost/api/baseline", {
+        method: "PATCH",
+        body: JSON.stringify({
+          answers: [
+            "Disagree",
+            "Disagree",
+            "Disagree",
+            "Disagree",
+            "No",
+            "No",
+            "No",
+            "No",
+          ],
+        }),
+      });
+      const res = await PATCH(req);
+
+      expect(res.status).toBe(500);
+      consoleSpy.mockRestore();
     });
   });
 });
