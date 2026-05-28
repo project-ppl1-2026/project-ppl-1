@@ -137,7 +137,8 @@ describe("lib/diary/litellm", () => {
     const emptyGenerator = generateDiaryAssistantReplyStream({ messages });
 
     await expect(async () => {
-      for await (const _chunk of emptyGenerator) {
+      for await (const chunk of emptyGenerator) {
+        void chunk;
         // consume stream
       }
     }).rejects.toThrow("Model mengembalikan respons kosong.");

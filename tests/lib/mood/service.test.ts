@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   getLocalDateString,
   parseDateString,
@@ -32,6 +32,10 @@ const mockTransaction = vi.mocked(prisma.$transaction);
 describe("lib/mood/service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   // ─────────────────────────────────────
@@ -85,18 +89,29 @@ describe("lib/mood/service", () => {
       mockUserFindUnique.mockResolvedValue(null);
 
       await expect(
-        createMoodLog({ userId: "user1", moodScore: 3, timezone: "Asia/Jakarta" }),
+        createMoodLog({
+          userId: "user1",
+          moodScore: 3,
+          timezone: "Asia/Jakarta",
+        }),
       ).rejects.toThrow("User tidak ditemukan.");
     });
 
     it("Harus throw error jika sudah submit mood hari ini (tanggal lokal sama)", async () => {
       // createdAt = sekarang = hari yang sama di WIB
       const now = new Date();
-      mockMoodFindFirst.mockResolvedValue({ id: "log1", createdAt: now } as never);
+      mockMoodFindFirst.mockResolvedValue({
+        id: "log1",
+        createdAt: now,
+      } as never);
       mockUserFindUnique.mockResolvedValue({ currentStreak: 3 } as never);
 
       await expect(
-        createMoodLog({ userId: "user1", moodScore: 3, timezone: "Asia/Jakarta" }),
+        createMoodLog({
+          userId: "user1",
+          moodScore: 3,
+          timezone: "Asia/Jakarta",
+        }),
       ).rejects.toThrow("Kamu sudah mengisi mood check-in hari ini.");
     });
 
@@ -123,7 +138,10 @@ describe("lib/mood/service", () => {
       yesterday.setUTCDate(yesterday.getUTCDate() - 1);
       yesterday.setUTCHours(3, 0, 0, 0); // jam 10:00 WIB kemarin
 
-      mockMoodFindFirst.mockResolvedValue({ id: "log0", createdAt: yesterday } as never);
+      mockMoodFindFirst.mockResolvedValue({
+        id: "log0",
+        createdAt: yesterday,
+      } as never);
       mockUserFindUnique.mockResolvedValue({ currentStreak: 5 } as never);
       mockTransaction.mockResolvedValue([
         { id: "log1", moodScore: 4 },
@@ -144,7 +162,10 @@ describe("lib/mood/service", () => {
       threeDaysAgo.setUTCDate(threeDaysAgo.getUTCDate() - 3);
       threeDaysAgo.setUTCHours(3, 0, 0, 0);
 
-      mockMoodFindFirst.mockResolvedValue({ id: "log-old", createdAt: threeDaysAgo } as never);
+      mockMoodFindFirst.mockResolvedValue({
+        id: "log-old",
+        createdAt: threeDaysAgo,
+      } as never);
       mockUserFindUnique.mockResolvedValue({ currentStreak: 10 } as never);
       mockTransaction.mockResolvedValue([
         { id: "log1", moodScore: 2 },
@@ -238,6 +259,11 @@ describe("lib/mood/service", () => {
   // resetStreakIfMissed
   // ─────────────────────────────────────
   describe("resetStreakIfMissed", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-05-25T03:00:00.000Z"));
+    });
+
     it("Harus tidak melakukan apa-apa jika tidak ada log", async () => {
       mockMoodFindFirst.mockResolvedValue(null);
 

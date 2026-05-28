@@ -16,7 +16,6 @@ import {
 } from "@/lib/validations";
 
 describe("lib/validations", () => {
-
   // ─────────────────────────────────────
   // registerSchema
   // ─────────────────────────────────────
@@ -39,47 +38,77 @@ describe("lib/validations", () => {
     });
 
     it("Harus gagal jika email tidak valid", () => {
-      const result = registerSchema.safeParse({ ...validData, email: "bukan-email" });
+      const result = registerSchema.safeParse({
+        ...validData,
+        email: "bukan-email",
+      });
       expect(result.success).toBe(false);
     });
 
     it("Harus gagal jika password kurang dari 8 karakter", () => {
-      const result = registerSchema.safeParse({ ...validData, password: "Pass1", confirmPassword: "Pass1" });
+      const result = registerSchema.safeParse({
+        ...validData,
+        password: "Pass1",
+        confirmPassword: "Pass1",
+      });
       expect(result.success).toBe(false);
     });
 
     it("Harus gagal jika password tanpa huruf kapital", () => {
-      const result = registerSchema.safeParse({ ...validData, password: "password1", confirmPassword: "password1" });
+      const result = registerSchema.safeParse({
+        ...validData,
+        password: "password1",
+        confirmPassword: "password1",
+      });
       expect(result.success).toBe(false);
     });
 
     it("Harus gagal jika password tanpa angka", () => {
-      const result = registerSchema.safeParse({ ...validData, password: "Password", confirmPassword: "Password" });
+      const result = registerSchema.safeParse({
+        ...validData,
+        password: "Password",
+        confirmPassword: "Password",
+      });
       expect(result.success).toBe(false);
     });
 
     it("Harus gagal jika confirmPassword tidak cocok", () => {
-      const result = registerSchema.safeParse({ ...validData, confirmPassword: "Berbeda1" });
+      const result = registerSchema.safeParse({
+        ...validData,
+        confirmPassword: "Berbeda1",
+      });
       expect(result.success).toBe(false);
     });
 
     it("Harus gagal jika agreeToTerms bukan true", () => {
-      const result = registerSchema.safeParse({ ...validData, agreeToTerms: false });
+      const result = registerSchema.safeParse({
+        ...validData,
+        agreeToTerms: false,
+      });
       expect(result.success).toBe(false);
     });
 
     it("Harus valid dengan parentEmail opsional", () => {
-      const result = registerSchema.safeParse({ ...validData, parentEmail: "ortu@example.com" });
+      const result = registerSchema.safeParse({
+        ...validData,
+        parentEmail: "ortu@example.com",
+      });
       expect(result.success).toBe(true);
     });
 
     it("Harus valid jika parentEmail string kosong", () => {
-      const result = registerSchema.safeParse({ ...validData, parentEmail: "" });
+      const result = registerSchema.safeParse({
+        ...validData,
+        parentEmail: "",
+      });
       expect(result.success).toBe(true);
     });
 
     it("Harus lowercase email otomatis", () => {
-      const result = registerSchema.safeParse({ ...validData, email: "BUDI@EXAMPLE.COM" });
+      const result = registerSchema.safeParse({
+        ...validData,
+        email: "BUDI@EXAMPLE.COM",
+      });
       expect(result.success).toBe(true);
       if (result.success) expect(result.data.email).toBe("budi@example.com");
     });
@@ -159,7 +188,11 @@ describe("lib/validations", () => {
 
     it("Harus valid untuk semua pilihan gender", () => {
       for (const gender of ["male", "female", "prefer_not"]) {
-        const result = registerStep2Schema.safeParse({ name: "Test", birthYear: "2000", gender });
+        const result = registerStep2Schema.safeParse({
+          name: "Test",
+          birthYear: "2000",
+          gender,
+        });
         expect(result.success).toBe(true);
       }
     });
@@ -170,7 +203,9 @@ describe("lib/validations", () => {
   // ─────────────────────────────────────
   describe("registerStep3Schema", () => {
     it("Harus valid jika parentEmail diisi dengan benar", () => {
-      const result = registerStep3Schema.safeParse({ parentEmail: "ortu@example.com" });
+      const result = registerStep3Schema.safeParse({
+        parentEmail: "ortu@example.com",
+      });
       expect(result.success).toBe(true);
     });
 
@@ -190,17 +225,26 @@ describe("lib/validations", () => {
   // ─────────────────────────────────────
   describe("loginSchema", () => {
     it("Harus valid dengan email dan password yang benar", () => {
-      const result = loginSchema.safeParse({ email: "user@example.com", password: "abc" });
+      const result = loginSchema.safeParse({
+        email: "user@example.com",
+        password: "abc",
+      });
       expect(result.success).toBe(true);
     });
 
     it("Harus gagal jika email tidak valid", () => {
-      const result = loginSchema.safeParse({ email: "bukan-email", password: "abc" });
+      const result = loginSchema.safeParse({
+        email: "bukan-email",
+        password: "abc",
+      });
       expect(result.success).toBe(false);
     });
 
     it("Harus gagal jika password kosong", () => {
-      const result = loginSchema.safeParse({ email: "user@example.com", password: "" });
+      const result = loginSchema.safeParse({
+        email: "user@example.com",
+        password: "",
+      });
       expect(result.success).toBe(false);
     });
   });
@@ -210,7 +254,9 @@ describe("lib/validations", () => {
   // ─────────────────────────────────────
   describe("forgotPasswordSchema", () => {
     it("Harus valid dengan email yang benar", () => {
-      const result = forgotPasswordSchema.safeParse({ email: "user@example.com" });
+      const result = forgotPasswordSchema.safeParse({
+        email: "user@example.com",
+      });
       expect(result.success).toBe(true);
     });
 
@@ -310,12 +356,35 @@ describe("lib/validations", () => {
     });
 
     it("Harus gagal jika moodLevel bukan bilangan bulat", () => {
-      expect(moodCheckInSchema.safeParse({ moodLevel: 2.5 }).success).toBe(false);
+      expect(moodCheckInSchema.safeParse({ moodLevel: 2.5 }).success).toBe(
+        false,
+      );
     });
 
     it("Harus valid dengan note opsional", () => {
-      const result = moodCheckInSchema.safeParse({ moodLevel: 3, note: "Lumayan baik" });
+      const result = moodCheckInSchema.safeParse({
+        moodLevel: 3,
+        note: "Lumayan baik",
+      });
       expect(result.success).toBe(true);
+    });
+
+    it("Harus valid dengan note tepat 100 kata", () => {
+      const note = Array.from(
+        { length: 100 },
+        (_, index) => `kata${index}`,
+      ).join(" ");
+      const result = moodCheckInSchema.safeParse({ moodLevel: 3, note });
+      expect(result.success).toBe(true);
+    });
+
+    it("Harus gagal jika note lebih dari 100 kata", () => {
+      const note = Array.from(
+        { length: 101 },
+        (_, index) => `kata${index}`,
+      ).join(" ");
+      const result = moodCheckInSchema.safeParse({ moodLevel: 3, note });
+      expect(result.success).toBe(false);
     });
   });
 
@@ -324,7 +393,9 @@ describe("lib/validations", () => {
   // ─────────────────────────────────────
   describe("diaryMessageSchema", () => {
     it("Harus valid dengan pesan yang benar", () => {
-      const result = diaryMessageSchema.safeParse({ messageText: "Halo, apa kabar?" });
+      const result = diaryMessageSchema.safeParse({
+        messageText: "Halo, apa kabar?",
+      });
       expect(result.success).toBe(true);
     });
 
@@ -334,7 +405,9 @@ describe("lib/validations", () => {
     });
 
     it("Harus gagal jika messageText lebih dari 5000 karakter", () => {
-      const result = diaryMessageSchema.safeParse({ messageText: "a".repeat(5001) });
+      const result = diaryMessageSchema.safeParse({
+        messageText: "a".repeat(5001),
+      });
       expect(result.success).toBe(false);
     });
   });
@@ -372,12 +445,16 @@ describe("lib/validations", () => {
   // ─────────────────────────────────────
   describe("parentConsentTokenQuerySchema", () => {
     it("Harus valid jika token >= 20 karakter", () => {
-      const result = parentConsentTokenQuerySchema.safeParse({ token: "a".repeat(20) });
+      const result = parentConsentTokenQuerySchema.safeParse({
+        token: "a".repeat(20),
+      });
       expect(result.success).toBe(true);
     });
 
     it("Harus gagal jika token kurang dari 20 karakter", () => {
-      const result = parentConsentTokenQuerySchema.safeParse({ token: "pendek" });
+      const result = parentConsentTokenQuerySchema.safeParse({
+        token: "pendek",
+      });
       expect(result.success).toBe(false);
     });
 

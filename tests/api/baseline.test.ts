@@ -93,6 +93,46 @@ describe("Baseline API Routes (/api/baseline)", () => {
       expect(res.status).toBe(400);
     });
 
+    it("Harus return 400 jika jawaban baseline kurang dari 8", async () => {
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+
+      const req = new Request("http://localhost/api/baseline", {
+        method: "POST",
+        body: JSON.stringify({
+          answers: ["Agree", "Agree", "Agree", "Agree", "Yes", "Yes", "Yes"],
+        }),
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(400);
+      expect(mockAnalyzeAndSaveBaseline).not.toHaveBeenCalled();
+    });
+
+    it("Harus return 400 jika jawaban baseline lebih dari 8", async () => {
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+
+      const req = new Request("http://localhost/api/baseline", {
+        method: "POST",
+        body: JSON.stringify({
+          answers: [
+            "Agree",
+            "Agree",
+            "Agree",
+            "Agree",
+            "Yes",
+            "Yes",
+            "Yes",
+            "Yes",
+            "Yes",
+          ],
+        }),
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(400);
+      expect(mockAnalyzeAndSaveBaseline).not.toHaveBeenCalled();
+    });
+
     it("Harus return 200 jika payload valid dan berhasil disimpan", async () => {
       mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
 
