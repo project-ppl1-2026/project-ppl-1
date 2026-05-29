@@ -17,7 +17,10 @@ vi.mock("@/lib/baseline/inference", () => ({
   runBaselineInference: vi.fn(),
 }));
 
-import { getBaselineByUserId, analyzeAndSaveBaseline } from "@/lib/baseline/service";
+import {
+  getBaselineByUserId,
+  analyzeAndSaveBaseline,
+} from "@/lib/baseline/service";
 import { runBaselineInference } from "@/lib/baseline/inference";
 
 const mockBaselineFindUnique = vi.mocked(prisma.baseline.findUnique);
@@ -98,8 +101,14 @@ describe("lib/baseline/service", () => {
       mockBaselineUpsert.mockResolvedValue(mockSaved as never);
 
       const answers = [
-        "Agree", "Disagree", "Agree", "Agree",
-        "Yes", "No", "Yes", "No",
+        "Agree",
+        "Disagree",
+        "Agree",
+        "Agree",
+        "Yes",
+        "No",
+        "Yes",
+        "No",
       ] as never;
 
       const result = await analyzeAndSaveBaseline({ answers, userId: "user1" });
@@ -108,7 +117,10 @@ describe("lib/baseline/service", () => {
       expect(mockBaselineUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId: "user1" },
-          create: expect.objectContaining({ userId: "user1", isBeginner: true }),
+          create: expect.objectContaining({
+            userId: "user1",
+            isBeginner: true,
+          }),
           update: expect.objectContaining({ isBeginner: true }),
         }),
       );
