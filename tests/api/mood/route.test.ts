@@ -35,6 +35,7 @@ const mockFindFirst = vi.mocked(prisma.moodLog.findFirst);
 const mockFindUnique = vi.mocked(prisma.user.findUnique);
 const mockTransaction = vi.mocked(prisma.$transaction);
 const mockDiaryCreate = vi.mocked(prisma.diary.create);
+const mockDiaryFindFirst = vi.mocked(prisma.diary.findFirst);
 
 type MockMoodLog = Awaited<ReturnType<typeof prisma.moodLog.findFirst>>;
 type MockUser = Awaited<ReturnType<typeof prisma.user.findUnique>>;
@@ -73,6 +74,31 @@ describe("Mood API Routes (/api/mood)", () => {
       expect(json.success).toBe(true);
       expect(json.data).toEqual(mockLogs);
     });
+
+    it("Harus return 400 jika query date invalid", async () => {
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+
+      const req = new Request("http://localhost/api/mood?date=salah", {
+        method: "GET",
+      });
+      const res = await GET(req);
+
+      expect(res.status).toBe(400);
+    });
+
+    it("Harus return 500 jika get mood logs gagal", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+      mockFindMany.mockRejectedValue(new Error("DB down"));
+
+      const req = new Request("http://localhost/api/mood", { method: "GET" });
+      const res = await GET(req);
+
+      expect(res.status).toBe(500);
+      consoleSpy.mockRestore();
+    });
   });
 
   describe("POST /api/mood", () => {
@@ -96,6 +122,85 @@ describe("Mood API Routes (/api/mood)", () => {
       expect(res.status).toBe(400);
     });
 
+    it("Harus menerima note tepat 100 kata", async () => {
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+      mockFindFirst.mockResolvedValue(null);
+      mockFindUnique.mockResolvedValue({
+        currentStreak: 1,
+      } as unknown as MockUser);
+      mockTransaction.mockImplementation(() =>
+        Promise.resolve([
+          { id: "m-note-100", moodScore: 4 },
+          { id: "user1", currentStreak: 2 },
+        ]),
+      );
+      mockDiaryFindFirst.mockResolvedValue(null);
+
+      const note = Array.from(
+        { length: 100 },
+        (_, index) => `kata${index}`,
+      ).join(" ");
+      const req = new Request("http://localhost/api/mood", {
+        method: "POST",
+        body: JSON.stringify({
+          moodScore: 4,
+          note,
+          timezone: "Asia/Jakarta",
+        }),
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(200);
+    });
+
+    it("Harus return 400 jika note lebih dari 100 kata", async () => {
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+      const note = Array.from(
+        { length: 101 },
+        (_, index) => `kata${index}`,
+      ).join(" ");
+
+      const req = new Request("http://localhost/api/mood", {
+        method: "POST",
+        body: JSON.stringify({
+          moodScore: 4,
+          note,
+          timezone: "Asia/Jakarta",
+        }),
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(400);
+      expect(mockTransaction).not.toHaveBeenCalled();
+    });
+
+    it("Harus menerima note kosong sebagai opsional", async () => {
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+      mockFindFirst.mockResolvedValue(null);
+      mockFindUnique.mockResolvedValue({
+        currentStreak: 1,
+      } as unknown as MockUser);
+      mockTransaction.mockImplementation(() =>
+        Promise.resolve([
+          { id: "m-empty-note", moodScore: 3 },
+          { id: "user1", currentStreak: 2 },
+        ]),
+      );
+      mockDiaryFindFirst.mockResolvedValue(null);
+
+      const req = new Request("http://localhost/api/mood", {
+        method: "POST",
+        body: JSON.stringify({
+          moodScore: 3,
+          note: "",
+          timezone: "Asia/Jakarta",
+        }),
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(200);
+    });
+
     it("Harus return 200 dan menambah streak jika valid dan berhasil tambah", async () => {
       mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
 
@@ -110,6 +215,7 @@ describe("Mood API Routes (/api/mood)", () => {
           { id: "user1", currentStreak: 4 },
         ]),
       );
+      mockDiaryFindFirst.mockResolvedValue(null);
 
       const req = new Request("http://localhost/api/mood", {
         method: "POST",
@@ -124,6 +230,40 @@ describe("Mood API Routes (/api/mood)", () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.currentStreak).toBe(4);
+    });
+
+    it("Harus return diary ready jika diary hari ini sudah ada pesan", async () => {
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+      mockFindFirst.mockResolvedValue(null);
+      mockFindUnique.mockResolvedValue({
+        currentStreak: 2,
+      } as unknown as MockUser);
+      mockTransaction.mockImplementation(() =>
+        Promise.resolve([
+          { id: "m2", moodScore: 4 },
+          { id: "user1", currentStreak: 3 },
+        ]),
+      );
+      mockDiaryFindFirst.mockResolvedValue({
+        id: "existing-diary",
+        messages: [{ id: "msg-1" }],
+      } as never);
+
+      const req = new Request("http://localhost/api/mood", {
+        method: "POST",
+        body: JSON.stringify({
+          moodScore: 4,
+          timezone: "Asia/Jakarta",
+        }),
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.diary).toEqual({
+        id: "existing-diary",
+        greetingStatus: "ready",
+      });
     });
 
     it("Harus menolak dengan 409 jika submit berkali-kali di hari yang sama (lokal)", async () => {

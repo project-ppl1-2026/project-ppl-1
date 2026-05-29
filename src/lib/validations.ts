@@ -5,6 +5,10 @@
 
 import { z } from "zod";
 
+function countWords(value: string) {
+  return value.trim().match(/\S+/g)?.length ?? 0;
+}
+
 // ─── Register Schema ─────────────────────────────────────────
 export const registerSchema = z
   .object({
@@ -177,7 +181,9 @@ export const moodCheckInSchema = z.object({
 
   note: z
     .string()
-    .max(2000, "Catatan maksimal 2000 karakter")
+    .refine((value) => countWords(value) <= 100, {
+      message: "Catatan maksimal 100 kata",
+    })
     .optional()
     .or(z.literal("")),
 });

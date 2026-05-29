@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+function countWords(value: string) {
+  return value.trim().match(/\S+/g)?.length ?? 0;
+}
+
 /**
  * Validasi untuk request payload dari submit mood check-in.
  */
@@ -9,7 +13,12 @@ export const moodSubmitSchema = z.object({
     .int("Skor mood harus berupa bilangan bulat.")
     .min(1, "Skor mood minimal adalah 1.")
     .max(5, "Skor mood maksimal adalah 5."),
-  note: z.string().optional(),
+  note: z
+    .string()
+    .refine((value) => countWords(value) <= 100, {
+      message: "Catatan mood maksimal 100 kata.",
+    })
+    .optional(),
   timezone: z.string().min(3, "Timezone tidak valid."),
 });
 

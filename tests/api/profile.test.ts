@@ -51,5 +51,21 @@ describe("Profile API Routes (/api/profile/security-state)", () => {
       expect(json.hasPassword).toBe(true);
       expect(json.isGoogleLinked).toBe(false);
     });
+
+    it("Harus return 500 jika security state gagal", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+      mockGetUserSecurityState.mockRejectedValue(new Error("DB down"));
+
+      const req = new Request("http://localhost/api/profile/security-state", {
+        method: "GET",
+      });
+      const res = await GET(req);
+
+      expect(res.status).toBe(500);
+      consoleSpy.mockRestore();
+    });
   });
 });

@@ -2,47 +2,43 @@ import "server-only";
 
 import { Prisma } from "@/app/generated/prisma/client";
 import prisma from "@/lib/prisma";
+import { runBaselineInference } from "@/lib/baseline/inference";
+import type { BaselineAnswersTuple } from "@/lib/baseline/validation";
 
-import { runBaselineInference } from "./inference";
-import type { BaselineAnswersTuple } from "./validation";
+// ─────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────
 
-export type BaselineRecordResponse = {
-  analyzedAt: Date;
-  confidenceScore: number | null;
+export type BaselineResult = {
   id: string;
+  userId: string;
   isBeginner: boolean;
   label: "Beginner" | "Intermediate";
-  userId: string;
-};
-
-type AnalyzeAndSaveBaselineParams = {
-  answers: BaselineAnswersTuple;
-  userId: string;
-};
-
-function formatBaselineRecord(record: {
+  confidenceScore: number | null;
   analyzedAt: Date;
-  id: string;
-  isBeginner: boolean;
-  mlConfidenceScore: Prisma.Decimal | null;
-  userId: string;
-}): BaselineRecordResponse {
-  return {
-    analyzedAt: record.analyzedAt,
-    confidenceScore: record.mlConfidenceScore
-      ? Number(record.mlConfidenceScore)
-      : null,
-    id: record.id,
-    isBeginner: record.isBeginner,
-    label: record.isBeginner ? "Beginner" : "Intermediate",
-    userId: record.userId,
-  };
+};
+
+function toConfidenceScore(
+  value: Prisma.Decimal | { toNumber: () => number } | number | null,
+): number | null {
+  if (value === null) return null;
+  if (typeof value === "number") return value;
+  if (typeof value.toNumber === "function") return value.toNumber();
+
+  return null;
 }
 
+// ─────────────────────────────────────────────────────────────
+// getBaselineByUserId
+// ─────────────────────────────────────────────────────────────
+
 /**
- * Reads the latest saved baseline result for the current user.
+ * Ambil hasil baseline yang sudah tersimpan untuk user tertentu.
+ * Return null jika user belum pernah mengisi baseline.
  */
-export async function getBaselineByUserId(userId: string) {
+export async function getBaselineByUserId(
+  userId: string,
+): Promise<BaselineResult | null> {
   const baseline = await prisma.baseline.findUnique({
     where: { userId },
     select: {
@@ -54,29 +50,51 @@ export async function getBaselineByUserId(userId: string) {
     },
   });
 
-  return baseline ? formatBaselineRecord(baseline) : null;
+  if (!baseline) return null;
+
+  const confidenceScore = toConfidenceScore(baseline.mlConfidenceScore);
+
+  return {
+    id: baseline.id,
+    userId: baseline.userId,
+    isBeginner: baseline.isBeginner,
+    label: baseline.isBeginner ? "Beginner" : "Intermediate",
+    confidenceScore,
+    analyzedAt: baseline.analyzedAt,
+  };
 }
 
+// ─────────────────────────────────────────────────────────────
+// analyzeAndSaveBaseline
+// ─────────────────────────────────────────────────────────────
+
 /**
- * Runs the baseline model and upserts the result into the `baseline` table.
+ * Jalankan ML inference lalu simpan (atau update) hasilnya ke database.
+ * Return data baseline yang sudah disimpan beserta hasil inference-nya.
  */
 export async function analyzeAndSaveBaseline({
   answers,
   userId,
-}: AnalyzeAndSaveBaselineParams) {
+}: {
+  answers: BaselineAnswersTuple;
+  userId: string;
+}): Promise<{
+  baseline: BaselineResult;
+  inference: Awaited<ReturnType<typeof runBaselineInference>>;
+}> {
   const inference = await runBaselineInference(answers);
 
-  const baseline = await prisma.baseline.upsert({
+  const saved = await prisma.baseline.upsert({
     where: { userId },
     create: {
       userId,
       isBeginner: inference.isBeginner,
-      mlConfidenceScore: new Prisma.Decimal(inference.confidenceScore),
+      mlConfidenceScore: inference.confidenceScore,
       analyzedAt: new Date(),
     },
     update: {
       isBeginner: inference.isBeginner,
-      mlConfidenceScore: new Prisma.Decimal(inference.confidenceScore),
+      mlConfidenceScore: inference.confidenceScore,
       analyzedAt: new Date(),
     },
     select: {
@@ -88,8 +106,16 @@ export async function analyzeAndSaveBaseline({
     },
   });
 
-  return {
-    baseline: formatBaselineRecord(baseline),
-    inference,
+  const confidenceScore = toConfidenceScore(saved.mlConfidenceScore);
+
+  const baseline: BaselineResult = {
+    id: saved.id,
+    userId: saved.userId,
+    isBeginner: saved.isBeginner,
+    label: saved.isBeginner ? "Beginner" : "Intermediate",
+    confidenceScore,
+    analyzedAt: saved.analyzedAt,
   };
+
+  return { baseline, inference };
 }

@@ -96,6 +96,47 @@ describe("Payment API Routes (/api/payment/create)", () => {
       expect(json.token).toBe("snap-token-123");
     });
 
+    it("Harus return 404 jika user tidak ditemukan", async () => {
+      mockGetAuthId.mockResolvedValue("user1");
+      mockUserFindUnique.mockResolvedValue(null);
+
+      const req = new Request("http://localhost/api/payment/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ durationMonths: 1 }),
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Harus return 500 jika create transaction gagal", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      mockGetAuthId.mockResolvedValue("user1");
+      mockUserFindUnique.mockResolvedValue({
+        id: "user1",
+        name: null,
+        email: "test@example.com",
+      } as never);
+      mockPaymentCreate.mockResolvedValue({
+        id: "pay1",
+        orderId: "TT-user1-123",
+      } as never);
+      mockCreateTransaction.mockRejectedValue(new Error("Midtrans down"));
+
+      const req = new Request("http://localhost/api/payment/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ durationMonths: 1 }),
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(500);
+      consoleSpy.mockRestore();
+    });
+
     it("Harus return 409 jika user masih punya pembayaran pending", async () => {
       mockGetAuthId.mockResolvedValue("user1");
       mockPaymentFindFirst.mockResolvedValue({

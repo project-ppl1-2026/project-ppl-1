@@ -181,6 +181,10 @@ export async function generateDailyInsight({
       content: message.content,
     })),
   });
+  const sensitiveSources = [
+    ...moodLogs.map((mood) => mood.note || ""),
+    ...messages.map((message) => message.content),
+  ];
 
   const completion = await openai.chat.completions.create({
     model: DEFAULT_MODEL,
@@ -215,16 +219,37 @@ export async function generateDailyInsight({
       userId,
       date: targetDate,
       averageScore,
-      analysisText: cleanText(insightResult.analysisText),
-      cognitivePattern: cleanText(insightResult.cognitivePattern),
-      affirmation: cleanText(insightResult.affirmation),
+      analysisText: makePrivacySafeText(
+        insightResult.analysisText,
+        sensitiveSources,
+        "Hari ini memuat beberapa emosi yang perlu ditemani dengan tenang, tanpa membuka detail cerita pribadi.",
+      ),
+      cognitivePattern: makePrivacySafeText(
+        insightResult.cognitivePattern,
+        sensitiveSources,
+        "Ada pola emosi umum yang perlu diperhatikan tanpa menyebut detail percakapan.",
+      ),
+      affirmation: makePrivacySafeText(
+        insightResult.affirmation,
+        sensitiveSources,
+        "Kamu tetap berharga dan boleh berjalan pelan hari ini.",
+      ),
       recommendations: {
         create: recommendations.slice(0, 3).map((recommendation) => ({
           priority: toDbPriority(recommendation.priority),
           actionText: JSON.stringify({
-            label: cleanText(recommendation.label) || "Langkah kecil",
+            label:
+              makePrivacySafeText(
+                recommendation.label,
+                sensitiveSources,
+                "Langkah kecil",
+              ) || "Langkah kecil",
             desc:
-              cleanText(recommendation.desc) ||
+              makePrivacySafeText(
+                recommendation.desc,
+                sensitiveSources,
+                "Pilih satu hal ringan yang terasa aman untuk dilakukan hari ini.",
+              ) ||
               "Pilih satu hal ringan yang terasa aman untuk dilakukan hari ini.",
           }),
         })),
@@ -368,4 +393,39 @@ function clampMoodScore(score: number) {
 
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function makePrivacySafeText(
+  value: unknown,
+  sensitiveSources: string[],
+  fallback: string,
+) {
+  const text = cleanText(value);
+  if (!text) {
+    return "";
+  }
+
+  const normalizedText = normalizeForPrivacyCompare(text);
+  const leaksSensitiveSource = sensitiveSources.some((source) => {
+    const normalizedSource = normalizeForPrivacyCompare(source);
+
+    if (normalizedSource.length < 12) {
+      return false;
+    }
+
+    return (
+      normalizedText.includes(normalizedSource) ||
+      normalizedSource.includes(normalizedText)
+    );
+  });
+
+  return leaksSensitiveSource ? fallback : text;
+}
+
+function normalizeForPrivacyCompare(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .trim();
 }

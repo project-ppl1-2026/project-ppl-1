@@ -71,4 +71,19 @@ describe("Mood Streak API (/api/mood/streak)", () => {
     expect(res.status).toBe(200);
     expect(prisma.user.update).toHaveBeenCalled();
   });
+
+  it("Harus return 500 jika reset streak gagal", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetAuthenticatedUserIdFromRequest.mockResolvedValue("user1");
+    mockFindFirst.mockRejectedValue(new Error("DB down"));
+
+    const req = new Request("http://localhost/api/mood/streak", {
+      method: "PATCH",
+      body: JSON.stringify({ timezone: "Asia/Jakarta" }),
+    });
+    const res = await PATCH(req);
+
+    expect(res.status).toBe(500);
+    consoleSpy.mockRestore();
+  });
 });
